@@ -1,3 +1,5 @@
+@AGENTS.md
+
 # Moonfold project rules
 
 The project name is Moonfold (confirmed by the owner).
