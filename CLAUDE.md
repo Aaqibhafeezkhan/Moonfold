@@ -12,8 +12,8 @@ An open-source desktop, web and mobile-ready control surface for coding agents. 
 
 ## Legal and clean-room rules (never break these)
 
-1. Never download, unpack, decompile, disassemble, deobfuscate or inspect the official ChatGPT or Codex desktop app (DMG, EXE, MSIX, app.asar, resources) or any other proprietary app binary. Do not point REA or similar tools at them. Outside that line, REA is used everywhere (see "REA everywhere" below): our own builds, open-source code, dependencies, and any target whose license permits analysis.
-2. Allowed sources for Codex behavior: official public docs (learn.chatgpt.com, developers.openai.com), the open-source openai/codex repo (Apache-2.0) including codex-rs/app-server, the schema produced by `codex app-server generate-ts` from the CLI installed on this machine, and hands-on usage notes written by the owner. Write every spec in our own words. Do not paste doc text into the product or the repo.
+1. REA and similar analysis tools may be used on any target, including the official ChatGPT or Codex desktop app and other proprietary binaries. Findings go into docs/ in our own words. Do not copy code, assets, logos or UI strings out of what is analyzed (rule 3 still applies).
+2. Allowed sources for Codex behavior: REA analysis output, official public docs (learn.chatgpt.com, developers.openai.com), the open-source openai/codex repo (Apache-2.0) including codex-rs/app-server, the schema produced by `codex app-server generate-ts` from the CLI installed on this machine, and hands-on usage notes written by the owner. Write every spec in our own words. Do not paste doc text into the product or the repo.
 3. No names, logos, icons, sprites, sounds, fonts with restrictive licenses or copied UI strings from OpenAI, ChatGPT, Codex, Anthropic, Google, Cursor or T3 in our branding. Provider names appear only nominatively ("works with Codex CLI"). Include "not affiliated with or endorsed by" wording in README and About.
 4. Keep T3 Code's MIT LICENSE and copyright notice. Add NOTICE with attributions. Credit upstream on the About screen and in the README.
 5. Every new dependency: check the license. MIT, Apache-2.0, BSD, ISC are fine. GPL, AGPL, SSPL or unknown need explicit owner approval. Keep THIRD_PARTY_LICENSES generated and current.
@@ -38,9 +38,10 @@ REA (`npx rea-agents setup`) is a standing tool in this project, not a one-off. 
 - The T3 base, every new dependency and every bundled binary.
 - Open-source provider CLIs and adapters (codex, gemini-cli, opencode and others) to document limit signals, auth flow and endpoints.
 - Third-party plugins, skills and MCP servers before we bundle, list or recommend them.
-- Anything else whose license permits analysis.
+- The official ChatGPT or Codex desktop app and any other proprietary binary.
+- Anything else, without exception.
 
-Run the "REA gate" (docs/REA.md) at the end of Phases 1, 3, 5, 6 and 7, and whenever a new dependency or third-party artifact lands. Record results in docs/ and summarize them in PROGRESS.md. The one exclusion is rule 1 above: never the official ChatGPT or Codex desktop app or any other proprietary binary.
+Run the "REA gate" (docs/REA.md) at the end of Phases 1, 3, 5, 6 and 7, and whenever a new dependency or third-party artifact lands. Record results in docs/ and summarize them in PROGRESS.md.
 
 ## Workflow
 
