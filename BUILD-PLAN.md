@@ -1,6 +1,6 @@
-# {{APP_NAME}} build plan
+# Moonfold build plan
 
-Working title only. "Super Code" is not usable: several active projects already use "Supercode" (see section 1). Phase 0 picks the real name.
+The name is **Moonfold** (confirmed by the owner). "Super Code" was rejected because several active projects already use "Supercode" (see section 1).
 
 ## 0. How to run this plan
 
@@ -31,7 +31,7 @@ Name check (done during research):
 - volter-ai/supercode, a Rust "glue tool" for Claude Code, Codex, Gemini CLI, Grok and opencode sessions, is a direct competitor under that exact name.
 - A terminal "Supercode" SWE agent already launched on Product Hunt, and there are more by the same name on GitHub and Go/Rust registries.
 
-Pick a distinctive name. Candidates to check in Phase 0 (not verified): Baton, Switchyard, Tandem, Interchange, Relay Deck. "Baton" fits the handoff idea best if it is free.
+The name is Moonfold. Phase 0 still verifies availability (GitHub org and repo, npm, domain, trademark search) and records any conflict in docs/DECISIONS.md. It does not reopen the choice.
 
 Non-goals for the beta: hosted cloud service, accounts, billing, resale of tokens, mobile apps (T3's mobile client stays out of scope unless it comes for free with the fork).
 
@@ -96,26 +96,26 @@ Phase 0. Recon and decisions only. The only code change allowed is making the fo
 5. Install the Codex CLI. Run `codex app-server generate-ts --out docs/protocol/codex` and `generate-json-schema`. Record the CLI version in docs/PROTOCOL.md.
 6. Read the official Codex docs index at learn.chatgpt.com/llms.txt and the feature, settings, app-server, skills, plugins, automations, browser, computer use, memories, hooks, subagents pages. Write docs/FEATURE-MATRIX.md in our own words: each public feature, whether T3 already has it, and the implementation path (protocol-backed, build ourselves, skip).
 7. Black-box UX study (owner does this, Claude prepares it). Claude writes docs/UX-STUDY-TEMPLATE.md: a checklist of every workflow in the official Codex app that the public docs describe (start a project, run parallel threads, set a goal, plan mode, steer a running turn, review a diff, schedule a task, open the browser pane, install a skill or plugin, change settings and themes). The owner uses the official app normally, with their own account, and fills in short written notes per workflow: what the user does, what they see, what felt good, what felt bad, what is missing. Notes are in the owner's own words. No screenshots are copied into the repo, no assets are extracted, and nothing is decompiled, unpacked or traffic-sniffed. Claude turns the notes into docs/UX-STUDY.md and feeds it into FEATURE-MATRIX.md. Our UI is designed from these notes and from T3's existing UI, not from pixels of someone else's product.
-8. Learn REA on targets we are allowed to analyze. Install it (`npx rea-agents setup`). Run `analyze-javascript-application` on our own freshly built desktop app (the unpacked asar from step 2). Use the result as an independent cross-check of docs/NETWORK-AUDIT.md: any T3 domain, update feed, relay or analytics endpoint that REA finds and the manual audit missed gets added. Write the result to docs/REA-SELF-AUDIT.md. Allowed REA targets for this whole project: our own builds, open-source code, and anything whose license explicitly permits analysis. Not allowed: the official ChatGPT or Codex desktop app or any other proprietary binary.
+8. Learn REA and make it a standing tool. Install it (`npx rea-agents setup`). Run `analyze-javascript-application` on our own freshly built desktop app (the unpacked asar from step 2) and use the result as an independent cross-check of docs/NETWORK-AUDIT.md: any T3 domain, update feed, relay or analytics endpoint that REA finds and the manual audit missed gets added. Write the result to docs/REA-SELF-AUDIT.md. Then write docs/REA.md: which REA commands we use, on which target types, and the checklist "REA gate" that later phases reference. REA is applied everywhere in this project on every target we are allowed to analyze: our own builds and installers, the T3 base, every dependency and bundled binary, open-source provider CLIs and adapters (codex, gemini-cli, opencode, and so on), third-party plugins, skills and MCP servers before we ship or recommend them, and anything whose license permits analysis. Not allowed: the official ChatGPT or Codex desktop app or any other proprietary binary (see CLAUDE.md).
 9. Read developers.openai.com/siwc and the Sign in with ChatGPT cookbook. Decide and document the auth path.
-10. Name check for each candidate: GitHub org and repo, npm, domain, USPTO and EUIPO quick search, top web results. Recommend one and ask the owner to confirm.
+10. Name availability check for Moonfold: GitHub org and repo, npm, domain, USPTO and EUIPO quick search, top web results. Report conflicts and alternatives for the owner. The name stays Moonfold unless the owner says otherwise.
 11. Write docs/DECISIONS.md and fill the Commands section of CLAUDE.md. Update PROGRESS.md.
 ```
 
-Gate: the unmodified fork runs with Codex and Claude Code working end to end on this machine. DEV, ARCHITECTURE, NETWORK-AUDIT, PROTOCOL, FEATURE-MATRIX, UX-STUDY and REA-SELF-AUDIT docs exist. The owner has confirmed the name.
+Gate: the unmodified fork runs with Codex and Claude Code working end to end on this machine. DEV, ARCHITECTURE, NETWORK-AUDIT, PROTOCOL, FEATURE-MATRIX, UX-STUDY and REA-SELF-AUDIT and REA docs exist. The Moonfold availability check is recorded.
 
 ### Phase 1: rebrand and repo hygiene
 
 Prompt:
 
 ```
-Phase 1. Rename everything to the confirmed name: package names, bundle and app IDs, protocol handlers, config and data directories, window titles, installer names, update channel names, docs, URLs. Remove or replace every T3-hosted endpoint found in NETWORK-AUDIT.md (update feed, relay, telemetry). Telemetry becomes opt-in and off by default.
+Phase 1. Rename everything to Moonfold: package names, bundle and app IDs, protocol handlers, config and data directories, window titles, installer names, update channel names, docs, URLs. Remove or replace every T3-hosted endpoint found in NETWORK-AUDIT.md (update feed, relay, telemetry). Telemetry becomes opt-in and off by default.
 Add NOTICE and an About screen crediting T3 Code and its license. Add README disclaimer ("not affiliated with or endorsed by OpenAI, Anthropic, Google, Cursor or T3 Tools"). Add THIRD_PARTY_LICENSES generation and a CI license check.
 Create the logo and icon set from section 6 of this file. Replace all T3 imagery.
 Add CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, issue and PR templates.
 ```
 
-Gate: `grep -ri "t3"` shows only attribution and git history. App starts with no network calls to T3 domains (verify with a proxy capture, include the capture summary). Lint, typecheck, tests green.
+Gate: `grep -ri "t3"` shows only attribution and git history. App starts with no network calls to T3 domains (verify with a proxy capture, include the capture summary). REA gate: re-run REA on the rebranded build and confirm no T3 endpoint, update feed or analytics remains. Lint, typecheck, tests green.
 
 ### Phase 2: Codex-parity layer A (protocol-backed features)
 
@@ -142,7 +142,7 @@ Computer use: separate MCP server per OS, off by default, explicit permission sc
 Memories: local only, user-visible, editable, per project and global, can be disabled per chat.
 ```
 
-Gate: each feature demonstrated end to end by an automated e2e test plus a recorded manual run. Security review of computer use and browser permissions by a separate reviewer subagent.
+Gate: each feature demonstrated end to end by an automated e2e test plus a recorded manual run. Security review of computer use and browser permissions by a separate reviewer subagent. REA gate: run REA on the built app and on every third-party plugin, skill and MCP server we bundle or list in the marketplace.
 
 ### Phase 4: provider handoff engine (the headline feature)
 
@@ -181,7 +181,7 @@ Gate: demo script passes on a real project: start a task in Codex, force the lim
 Prompt:
 
 ```
-Phase 5. Add the Gemini CLI adapter (evaluate ACP first), verify the existing Cursor, OpenCode, Grok and Antigravity adapters on all three OSes, and add an OpenAI-compatible endpoint provider if the architecture allows it cleanly. Each provider gets: install detection, login status, model list, limit signals for handoff, docs page. A provider that cannot be verified on a real install is not listed as supported.
+Phase 5. Add the Gemini CLI adapter (evaluate ACP first), verify the existing Cursor, OpenCode, Grok and Antigravity adapters on all three OSes, and add an OpenAI-compatible endpoint provider if the architecture allows it cleanly. Each provider gets: install detection, login status, model list, limit signals for handoff, docs page. A provider that cannot be verified on a real install is not listed as supported. Use REA on each open-source provider CLI and adapter to document its real limit signals, auth flow and network endpoints for docs and handoff triggers.
 ```
 
 Gate: provider matrix in README generated from tests that actually ran.
@@ -191,7 +191,7 @@ Gate: provider matrix in README generated from tests that actually ran.
 Prompt:
 
 ```
-Phase 6. Hardening. Run: full unit, contract and e2e suites; Electron security audit (contextIsolation, sandbox, IPC allowlist, CSP, navigation and window-open handlers, protocol handlers); dependency audit; secret-leak scan of logs and crash reports; remote access threat model with authentication review; accessibility pass; performance profiling against the budgets in CLAUDE.md; crash recovery (provider process dies, app killed mid-turn, disk full, offline). Use a separate reviewer subagent that did not write the code. Fix everything rated medium or higher. Record results in docs/QA-REPORT.md.
+Phase 6. Hardening. Run: full unit, contract and e2e suites; Electron security audit (contextIsolation, sandbox, IPC allowlist, CSP, navigation and window-open handlers, protocol handlers); dependency audit; secret-leak scan of logs and crash reports; remote access threat model with authentication review; accessibility pass; performance profiling against the budgets in CLAUDE.md; crash recovery (provider process dies, app killed mid-turn, disk full, offline). Use a separate reviewer subagent that did not write the code. Run REA on the production build, every dependency and bundled binary, and each installer; add its findings to the audit. Fix everything rated medium or higher. Record results in docs/QA-REPORT.md.
 ```
 
 Gate: QA-REPORT.md has no open high or medium items. Budgets met with measured numbers.
@@ -201,7 +201,7 @@ Gate: QA-REPORT.md has no open high or medium items. Budgets met with measured n
 Prompt:
 
 ```
-Phase 7. Release pipeline on GitHub Actions: macOS (arm64 and x64), Windows (x64, arm64 if feasible), Linux (AppImage and .deb). Auto-update from our own GitHub Releases feed. Checksums and SBOM attached. Document signing: unsigned betas trigger macOS Gatekeeper and Windows SmartScreen warnings, so write clear first-run instructions and list what the owner needs for proper signing (Apple Developer account for notarization, a Windows code-signing option). Add a `npx` or one-line install path. Prepare Homebrew cask and winget manifests but do not submit until after beta feedback. Cut v0.1.0-beta.1 as a GitHub pre-release with real release notes.
+Phase 7. Release pipeline on GitHub Actions: macOS (arm64 and x64), Windows (x64, arm64 if feasible), Linux (AppImage and .deb). Auto-update from our own GitHub Releases feed. Checksums and SBOM attached. Document signing: unsigned betas trigger macOS Gatekeeper and Windows SmartScreen warnings, so write clear first-run instructions and list what the owner needs for proper signing (Apple Developer account for notarization, a Windows code-signing option). Add a `npx` or one-line install path. Prepare Homebrew cask and winget manifests but do not submit until after beta feedback. Run REA on every release artifact before publishing (REA gate) and attach the summary. Cut v0.1.0-beta.1 as a GitHub pre-release with real release notes.
 ```
 
 Gate: a clean VM or machine per OS installs the artifact, launches, signs in to a provider, completes a task and a handoff, and updates to a newer build.
@@ -228,7 +228,7 @@ Gate: a stranger can go from README to a completed first task in under five minu
 
 Goal: an original mark that reads as developer tooling, not a copy of anything. Look at ChatGPT, Claude Code, OpenCode and Cursor only to see the genre (simple geometric glyph, strong silhouette at 16 px). Do not echo their shapes or colors.
 
-Concept: handoff. One path that splits and rejoins, or two interlocking strokes passing a baton. Keep it to one idea.
+Concept: Moonfold. A moon (crescent or phase) combined with a fold, one path that folds over and continues, which also reads as handoff. Keep it to one idea.
 
 Deliverables:
 - Three distinct concepts as SVG, rendered and screenshot-checked at 1024, 128, 32 and 16 px. Pick one with the owner.

@@ -30,7 +30,7 @@ T minus 7 to 1 days
 
 Launch day (Tuesday to Thursday, around 14:00 to 16:00 Berlin time to hit US morning)
 1. Tag the release, flip the repo to polished state.
-2. Show HN: "Show HN: <name>, an open-source workspace where your coding task survives agent usage limits". Put the GIF and the honest limits in the first comment. Be present for hours answering.
+2. Show HN: "Show HN: Moonfold, an open-source workspace where your coding task survives agent usage limits". Put the GIF and the honest limits in the first comment. Be present for hours answering.
 3. X thread (GIF first, then three features, then repo link).
 4. LinkedIn post with the GIF (you already have a developer audience there; this is your strongest owned channel). Write it as a build story: why you made it, what broke, what you learned.
 5. Reddit: one post per relevant subreddit, each written for that audience, read each sub's self-promotion rules first. Never copy-paste the same post.

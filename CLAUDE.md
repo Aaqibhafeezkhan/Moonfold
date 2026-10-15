@@ -1,6 +1,6 @@
-# {{APP_NAME}} project rules
+# Moonfold project rules
 
-Replace {{APP_NAME}} once the name is decided in Phase 0 (see docs/DECISIONS.md).
+The project name is Moonfold (confirmed by the owner).
 
 ## What this project is
 
@@ -12,7 +12,7 @@ An open-source desktop, web and mobile-ready control surface for coding agents. 
 
 ## Legal and clean-room rules (never break these)
 
-1. Never download, unpack, decompile, disassemble, deobfuscate or inspect the official ChatGPT or Codex desktop app (DMG, EXE, MSIX, app.asar, resources) or any other proprietary app binary. Do not point REA or similar tools at them. REA is allowed only on our own builds, open-source code, and targets whose license explicitly permits analysis.
+1. Never download, unpack, decompile, disassemble, deobfuscate or inspect the official ChatGPT or Codex desktop app (DMG, EXE, MSIX, app.asar, resources) or any other proprietary app binary. Do not point REA or similar tools at them. Outside that line, REA is used everywhere (see "REA everywhere" below): our own builds, open-source code, dependencies, and any target whose license permits analysis.
 2. Allowed sources for Codex behavior: official public docs (learn.chatgpt.com, developers.openai.com), the open-source openai/codex repo (Apache-2.0) including codex-rs/app-server, the schema produced by `codex app-server generate-ts` from the CLI installed on this machine, and hands-on usage notes written by the owner. Write every spec in our own words. Do not paste doc text into the product or the repo.
 3. No names, logos, icons, sprites, sounds, fonts with restrictive licenses or copied UI strings from OpenAI, ChatGPT, Codex, Anthropic, Google, Cursor or T3 in our branding. Provider names appear only nominatively ("works with Codex CLI"). Include "not affiliated with or endorsed by" wording in README and About.
 4. Keep T3 Code's MIT LICENSE and copyright notice. Add NOTICE with attributions. Credit upstream on the About screen and in the README.
@@ -29,6 +29,18 @@ An open-source desktop, web and mobile-ready control surface for coding agents. 
 - Security: Electron contextIsolation on, nodeIntegration off, sandbox on, strict IPC allowlist, CSP, no remote code. Remote access requires authentication and TLS or an equivalent tunnel. Default permission mode is the safest one. Secrets never go into logs, handoff briefs or crash reports. Redact before sending context to another provider and show the user what will be sent.
 - Accessibility: keyboard reachable, visible focus, contrast AA, reduced motion respected.
 - Performance budgets: cold start under 3 s on a mid laptop, 60 fps scrolling on a 5,000-item thread, idle CPU near zero, idle RAM reasonable. Measure, do not guess.
+
+## REA everywhere
+
+REA (`npx rea-agents setup`) is a standing tool in this project, not a one-off. Apply it to every target we are allowed to analyze:
+
+- Our own builds, unpacked asars, installers and release artifacts, on every OS.
+- The T3 base, every new dependency and every bundled binary.
+- Open-source provider CLIs and adapters (codex, gemini-cli, opencode and others) to document limit signals, auth flow and endpoints.
+- Third-party plugins, skills and MCP servers before we bundle, list or recommend them.
+- Anything else whose license permits analysis.
+
+Run the "REA gate" (docs/REA.md) at the end of Phases 1, 3, 5, 6 and 7, and whenever a new dependency or third-party artifact lands. Record results in docs/ and summarize them in PROGRESS.md. The one exclusion is rule 1 above: never the official ChatGPT or Codex desktop app or any other proprietary binary.
 
 ## Workflow
 
