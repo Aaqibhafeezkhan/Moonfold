@@ -1,5 +1,53 @@
 # Progress
 
+## Phase 1: rebrand and repo hygiene (complete, 2026-10-16)
+
+Plan: docs/plans/phase-1.md. Decisions: DECISIONS D-12 to D-16.
+
+### Done
+
+- Everything renamed to Moonfold by a committed, idempotent codemod (`scripts/brand-codemod.ts`):
+  packages `@moonfold/*`, env `MOONFOLD_*`, home `~/.moonfold`, app id `dev.moonfold.app`, scheme
+  `moonfold://`, MCP server key `moonfold`, project file `moonfold.json`. CI gate
+  `scripts/check-brand.ts` reports no T3 token outside attribution files.
+- Removed: mobile app, marketing site, mobile-only patches/scripts/docs, T3-account workflows
+  (release, preview, AUR, Vercel, Discord, contribution bots). CI moved to GitHub-hosted runners.
+- Hosted services: telemetry opt-in with no embedded key; no default hosted web app (prompt links use
+  `moonfold://`, OAuth returns only to local clients); install scripts, schema, privacy page and
+  update feed point at this repository; Connect relay dormant (no relay URL in builds).
+- Brand: folded-moon icons for all channels, favicons, DMG backgrounds, Icon Composer layers, in-app
+  mark, sidebar/welcome/auth identity, stage art; rendered by `scripts/render-brand-icons.ts`.
+- Attribution and community: NOTICE, LICENSE line, About > Credits row, README with
+  non-affiliation statement, CODE_OF_CONDUCT, CONTRIBUTING, SECURITY, docs/legal/privacy.md.
+- REA gate: docs/REA-PHASE1.md (bundle scan clean; runtime capture of the built desktop app shows
+  only GitHub, npm, and the user's own Claude and Codex CLIs).
+
+### Verification (real output, Windows 11, 2026-10-16)
+
+- Typecheck `vp run -r --concurrency-limit 2 typecheck`: exit 0, 0 errors.
+- Lint: 0 errors in tracked code (pre-existing warnings only).
+- `vp fmt --check`: clean. `node scripts/check-brand.ts`: clean. `node scripts/render-brand-icons.ts --check`: clean.
+- Tests, compared with the unmodified upstream tree on the same machine (baseline worktree):
+  web 6858/6858, client-runtime 2112/2112, contracts 667/667, provider-pi 140/140, ssh 33/33,
+  relay 417/417, lint plugin 175/175, release smoke passes. desktop 33, scripts 14, shared 7,
+  provider-acp 2 and server 94 failures are **identical to the baseline's** (Windows-only causes:
+  symlink privileges, Linux-only cases, tool downloads); the server's file-level failures from the
+  full run pass in isolation (load while the desktop build ran). **No regressions from Phase 1.**
+
+### Not verified / open
+
+- Packaged installer: `build-desktop-artifact` needs Visual Studio Build Tools with Spectre libraries
+  (not installed here). Phase 7 builds installers in CI and runs REA on the asar.
+- The 94 server and 33 desktop baseline failures on Windows are upstream issues; not fixed in Phase 1.
+- An untracked `moonfold-website/` folder (a Vercel site, created 02:30-02:39 by someone other than
+  this session) sits in the working tree. It is not committed and was not modified.
+
+### Next step
+
+Phase 2 (docs/plans/phase-2.md): pinned protocol contract test, review mode, goal budget, MCP and skills
+managers, instructions editor, hooks, agent import, account usage, archive sync, keystroke search,
+pop-out chat.
+
 ## Phase 0: recon and decisions (complete, 2026-10-16)
 
 Started 2026-10-15 in a cloud container; finished 2026-10-16 on the owner's Windows 11 machine.

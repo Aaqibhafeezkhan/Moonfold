@@ -1,5 +1,24 @@
 # Network audit (T3 Code base, pre-rebrand)
 
+## Phase 1 status (2026-10-16)
+
+| Item                          | Outcome                                                                                                                            |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| PostHog telemetry             | Off by default; no embedded key; needs the user's own key and host (DECISIONS D-15).                                               |
+| Connect relay + Clerk         | Kept as dormant code, renamed; active only with a build-time relay URL, which Moonfold builds do not set. Deploy workflow removed. |
+| Hosted web app `app.t3.codes` | Removed; hosted app URL optional and empty (D-14). `apps/web/vercel.ts` deleted.                                                   |
+| Install scripts on `t3.codes` | Served from this repository's raw GitHub URLs.                                                                                     |
+| `t3.codes/schema/t3.json`     | Committed as `schemas/moonfold.json`, referenced by raw GitHub URL.                                                                |
+| Legal pages on `t3.codes`     | `docs/legal/privacy.md` in this repository.                                                                                        |
+| Marketing site                | `apps/marketing` removed.                                                                                                          |
+| `t3.chat` links               | Replaced with `example.com` in tool descriptions.                                                                                  |
+| Podspec homepage              | Mobile removed.                                                                                                                    |
+| Desktop update feed           | Publish config comes from `GITHUB_REPOSITORY` in CI (this repository); local builds have none. TODO closed.                        |
+| Server self-update            | Uses this repository's GitHub Releases (`cliRelease.ts`). TODO closed.                                                             |
+| Desktop telemetry publisher   | Local IPC only (host metrics to the local server); no external endpoint. TODO closed.                                              |
+
+Verification: docs/REA-PHASE1.md (bundle scan and a runtime capture of the built desktop app).
+
 Method: manual `git grep` of the tree at the T3 import (commit `65a3bc9f5`), cross-checked with REA on the built web bundle (docs/REA-SELF-AUDIT.md). Phase 1 removes or replaces every item in the "T3-hosted" and "Third-party" groups. Items not yet read in detail are marked **TODO**.
 
 ## T3-hosted services (remove or replace in Phase 1)
