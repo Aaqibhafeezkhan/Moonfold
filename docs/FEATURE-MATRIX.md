@@ -36,8 +36,33 @@ Legend: **P** protocol-backed (use Codex app-server method), **B** build ourselv
 | Remote access, background service, mobile                 | Present (T3 Connect relay, Tailscale, SSH, mobile app)                                                                    | Rebuild or drop relay                              | 1, 7  |
 | Voice, pets, appshots                                     | `voice-input.md` exists; others none                                                                                      | S for beta                                         | 8+    |
 
+## Additions from REA of the Codex desktop app (2026-10-16)
+
+Source: docs/CODEX-APP-REA.md (static evidence, not yet observed running). New or sharper rows:
+
+| Feature                                                                    | T3 today          | Path                                    | Phase |
+| -------------------------------------------------------------------------- | ----------------- | --------------------------------------- | ----- |
+| Visible follow-up queue: edit, retry, pause after interrupt, side chat     | Steer exists      | B on top of steer                       | 2     |
+| Editable plan file plus "implement plan" action                            | Plan mode exists  | B                                       | 2     |
+| Move a running chat to a new or existing worktree, bring changes back      | Worktrees exist   | B                                       | 2     |
+| Worktree retention (root folder, upstream fetch, auto-delete keep count)   | Unknown           | V, B                                    | 2     |
+| Per-thread usage breakdown by model, effort, speed, cached tokens          | Usage page exists | P + B                                   | 2, 4  |
+| Hooks list grouped by source with trust state                              | Weak              | P (`hooks/list`)                        | 2     |
+| Hotkey quick window                                                        | None found        | B (desktop only)                        | 2     |
+| Scheduled task notification policy and custom recurrence (RRULE)           | Scheduler exists  | V, B                                    | 3     |
+| Chat-attached recurring task ("heartbeat"), PR auto-fix template           | Unknown           | B                                       | 3     |
+| Browser per-site matrix: browse / download / upload x ask / always / block | Preview exists    | B                                       | 3     |
+| Computer use per-app approvals with "this chat" vs "always"                | None              | B                                       | 3     |
+| Plugin folder format compatible with Codex plugins                         | None              | B (read manifest + skills + MCP config) | 3     |
+| Computer history (screen activity log)                                     | None              | S (privacy, out of scope)               | -     |
+| Pets, floating Mini panel, hardware macro pad, realtime voice              | None              | S                                       | 8+    |
+
 ## Findings that change the plan
 
 1. T3 is much closer to the Codex app than the build plan assumed. Phase 2/3 effort shifts from building to verifying, closing gaps (review mode, rate limits in UI, hooks, MCP status, plugins, image generation, memories) and parity polish.
 2. Handoff is not greenfield. See DECISIONS D-4.
 3. Biggest Phase 1 cost is not rebranding but removing Clerk/relay/PostHog/app.t3.codes dependencies.
+4. The official app's own "handoff" moves chats between checkout, worktree, cloud and phone, not
+   between providers (CODEX-APP-REA). Cross-provider handoff remains unique.
+5. The unmodified T3 fork already surfaces a real Codex usage-limit error inline (observed
+   2026-10-16), so Phase 4 can hook the existing error path instead of adding detection from zero.
