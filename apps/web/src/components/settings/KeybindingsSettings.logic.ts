@@ -248,9 +248,14 @@ export function groupKeybindingRows(
   });
 }
 
+/**
+ * Rows for the keybindings page. A `keystroke` (from pressing keys, such as
+ * `mod+k`) matches bindings that use exactly that keystroke and replaces the text query.
+ */
 export function buildKeybindingRows(
   keybindings: ResolvedKeybindingsConfig,
   query: string,
+  keystroke: string | null = null,
 ): ReadonlyArray<KeybindingRow> {
   const normalizedQuery = query.trim().toLowerCase();
   const rows = keybindings.map((binding, index) => {
@@ -286,6 +291,10 @@ export function buildKeybindingRows(
     if (commandCompare !== 0) return commandCompare;
     return left.key.localeCompare(right.key);
   });
+
+  if (keystroke !== null) {
+    return rowsWithConflicts.filter((row) => row.key.split(" ").includes(keystroke));
+  }
 
   if (normalizedQuery.length === 0) {
     return rowsWithConflicts;

@@ -3,6 +3,10 @@
 Customize shortcuts in **Settings → Keybindings** on web and desktop. That page
 also lists the command IDs and defaults available in your version.
 
+To find what a shortcut does, select the keyboard button next to the search field
+and press the shortcut. The list shows every binding that uses exactly that
+keystroke. Press Escape to stop listening for keys.
+
 ## Composer controls
 
 In **Settings → General → Send shortcut**, choose whether Enter sends, requires

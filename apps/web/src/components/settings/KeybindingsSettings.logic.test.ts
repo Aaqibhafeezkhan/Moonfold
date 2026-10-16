@@ -42,6 +42,18 @@ describe("KeybindingsSettings.logic", () => {
       });
     }
   });
+  it("finds bindings by the exact keystroke pressed, ignoring the text query", () => {
+    const rows = buildKeybindingRows(DEFAULT_RESOLVED_KEYBINDINGS, "anything", "mod+shift+c");
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((row) => row.key.split(" ").includes("mod+shift+c"))).toBe(true);
+    expect(rows).toContainEqual(expect.objectContaining({ command: "thread.copyReference" }));
+    // A keystroke is not a prefix search: mod+c does not find mod+shift+c.
+    expect(
+      buildKeybindingRows(DEFAULT_RESOLVED_KEYBINDINGS, "", "mod+c").some(
+        (row) => row.command === "thread.copyReference",
+      ),
+    ).toBe(false);
+  });
   it("finds the editable shortcut for sending the first queued message", () => {
     expect(buildKeybindingRows(DEFAULT_RESOLVED_KEYBINDINGS, "first queued")).toContainEqual(
       expect.objectContaining({
