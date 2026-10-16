@@ -9,7 +9,7 @@ import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@moonfold/client-runtime/state/runtime";
-import { ChevronDownIcon } from "lucide-react";
+import { ChevronDownIcon, PinIcon } from "lucide-react";
 import {
   memo,
   useCallback,
@@ -23,6 +23,8 @@ import {
 import { isTrailingDoubleClick } from "../Sidebar.logic";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { toastManager } from "../ui/toast";
+import { Toggle } from "../ui/toggle";
+import { isThreadPopoutWindow } from "~/threadPopout";
 import { useThreadActionMenu } from "~/hooks/useThreadActionMenu";
 import { readLocalApi } from "~/localApi";
 import { threadEnvironment } from "../../state/threads";
@@ -436,6 +438,35 @@ export const ChatHeader = memo(function ChatHeader({
           )}
         </WorkspaceBreadcrumbItem>
       </WorkspaceBreadcrumb>
+      {isThreadPopoutWindow ? <KeepWindowOnTopToggle /> : null}
     </div>
   );
 });
+
+/** In a popped-out thread window: keeps the window above other apps' windows. */
+function KeepWindowOnTopToggle() {
+  const [onTop, setOnTop] = useState(false);
+  const setAlwaysOnTop = window.desktopBridge?.setWindowAlwaysOnTop;
+  if (setAlwaysOnTop === undefined) return null;
+  const label = onTop ? "Stop keeping this window on top" : "Keep this window on top";
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Toggle
+            variant="ghost"
+            size="sm"
+            aria-label={label}
+            pressed={onTop}
+            onPressedChange={(pressed) => {
+              void setAlwaysOnTop(pressed).then((applied) => setOnTop(applied && pressed));
+            }}
+          />
+        }
+      >
+        <PinIcon aria-hidden className="size-3.5" />
+      </TooltipTrigger>
+      <TooltipPopup side="bottom">{label}</TooltipPopup>
+    </Tooltip>
+  );
+}

@@ -16,6 +16,7 @@ const baseState: ThreadActionMenuState = {
   isSnoozed: false,
   canSnoozeNow: true,
   isRegeneratingTitle: false,
+  canOpenInWindow: false,
   isRunning: false,
   supports: {
     settlement: true,
@@ -38,6 +39,19 @@ function allIds(state: ThreadActionMenuState): string[] {
     items.flatMap((item) => [item.id, ...(item.children ? flatten(item.children) : [])]);
   return flatten(buildThreadActionMenuItems(state));
 }
+
+describe("open in new window", () => {
+  it("is offered only where the desktop app can open one, and needs no write access", () => {
+    expect(ids(baseState)).not.toContain("open-in-window");
+    expect(ids({ ...baseState, canOpenInWindow: true })).toContain("open-in-window");
+    const readOnly = buildThreadActionMenuItems({
+      ...baseState,
+      canOperate: false,
+      canOpenInWindow: true,
+    }).find((item) => item.id === "open-in-window");
+    expect(readOnly?.disabled).not.toBe(true);
+  });
+});
 
 describe("buildThreadActionMenuItems", () => {
   it.each([false, true])(

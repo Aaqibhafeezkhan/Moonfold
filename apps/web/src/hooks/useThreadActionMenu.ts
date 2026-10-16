@@ -47,6 +47,7 @@ import { useCopyToClipboard } from "./useCopyToClipboard";
 import { useNewThreadHandler } from "./useHandleNewThread";
 import { useClientSettings } from "./useSettings";
 import { useThreadActions } from "./useThreadActions";
+import { canPopOutThreads, openThreadInNewWindow } from "../threadPopout";
 
 function failureToast(title: string, error: unknown) {
   toastManager.add(
@@ -158,6 +159,7 @@ export function useThreadActionMenu(input: {
           canSnoozeNow: canSnooze(thread, { now: now.toISOString() }),
           isRegeneratingTitle,
           isRunning: !threadRuntimeCanArchive(thread.runtime),
+          canOpenInWindow: canPopOutThreads(),
           supports,
           snoozePresets,
         });
@@ -287,6 +289,11 @@ export function useThreadActionMenu(input: {
             return;
           case "copy-thread-id":
             copyThreadIdToClipboard(thread.id, { threadId: thread.id });
+            return;
+          case "open-in-window":
+            void openThreadInNewWindow(threadRef).catch((error: unknown) =>
+              failureToast("Could not open a new window", error),
+            );
             return;
           case "archive": {
             if (confirmThreadArchive) {

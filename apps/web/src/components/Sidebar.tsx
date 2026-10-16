@@ -189,6 +189,7 @@ import {
   buildThreadActionMenuItems,
   threadActionRequiresOperate,
 } from "./threadActionMenu.logic";
+import { canPopOutThreads, openThreadInNewWindow } from "../threadPopout";
 import {
   animateSidebarLayoutChanges,
   applySidebarThreadDrop,
@@ -4659,6 +4660,7 @@ export default function Sidebar() {
               canSnoozeNow: canSnooze(thread, { now: new Date().toISOString() }),
               isRegeneratingTitle,
               isRunning: !threadRuntimeCanArchive(thread.runtime),
+              canOpenInWindow: canPopOutThreads(),
               supports: {
                 settlement: supportsSettlement,
                 autoSettleOptOut: supportsAutoSettleOptOut,
@@ -4800,6 +4802,15 @@ export default function Sidebar() {
             return;
           case "copy-thread-id":
             copyThreadIdToClipboard(thread.id, { threadId: thread.id });
+            return;
+          case "open-in-window":
+            void openThreadInNewWindow(threadRef).catch((error: unknown) => {
+              toastManager.add({
+                type: "error",
+                title: "Could not open a new window",
+                description: error instanceof Error ? error.message : "The window did not open.",
+              });
+            });
             return;
           case "archive": {
             if (confirmThreadArchive) {

@@ -53,6 +53,7 @@ import {
   toastManager,
 } from "../components/ui/toast";
 import { isElectron } from "../env";
+import { isThreadPopoutWindow } from "../threadPopout";
 import { cn } from "../lib/utils";
 import { applyAppearanceFontVariables } from "~/appearanceFonts";
 import { applyAppearanceContrast } from "~/appearanceContrast";
@@ -244,28 +245,42 @@ function RootRouteView() {
           hostedStatic={authGateState.status === "hosted-static"}
         >
           {primaryEnvironmentAuthenticated ? <AuthenticatedTracingBootstrap /> : null}
-          {primaryEnvironmentAuthenticated ? <DesktopAppActivationCoordinator /> : null}
-          {primaryEnvironmentAuthenticated ? <DesktopWebLinkCoordinator /> : null}
-          {isElectron ? <RunningThreadKeepAlive /> : null}
+          {/* A popped-out thread window leaves app-wide work to the main window, so
+              nothing below notifies, opens links or keeps the machine awake twice. */}
+          {primaryEnvironmentAuthenticated && !isThreadPopoutWindow ? (
+            <DesktopAppActivationCoordinator />
+          ) : null}
+          {primaryEnvironmentAuthenticated && !isThreadPopoutWindow ? (
+            <DesktopWebLinkCoordinator />
+          ) : null}
+          {isElectron && !isThreadPopoutWindow ? <RunningThreadKeepAlive /> : null}
           <RelayClientInstallDialog />
           <ConnectOnboardingDialog />
           <SshPasswordPromptDialog />
-          <SnapShotCoordinator />
-          <ThreadNotificationCoordinator />
+          {isThreadPopoutWindow ? null : <SnapShotCoordinator />}
+          {isThreadPopoutWindow ? null : <ThreadNotificationCoordinator />}
           <ReopenClosedViewShortcut />
           <ConfirmDialogHost />
           <CustomSnoozeDialogHost />
           <SlowRpcRequestToastCoordinator />
           <PermissionUpdateNotice />
-          {primaryEnvironmentAuthenticated ? <LegacyThreadMigrationToast /> : null}
+          {primaryEnvironmentAuthenticated && !isThreadPopoutWindow ? (
+            <LegacyThreadMigrationToast />
+          ) : null}
           <ProjectCloneToastCoordinator />
-          <PullRequestGuideRunCoordinator />
+          {isThreadPopoutWindow ? null : <PullRequestGuideRunCoordinator />}
           <HostedStaticEnvironmentBootstrap />
           {primaryEnvironmentAuthenticated ? (
-            <EventRouter skipInitialBootstrapNavigation={returningFromWelcomeRef.current} />
+            <EventRouter
+              skipInitialBootstrapNavigation={
+                returningFromWelcomeRef.current || isThreadPopoutWindow
+              }
+            />
           ) : null}
-          {primaryEnvironmentAuthenticated ? <ProviderUpdateLaunchNotification /> : null}
-          {isElectron ? <DesktopUpdateLaunchNotice /> : null}
+          {primaryEnvironmentAuthenticated && !isThreadPopoutWindow ? (
+            <ProviderUpdateLaunchNotification />
+          ) : null}
+          {isElectron && !isThreadPopoutWindow ? <DesktopUpdateLaunchNotice /> : null}
           {/* Hosted Nightly is "hosted-static", not authenticated, and needs it too. */}
           {appShell}
           {/* Above the router: a theme draft is judged by walking the app, so the

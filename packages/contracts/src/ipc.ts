@@ -1217,6 +1217,10 @@ export interface DesktopBridge {
   receiveProviderAuthCallback?: (authorizationUrl: string) => Promise<string>;
   cancelProviderAuthCallback?: (authorizationUrl: string) => Promise<void>;
   openExternal: (url: string) => Promise<boolean>;
+  /** Opens one thread (`/environment-id/thread-id`) in its own window. Optional: older builds lack it. */
+  openThreadWindow?: (path: string) => Promise<void>;
+  /** Keeps this pop-out window above others. Resolves false outside a pop-out window. */
+  setWindowAlwaysOnTop?: (enabled: boolean) => Promise<boolean>;
   /**
    * Open a System Settings pane by identifier. Optional: older desktop builds
    * lack it, and callers no-op when it is missing.
