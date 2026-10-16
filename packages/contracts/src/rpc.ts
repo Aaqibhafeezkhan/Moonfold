@@ -1982,7 +1982,13 @@ export class RpcScopeAuthorization extends RpcMiddleware.Service<RpcScopeAuthori
   { error: EnvironmentAuthorizationError },
 ) {}
 
-export const WsRpcGroup = RpcGroup.make(
+/**
+ * The WebSocket RPCs, in parts. The server implements each part separately: typing one
+ * handler layer for every method at once grows quadratically with the method count and
+ * exceeds TypeScript's instantiation budget. Clients use the merged `WsRpcGroup`. Add a new
+ * method to the last part, or to whichever part is smallest.
+ */
+export const WsRpcGroupPart1 = RpcGroup.make(
   WsServerProbeRpc,
   WsServerGetConfigRpc,
   WsServerRefreshProvidersRpc,
@@ -2035,6 +2041,9 @@ export const WsRpcGroup = RpcGroup.make(
   WsServerLogoutAcpRegistryRpc,
   WsServerGetTraceDiagnosticsRpc,
   WsServerGetProcessDiagnosticsRpc,
+).middleware(RpcScopeAuthorization);
+
+export const WsRpcGroupPart2 = RpcGroup.make(
   WsServerGetHostResourcesRpc,
   WsServerGetProcessResourceHistoryRpc,
   WsServerGetResourceTelemetryHistoryRpc,
@@ -2087,6 +2096,9 @@ export const WsRpcGroup = RpcGroup.make(
   WsPullRequestsReportStateRpc,
   WsPullRequestsSubscribeRefreshesRpc,
   WsPullRequestsReviewerCandidatesRpc,
+).middleware(RpcScopeAuthorization);
+
+export const WsRpcGroupPart3 = RpcGroup.make(
   WsPullRequestsRequestReviewersRpc,
   WsPullRequestsLabelCandidatesRpc,
   WsPullRequestsSetLabelsRpc,
@@ -2139,6 +2151,9 @@ export const WsRpcGroup = RpcGroup.make(
   WsReviewGetDiffFileContentsRpc,
   WsTerminalOpenRpc,
   WsTerminalAttachRpc,
+).middleware(RpcScopeAuthorization);
+
+export const WsRpcGroupPart4 = RpcGroup.make(
   WsTerminalObserveRpc,
   WsTerminalWriteRpc,
   WsTerminalResizeRpc,
@@ -2189,3 +2204,5 @@ export const WsRpcGroup = RpcGroup.make(
   WsOrchestrationV2SubscribeShellRpc,
   WsOrchestrationV2SubscribeThreadRpc,
 ).middleware(RpcScopeAuthorization);
+
+export const WsRpcGroup = WsRpcGroupPart1.merge(WsRpcGroupPart2, WsRpcGroupPart3, WsRpcGroupPart4);
