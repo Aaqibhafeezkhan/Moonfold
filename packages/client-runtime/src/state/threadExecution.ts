@@ -495,6 +495,9 @@ export function summarizeThreadTokenUsage(
   for (const turn of projection.providerTurns) {
     const usage = turn.turnTokenUsage;
     if (usage === undefined || usage.usageStatus === "unavailable") continue;
+    // A turn the provider answered locally (a slash command) used no tokens and is not a turn
+    // of model work.
+    if ((usage.inputTokens ?? 0) + (usage.outputTokens ?? 0) === 0) continue;
     const runId = turn.runAttemptId === null ? undefined : runIdByAttempt.get(turn.runAttemptId);
     const run = runId === undefined ? undefined : runsById.get(runId);
     if (run === undefined) continue;

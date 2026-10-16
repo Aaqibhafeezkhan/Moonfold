@@ -785,6 +785,8 @@ describe("summarizeThreadTokenUsage", () => {
           turnTokenUsage: { ...usage(0, 0, 0), usageStatus: "unavailable" },
         },
         { runAttemptId: null, turnTokenUsage: usage(9_999, 0, 0) },
+        // A locally answered slash command reports zero usage and is not counted.
+        { runAttemptId: "attempt-3", turnTokenUsage: usage(0, 0, 0) },
       ],
     } as never);
 
