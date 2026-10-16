@@ -9574,6 +9574,91 @@ describe("CodexAdapterV2 post-settle continuation", () => {
       ),
     );
   });
+  it.effect("shows each hook run in the turn, from running to its outcome", () =>
+    Effect.scoped(
+      Effect.gen(function* () {
+        const nativeThreadId = "hook-thread";
+        const nativeTurnId = "hook-turn";
+        const hookRun = (status: string, entries: ReadonlyArray<unknown>) => ({
+          id: "run-1",
+          displayOrder: 0,
+          entries,
+          eventName: "preToolUse",
+          executionMode: "sync",
+          handlerType: "command",
+          scope: "turn",
+          sourcePath: "/home/dev/.codex/hooks.json",
+          startedAt: 1782622441,
+          status,
+          statusMessage: null,
+        });
+        const hookNotification = (method: string, run: unknown, turnId: string | null) => ({
+          type: "emit_inbound" as const,
+          label: method,
+          frame: { method, params: { threadId: nativeThreadId, turnId, run } },
+        });
+        const transcript = makeCodexReplayTranscript({
+          scenario: "hook-runs",
+          entries: [
+            ...codexReplayPreamble({ nativeThreadId, nativeTurnId, prompt: "Edit the file." }),
+            // Session-level runs have no turn to show in.
+            hookNotification("hook/started", hookRun("running", []), null),
+            hookNotification("hook/started", hookRun("running", []), nativeTurnId),
+            hookNotification(
+              "hook/completed",
+              hookRun("blocked", [{ kind: "stop", text: "  protected path  " }]),
+              nativeTurnId,
+            ),
+            {
+              type: "emit_inbound",
+              label: "complete",
+              frame: {
+                method: "turn/completed",
+                params: {
+                  threadId: nativeThreadId,
+                  turn: makeCodexReplayTurn({ id: nativeTurnId, status: "completed" }),
+                },
+              },
+            },
+          ],
+        });
+        const harness = yield* makeCodexReplayHarness(transcript);
+        yield* harness.runtime.startTurn(
+          makeCodexTestTurnInput({
+            threadId: harness.threadId,
+            providerThread: harness.providerThread,
+            now: yield* DateTime.now,
+            attemptId: RunAttemptId.make("hook-attempt"),
+            text: "Edit the file.",
+          }),
+        );
+        yield* harness.firstTerminal;
+
+        const notices = harness.events.flatMap((event) =>
+          event.type === "turn_item.updated" && event.turnItem.type === "system_notice"
+            ? [event.turnItem]
+            : [],
+        );
+        assert.deepEqual(
+          notices.map((notice) => [notice.title, notice.status, notice.message]),
+          [
+            ["Hook: preToolUse", "running", "Running the preToolUse hook."],
+            [
+              "Hook: preToolUse",
+              "completed",
+              "The preToolUse hook blocked the action.\nprotected path",
+            ],
+          ],
+        );
+        assert.equal(notices[0]?.id, notices[1]?.id);
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(IdAllocator.layer, McpProviderSessions.layer, NodeServices.layer),
+        ),
+      ),
+    ),
+  );
+
   describe("native review", () => {
     const nativeThreadId = "review-thread";
     const nativeTurnId = "review-turn";

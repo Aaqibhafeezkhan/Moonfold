@@ -55,6 +55,7 @@ import type {
   OrchestrationV2ProviderSession,
   OrchestrationV2ProviderThread,
   OrchestrationV2ProviderTurn,
+  OrchestrationV2TurnItemStatus,
   OrchestrationV2PlanStep,
   OrchestrationV2RuntimeRequest,
   OrchestrationV2Subagent,
@@ -1011,6 +1012,20 @@ function describeCodexGoal(goal: OrchestrationV2ProviderGoal): string {
   if (goal.tokenBudget == null) return summary;
   return `${summary} (${formatTokens(goal.tokensUsed ?? 0)} of ${formatTokens(goal.tokenBudget)} tokens)`;
 }
+
+const CODEX_HOOK_STATUSES = {
+  running: "running",
+  completed: "completed",
+  failed: "failed",
+  blocked: "completed",
+  stopped: "cancelled",
+} as const satisfies Record<
+  CodexSchema.V2HookCompletedNotification["run"]["status"],
+  OrchestrationV2TurnItemStatus
+>;
+
+/** Hook output shown in the thread; the full output stays in Codex's logs. */
+const CODEX_HOOK_OUTPUT_LIMIT = 2_000;
 
 // Codex starts the next goal turn milliseconds after the last one completes.
 // A run waits this long for it before settling, in case Codex declines.
@@ -4791,6 +4806,63 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
             },
           });
         });
+
+        /**
+         * One notice per hook run, updated from running to its outcome. Runs outside a turn
+         * (session start, for example) have nowhere to show and are skipped.
+         */
+        const emitHookRunNotice = (payload: CodexSchema.V2HookCompletedNotification) =>
+          Effect.gen(function* () {
+            if (payload.turnId == null) return;
+            const resolved = yield* resolveItemEventContext(payload.turnId);
+            if (resolved === undefined) return;
+            const { context } = resolved;
+            const { run } = payload;
+            const nativeItemId = `hook:${run.id}`;
+            const now = yield* DateTime.now;
+            const { ordinal, startedAt } = yield* resolveItemPosition(context, nativeItemId);
+            const status = CODEX_HOOK_STATUSES[run.status];
+            const output = run.entries
+              .map((entry) => entry.text.trim())
+              .filter((text) => text.length > 0)
+              .join("\n")
+              .slice(0, CODEX_HOOK_OUTPUT_LIMIT);
+            const summary =
+              run.status === "blocked"
+                ? `The ${run.eventName} hook blocked the action.`
+                : run.status === "running"
+                  ? `Running the ${run.eventName} hook.`
+                  : `The ${run.eventName} hook ${run.status}.`;
+            yield* emitProviderEvent({
+              type: "turn_item.updated",
+              driver: CODEX_PROVIDER,
+              turnItem: {
+                id: idAllocator.derive.turnItemFromProviderItem({
+                  driver: CODEX_PROVIDER,
+                  nativeItemId,
+                }),
+                threadId: context.projectionThreadId,
+                runId: context.projectionRunId,
+                nodeId: context.providerNodeId,
+                providerThreadId: context.providerThread.id,
+                providerTurnId: context.providerTurnId,
+                nativeItemRef: codexNativeItemRef(nativeItemId),
+                parentItemId: null,
+                ordinal,
+                type: "system_notice",
+                status,
+                title: `Hook: ${run.eventName}`,
+                message: [summary, run.statusMessage?.trim(), output]
+                  .filter((part) => part !== undefined && part !== null && part.length > 0)
+                  .join("\n"),
+                startedAt,
+                completedAt: status === "running" ? null : now,
+                updatedAt: now,
+              },
+            });
+          });
+        yield* client.handleServerNotification("hook/started", emitHookRunNotice);
+        yield* client.handleServerNotification("hook/completed", emitHookRunNotice);
 
         yield* client.handleServerNotification("item/started", (payload) =>
           Effect.gen(function* () {
