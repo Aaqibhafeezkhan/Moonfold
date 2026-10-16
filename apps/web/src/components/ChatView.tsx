@@ -232,6 +232,7 @@ import {
   buildPlanImplementationPrompt,
   resolvePlanFollowUpSubmission,
 } from "../proposedPlan";
+import { readPlanMarkdownForImplementation } from "../planEdits";
 import {
   DEFAULT_INTERACTION_MODE,
   DEFAULT_THREAD_TERMINAL_ID,
@@ -8985,7 +8986,10 @@ export default function ChatView(props: ChatViewProps) {
     ) {
       const followUp = resolvePlanFollowUpSubmission({
         draftText: promptForSend,
-        planMarkdown: activeProposedPlan.planMarkdown,
+        planMarkdown: readPlanMarkdownForImplementation(
+          scopeThreadRef(activeThread.environmentId, activeThread.id),
+          activeProposedPlan,
+        ),
       });
       const outgoingFollowUpText = formatOutgoingPrompt({
         provider: ctxSelectedProvider,
@@ -10412,7 +10416,10 @@ export default function ChatView(props: ChatViewProps) {
 
     const createdAt = new Date().toISOString();
     const nextThreadId = newThreadId();
-    const planMarkdown = activeProposedPlan.planMarkdown;
+    const planMarkdown = readPlanMarkdownForImplementation(
+      scopeThreadRef(activeThread.environmentId, activeThread.id),
+      activeProposedPlan,
+    );
     const implementationPrompt = buildPlanImplementationPrompt(planMarkdown);
     const outgoingImplementationPrompt = formatOutgoingPrompt({
       provider: ctxSelectedProvider,

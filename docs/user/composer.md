@@ -191,6 +191,13 @@ Provider commands must start the message to run. Moonfold commands such as
 Send `/compact` in an existing conversation to reduce context usage when the
 provider supports it. Web and desktop also offer compaction from the context meter.
 
+## Plans
+
+Switch to plan mode (`/plan`) to have the agent propose a plan before it changes anything. Send
+feedback to refine the plan, or send an empty message (or select **Implement**) to start the work.
+To change the plan yourself first, open the plan's menu and choose **Edit plan**; implementing then
+sends your version. **Use the original plan** discards your edit. Edits stay on this device.
+
 ## Goals
 
 With Codex and Claude, send `/goal` followed by what "done" means, for example
