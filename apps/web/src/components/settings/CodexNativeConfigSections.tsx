@@ -4,6 +4,7 @@ import {
   type ProjectId,
   type ProviderAccountUsage,
   type ProviderAgentImportItem,
+  type ProviderHookEntry,
   type ProviderHookList,
   type ProviderInstanceId,
   type ProviderMcpServer,
@@ -38,6 +39,7 @@ import {
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
 import { Switch } from "../ui/switch";
 import { toastManager } from "../ui/toast";
+import { groupHooksBySource } from "./CodexNativeConfigSections.logic";
 import { FoldedSettingsSection } from "./FoldedSettingsSection";
 import { SettingsRow } from "./settingsLayout";
 
@@ -491,25 +493,29 @@ function HooksSection(props: SectionProps & { readonly projectId: ProjectId | un
       {list !== null && list.hooks.length === 0 ? (
         <SettingsRow title="No hooks" description="Codex has no hooks configured for this scope." />
       ) : null}
-      {list?.hooks.map((hook) => (
-        <SettingsRow
-          key={hook.key}
-          title={
-            <span className="flex items-center gap-2">
-              {hook.event}
-              {!hook.enabled ? <Badge variant="outline">Off</Badge> : null}
-              {hook.trust !== "trusted" ? <Badge variant="warning">{hook.trust}</Badge> : null}
-              {hook.managed ? <Badge variant="info">Managed</Badge> : null}
-            </span>
-          }
-          description={[
-            hook.target ?? hook.handler,
-            hook.matcher ? `when ${hook.matcher}` : null,
-            hook.sourcePath,
-          ]
-            .filter(Boolean)
-            .join(" · ")}
-        />
+      {groupHooksBySource(list?.hooks ?? []).map(([group, hooks]) => (
+        <div key={group}>
+          <p className="px-3 pt-3 text-xs font-medium text-muted-foreground sm:px-4">{group}</p>
+          {hooks.map((hook) => (
+            <SettingsRow
+              key={hook.key}
+              title={
+                <span className="flex items-center gap-2">
+                  {hook.event}
+                  {!hook.enabled ? <Badge variant="outline">Off</Badge> : null}
+                  {hookTrustBadge(hook.trust)}
+                </span>
+              }
+              description={[
+                hook.target ?? hook.handler,
+                hook.matcher ? `when ${hook.matcher}` : null,
+                hook.sourcePath,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            />
+          ))}
+        </div>
       ))}
       {[
         ...(list?.warnings ?? []),
@@ -519,6 +525,21 @@ function HooksSection(props: SectionProps & { readonly projectId: ProjectId | un
       ))}
     </FoldedSettingsSection>
   );
+}
+
+function hookTrustBadge(trust: string) {
+  switch (trust) {
+    case "trusted":
+      return null;
+    case "managed":
+      return <Badge variant="info">Managed</Badge>;
+    case "modified":
+      return <Badge variant="warning">Changed since trusted</Badge>;
+    case "untrusted":
+      return <Badge variant="warning">Not trusted</Badge>;
+    default:
+      return <Badge variant="outline">{trust}</Badge>;
+  }
 }
 
 function AgentImportSection(props: SectionProps & { readonly projectId: ProjectId | undefined }) {
