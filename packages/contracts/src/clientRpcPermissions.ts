@@ -40,6 +40,9 @@ export const CLIENT_GUARDED_RPC_SCOPES = {
   [WS_METHODS.gitRunStackedAction]: AuthSourceControlWriteScope,
   [WS_METHODS.gitPreparePullRequestThread]: AuthSourceControlWriteScope,
   [WS_METHODS.vcsCreateWorktree]: AuthSourceControlWriteScope,
+  // Moving a thread's checkout creates or merges branches and moves uncommitted work.
+  [WS_METHODS.threadsMoveToWorktree]: AuthSourceControlWriteScope,
+  [WS_METHODS.threadsReturnToProject]: AuthSourceControlWriteScope,
   [WS_METHODS.vcsRemoveWorktree]: AuthSourceControlWriteScope,
   [WS_METHODS.vcsCreateRef]: AuthSourceControlWriteScope,
   [WS_METHODS.vcsSwitchRef]: AuthSourceControlWriteScope,

@@ -2,6 +2,9 @@ import {
   CommandId,
   MessageId,
   type ProjectId,
+  type ThreadId,
+  type ThreadMoveToWorktreeInput,
+  type ThreadReturnToProjectResult,
   WorktreeMcpFailure,
   type WorktreeMcpContinuationStatus,
   type WorktreeMcpHandoffInput,
@@ -23,7 +26,13 @@ import * as ProjectService from "../project/ProjectService.ts";
 import * as ProjectSetupScriptRunner from "../project/ProjectSetupScriptRunner.ts";
 import * as ServerSettings from "../serverSettings.ts";
 import * as VcsStatusBroadcaster from "../vcs/VcsStatusBroadcaster.ts";
-import type { McpInvocationScope, McpThreadInvocationScope } from "./McpInvocationContext.ts";
+import type { McpInvocationScope, McpThreadCaller } from "./McpInvocationContext.ts";
+import * as GitVcsDriver from "../vcs/GitVcsDriver.ts";
+
+/** The thread a handoff moves, and the seed its command ids derive from. */
+interface HandoffTarget {
+  readonly thread: Pick<McpThreadCaller, "threadId" | "providerSessionId">;
+}
 
 export class WorktreeMcpService extends Context.Service<
   WorktreeMcpService,
@@ -35,6 +44,18 @@ export class WorktreeMcpService extends Context.Service<
     readonly status: (
       scope: McpInvocationScope,
     ) => Effect.Effect<WorktreeMcpStatusResult, WorktreeMcpFailure>;
+    /** The user moves an idle thread into a new worktree, optionally with its changes. */
+    readonly moveToNewWorktree: (
+      input: ThreadMoveToWorktreeInput,
+    ) => Effect.Effect<WorktreeMcpHandoffResult, WorktreeMcpFailure>;
+    /**
+     * The user brings an idle thread's worktree work back to the project checkout: the worktree
+     * branch is merged into the checkout's branch, uncommitted changes come over, and the thread
+     * points at the project folder again. The checkout must be clean, so a failure undoes itself.
+     */
+    readonly returnToProject: (
+      threadId: ThreadId,
+    ) => Effect.Effect<ThreadReturnToProjectResult, WorktreeMcpFailure>;
   }
 >()("moonfold/mcp/WorktreeMcpService") {}
 
@@ -64,6 +85,54 @@ const make = Effect.gen(function* () {
   const gitWorkflow = yield* GitWorkflowService.GitWorkflowService;
   const setupScriptRunner = yield* ProjectSetupScriptRunner.ProjectSetupScriptRunner;
   const vcsStatusBroadcaster = yield* VcsStatusBroadcaster.VcsStatusBroadcaster;
+  const git = yield* GitVcsDriver.GitVcsDriver;
+
+  const runGit = (cwd: string, args: ReadonlyArray<string>) =>
+    git
+      .execute({ operation: `WorktreeTransfer.${args[0]}`, cwd, args })
+      .pipe(asOperationFailed(`git ${args.join(" ")} failed in ${cwd}`));
+
+  const hasUncommittedChanges = (cwd: string) =>
+    runGit(cwd, ["status", "--porcelain"]).pipe(
+      Effect.map((result) => result.stdout.trim().length > 0),
+    );
+
+  /**
+   * Moves uncommitted work (tracked and untracked) from one checkout of the repository to
+   * another through the shared stash. `to` must start clean: when the work does not apply
+   * there, the partial apply is discarded and the work returns to `from`.
+   */
+  const carryUncommittedChanges = Effect.fn("WorktreeMcpService.carryUncommittedChanges")(
+    function* (from: string, to: string) {
+      if (!(yield* hasUncommittedChanges(from))) return false;
+      yield* runGit(from, [
+        "stash",
+        "push",
+        "--include-untracked",
+        "--message",
+        "moonfold: move uncommitted changes",
+      ]);
+      const applied = yield* git
+        .execute({
+          operation: "WorktreeTransfer.apply",
+          cwd: to,
+          args: ["stash", "apply"],
+          allowNonZeroExit: true,
+        })
+        .pipe(asOperationFailed(`git stash apply failed in ${to}`));
+      if (applied.exitCode !== 0) {
+        yield* runGit(to, ["reset", "--hard", "HEAD"]);
+        yield* runGit(to, ["clean", "-fd"]);
+        yield* runGit(from, ["stash", "pop"]);
+        return yield* failure(
+          "operation_failed",
+          `The uncommitted changes in ${from} do not apply cleanly in ${to}; they were left where they were.`,
+        );
+      }
+      yield* runGit(from, ["stash", "drop"]);
+      return true;
+    },
+  );
 
   // Serializes handoffs per thread: two concurrent calls could otherwise both
   // pass the worktreePath === null check and each create a worktree, leaving
@@ -79,7 +148,7 @@ const make = Effect.gen(function* () {
             "Worktree handoff and status act as the calling Moonfold thread, so they need an agent running inside Moonfold.",
           ),
         )
-      : Effect.succeed(scope as McpThreadInvocationScope);
+      : Effect.succeed(scope as McpInvocationScope & { readonly thread: McpThreadCaller });
 
   const requireCapability = (scope: McpInvocationScope) =>
     scope.capabilities.has("worktree")
@@ -88,7 +157,7 @@ const make = Effect.gen(function* () {
           failure("capability_denied", "This MCP credential does not grant worktree capabilities."),
         );
 
-  const loadThread = (scope: McpThreadInvocationScope) =>
+  const loadThread = (scope: HandoffTarget) =>
     threadManagement.getThreadRecords(scope.thread.threadId, []).pipe(
       Effect.mapError((error) =>
         error._tag === "OrchestratorProjectionError"
@@ -104,7 +173,7 @@ const make = Effect.gen(function* () {
       ),
     );
 
-  const loadProject = (scope: McpThreadInvocationScope, projectId: ProjectId) =>
+  const loadProject = (scope: HandoffTarget, projectId: ProjectId) =>
     projects.getById(projectId).pipe(
       asOperationFailed(`Unable to read project ${projectId}`),
       Effect.flatMap(
@@ -126,7 +195,7 @@ const make = Effect.gen(function* () {
     asOperationFailed("Unable to read server settings"),
   );
 
-  const handoffIds = (scope: McpThreadInvocationScope) =>
+  const handoffIds = (scope: HandoffTarget) =>
     crypto.randomUUIDv4().pipe(
       Effect.map((uuid) => {
         const part = (kind: string, operation: string) =>
@@ -143,8 +212,9 @@ const make = Effect.gen(function* () {
     );
 
   const performHandoff = Effect.fn("WorktreeMcpService.performHandoff")(function* (
-    scope: McpThreadInvocationScope,
+    scope: HandoffTarget,
     input: WorktreeMcpHandoffInput,
+    options: { readonly carryChanges?: boolean } = {},
   ) {
     const alreadyInWorktree = (worktreePath: string) =>
       failure(
@@ -299,6 +369,16 @@ const make = Effect.gen(function* () {
           ),
         ).pipe(Effect.ignoreCause({ log: true }));
 
+        // Moving a thread takes its uncommitted work along when asked. A failure puts the work
+        // back in the project checkout and removes the new worktree.
+        if (options.carryChanges === true) {
+          yield* carryUncommittedChanges(projectCwd, worktreePath).pipe(
+            Effect.onError((cause) =>
+              Cause.hasInterruptsOnly(cause) ? Effect.void : removeCreatedWorktree,
+            ),
+          );
+        }
+
         const recheckAndBind = Effect.gen(function* () {
           // The projection was read before the potentially slow git work
           // above; a concurrent binding (for example from the UI) could have
@@ -442,35 +522,162 @@ const make = Effect.gen(function* () {
     );
   });
 
+  // One workspace change per thread at a time. uninterruptibleMask: the guard acquisition and
+  // the registration of the releasing finalizer happen with no interruptible gap in between. An
+  // interrupt landing between a bare add() and the start of an ensured effect would otherwise
+  // leak the guard entry and block every future handoff for this thread until restart.
+  const exclusively = <A>(
+    threadId: ThreadId,
+    effect: Effect.Effect<A, WorktreeMcpFailure>,
+  ): Effect.Effect<A, WorktreeMcpFailure> =>
+    Effect.uninterruptibleMask((restore) =>
+      Effect.suspend(() => {
+        if (handoffThreadsInFlight.has(threadId)) {
+          return Effect.fail(
+            failure(
+              "handoff_in_progress",
+              `A worktree handoff is already in progress for thread '${threadId}'.`,
+            ),
+          );
+        }
+        handoffThreadsInFlight.add(threadId);
+        return restore(effect).pipe(
+          Effect.ensuring(Effect.sync(() => handoffThreadsInFlight.delete(threadId))),
+        );
+      }),
+    );
+
   const handoff: WorktreeMcpService["Service"]["handoff"] = Effect.fn("WorktreeMcpService.handoff")(
     function* (callerScope, input) {
       yield* requireCapability(callerScope);
       const scope = yield* requireThreadScope(callerScope);
-      // uninterruptibleMask: the guard acquisition and the registration of the
-      // releasing finalizer happen with no interruptible gap in between. An
-      // interrupt landing between a bare add() and the start of an ensured
-      // effect would otherwise leak the guard entry and block every future
-      // handoff for this thread until restart.
-      return yield* Effect.uninterruptibleMask((restore) =>
-        Effect.suspend(() => {
-          if (handoffThreadsInFlight.has(scope.thread.threadId)) {
-            return Effect.fail(
-              failure(
-                "handoff_in_progress",
-                `A worktree handoff is already in progress for thread '${scope.thread.threadId}'.`,
-              ),
-            );
-          }
-          handoffThreadsInFlight.add(scope.thread.threadId);
-          return restore(performHandoff(scope, input)).pipe(
-            Effect.ensuring(
-              Effect.sync(() => handoffThreadsInFlight.delete(scope.thread.threadId)),
-            ),
-          );
-        }),
-      );
+      return yield* exclusively(scope.thread.threadId, performHandoff(scope, input));
     },
   );
+
+  const userTarget = (threadId: ThreadId): HandoffTarget => ({
+    thread: { threadId, providerSessionId: `user:${threadId}` },
+  });
+
+  /** A user moves files under a thread only while its agent is not working in them. */
+  const requireIdle = (target: HandoffTarget) =>
+    loadThread(target).pipe(
+      Effect.tap(() =>
+        threadManagement.getThreadRecords(target.thread.threadId, ["runs"]).pipe(
+          asOperationFailed(`Unable to read thread ${target.thread.threadId}`),
+          Effect.filterOrFail(
+            ({ runs }) =>
+              !runs.some((run) =>
+                ["preparing", "starting", "running", "waiting"].includes(run.status),
+              ),
+            () =>
+              failure(
+                "invalid_request",
+                "The agent is still working in this thread. Stop it or wait for it to finish first.",
+              ),
+          ),
+        ),
+      ),
+    );
+
+  const moveToNewWorktree: WorktreeMcpService["Service"]["moveToNewWorktree"] = (input) => {
+    const target = userTarget(input.threadId);
+    return exclusively(
+      input.threadId,
+      requireIdle(target).pipe(
+        Effect.andThen(
+          performHandoff(target, { branch: input.branch }, { carryChanges: input.carryChanges }),
+        ),
+      ),
+    );
+  };
+
+  const performReturn = Effect.fn("WorktreeMcpService.performReturn")(function* (
+    threadId: ThreadId,
+  ) {
+    const target = userTarget(threadId);
+    const projection = yield* requireIdle(target);
+    const worktreePath = projection.thread.worktreePath;
+    if (worktreePath === null) {
+      return yield* failure("invalid_request", "This thread already works in the project folder.");
+    }
+    const project = yield* loadProject(target, projection.thread.projectId);
+    const projectCwd = project.workspaceRoot;
+    if (path.resolve(worktreePath) === path.resolve(projectCwd)) {
+      return yield* failure("invalid_request", "This thread already works in the project folder.");
+    }
+    if (yield* hasUncommittedChanges(projectCwd)) {
+      return yield* failure(
+        "invalid_request",
+        `${projectCwd} has uncommitted changes. Commit or stash them first, so the thread's work can come back cleanly.`,
+      );
+    }
+    const projectStatus = yield* gitWorkflow
+      .localStatus({ cwd: projectCwd })
+      .pipe(asOperationFailed("Unable to read git status"));
+    const projectBranch = projectStatus.refName;
+    if (projectBranch === null) {
+      return yield* failure(
+        "invalid_request",
+        `${projectCwd} is not on a branch (detached HEAD). Switch to a branch first.`,
+      );
+    }
+    const worktreeBranch =
+      projection.thread.branch ??
+      (yield* gitWorkflow
+        .localStatus({ cwd: worktreePath })
+        .pipe(asOperationFailed("Unable to read the worktree's git status"))).refName;
+
+    let mergedBranch: string | null = null;
+    if (worktreeBranch !== null && worktreeBranch !== projectBranch) {
+      const ahead = yield* runGit(projectCwd, [
+        "rev-list",
+        "--count",
+        `${projectBranch}..${worktreeBranch}`,
+      ]);
+      if (Number.parseInt(ahead.stdout.trim(), 10) > 0) {
+        const merged = yield* git
+          .execute({
+            operation: "WorktreeTransfer.merge",
+            cwd: projectCwd,
+            args: ["merge", "--no-edit", worktreeBranch],
+            allowNonZeroExit: true,
+          })
+          .pipe(asOperationFailed(`git merge failed in ${projectCwd}`));
+        if (merged.exitCode !== 0) {
+          yield* runGit(projectCwd, ["merge", "--abort"]);
+          return yield* failure(
+            "operation_failed",
+            `Merging ${worktreeBranch} into ${projectBranch} conflicts, so nothing was changed. Resolve it in the worktree (for example by merging ${projectBranch} there) and try again.`,
+          );
+        }
+        mergedBranch = worktreeBranch;
+      }
+    }
+
+    const carriedChanges = yield* carryUncommittedChanges(worktreePath, projectCwd);
+
+    const ids = yield* handoffIds(target);
+    yield* threadManagement
+      .dispatch({
+        type: "thread.metadata.update",
+        commandId: ids.commandId,
+        threadId,
+        branch: projectBranch,
+        worktreePath: null,
+        expectedWorktreePath: worktreePath,
+      })
+      .pipe(asOperationFailed("Unable to point the thread at the project folder"));
+    yield* Effect.forEach([projectCwd, worktreePath], (cwd) =>
+      vcsStatusBroadcaster
+        .refreshStatus(cwd)
+        .pipe(Effect.ignoreCause({ log: true }), Effect.forkDetach),
+    );
+    return { projectPath: projectCwd, branch: projectBranch, mergedBranch, carriedChanges };
+  });
+
+  const returnToProject: WorktreeMcpService["Service"]["returnToProject"] = (threadId) =>
+    exclusively(threadId, performReturn(threadId));
 
   const status: WorktreeMcpService["Service"]["status"] = Effect.fn("WorktreeMcpService.status")(
     function* (callerScope) {
@@ -492,7 +699,7 @@ const make = Effect.gen(function* () {
     },
   );
 
-  return WorktreeMcpService.of({ handoff, status });
+  return WorktreeMcpService.of({ handoff, status, moveToNewWorktree, returnToProject });
 });
 
 export const layer: Layer.Layer<
@@ -506,4 +713,5 @@ export const layer: Layer.Layer<
   | GitWorkflowService.GitWorkflowService
   | ProjectSetupScriptRunner.ProjectSetupScriptRunner
   | VcsStatusBroadcaster.VcsStatusBroadcaster
+  | GitVcsDriver.GitVcsDriver
 > = Layer.effect(WorktreeMcpService, make);

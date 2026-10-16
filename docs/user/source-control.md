@@ -135,6 +135,21 @@ For a local Git repository without a remote, **Publish Repository** creates a ho
 adds it as `origin`, and pushes your commits. If there are no commits yet, it creates the remote;
 make your first commit before pushing.
 
+## Move a thread between the project folder and a worktree
+
+A thread that started in the project folder can move into a worktree of its own: right-click it
+in the sidebar (or open the thread menu in its header), choose **Move to new worktree…**, and name
+the branch. With **Take uncommitted changes along** on, the folder's uncommitted changes, new files
+included, go with it and the project folder is left clean.
+
+**Bring back to project folder…** does the reverse. Commits on the worktree's branch are merged
+into the branch the project folder has checked out, uncommitted changes come over, and the thread
+works in the project folder again. The worktree itself stays on disk. The project folder needs to
+be free of uncommitted changes first, and a merge conflict leaves everything as it was; resolve
+it in the worktree (for example by merging the project's branch there) and try again.
+
+Both moves wait until the agent is not working in the thread.
+
 ## Create a pull request
 
 Use a thread's Git actions to commit, push, and create a pull request. Moonfold can generate commit

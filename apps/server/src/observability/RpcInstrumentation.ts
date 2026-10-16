@@ -34,6 +34,8 @@ const RPC_AGGREGATES = {
   [WS_METHODS.agentInstructionsList]: "server",
   [WS_METHODS.agentInstructionsWrite]: "server",
   [WS_METHODS.threadsAskSideQuestion]: "orchestration",
+  [WS_METHODS.threadsMoveToWorktree]: "orchestration",
+  [WS_METHODS.threadsReturnToProject]: "orchestration",
   [WS_METHODS.serverProbe]: "server",
   [WS_METHODS.serverGetConfig]: "server",
   [WS_METHODS.serverRefreshProviders]: "server",

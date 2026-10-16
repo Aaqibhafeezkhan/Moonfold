@@ -1056,6 +1056,14 @@ export function createServerEnvironmentAtoms<R, E>(
       label: "environment-data:threads:ask-side-question",
       tag: WS_METHODS.threadsAskSideQuestion,
     }),
+    moveThreadToWorktree: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:threads:move-to-worktree",
+      tag: WS_METHODS.threadsMoveToWorktree,
+    }),
+    returnThreadToProject: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:threads:return-to-project",
+      tag: WS_METHODS.threadsReturnToProject,
+    }),
     listAgentInstructions: createEnvironmentRpcCommand(runtime, {
       label: "environment-data:agent-instructions:list",
       tag: WS_METHODS.agentInstructionsList,

@@ -30,6 +30,7 @@ import * as ProjectService from "../project/ProjectService.ts";
 import * as ProjectSetupScriptRunner from "../project/ProjectSetupScriptRunner.ts";
 import * as ServerSettings from "../serverSettings.ts";
 import * as VcsStatusBroadcaster from "../vcs/VcsStatusBroadcaster.ts";
+import * as GitVcsDriver from "../vcs/GitVcsDriver.ts";
 import type * as McpInvocationContext from "./McpInvocationContext.ts";
 import * as WorktreeMcpService from "./WorktreeMcpService.ts";
 
@@ -334,6 +335,10 @@ const makeHarness = (options: HarnessOptions = {}) => {
         Layer.mock(VcsStatusBroadcaster.VcsStatusBroadcaster)({
           refreshStatus,
         } satisfies Partial<VcsStatusBroadcaster.VcsStatusBroadcaster["Service"]>),
+        // Handoffs without carried changes run no raw git commands.
+        Layer.mock(GitVcsDriver.GitVcsDriver)({
+          execute: () => Effect.die("unexpected git command"),
+        }),
         NodeServices.layer,
       ),
     ),

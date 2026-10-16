@@ -58,6 +58,7 @@ import {
 } from "@moonfold/client-runtime/environment";
 import {
   AuthOrchestrationOperateScope,
+  AuthSourceControlWriteScope,
   type EnvironmentMachineKind,
   type ScopedThreadRef,
   type ThreadId,
@@ -142,6 +143,7 @@ import {
   useThreadSelectionStore,
 } from "../threadSelectionStore";
 import { useAcknowledgeThreadWoke, useThreadActions } from "../hooks/useThreadActions";
+import { useThreadWorkspaceTransfer } from "../hooks/useThreadWorkspaceTransfer";
 import { useHandleNewThread } from "../hooks/useHandleNewThread";
 import { useSidebarProjectGroups } from "../hooks/useSidebarProjectGroups";
 import { useTerminalFocus } from "../hooks/useTerminalFocus";
@@ -187,6 +189,7 @@ import { ProjectEnvironmentBadge } from "./ProjectEnvironmentBadge";
 import {
   buildDraftActionMenuItems,
   buildThreadActionMenuItems,
+  threadWorkspaceKind,
   threadActionRequiresOperate,
 } from "./threadActionMenu.logic";
 import { canPopOutThreads, openThreadInNewWindow } from "../threadPopout";
@@ -2454,6 +2457,7 @@ export default function Sidebar() {
     archiveThread,
     deleteThread,
   } = useThreadActions();
+  const { moveToWorktree, returnToProject } = useThreadWorkspaceTransfer();
   const updateThreadMetadata = useOrchestrationCommand(threadEnvironment.updateMetadata, {
     reportFailure: false,
   });
@@ -4661,6 +4665,10 @@ export default function Sidebar() {
               isRegeneratingTitle,
               isRunning: !threadRuntimeCanArchive(thread.runtime),
               canOpenInWindow: canPopOutThreads(),
+              workspace: threadWorkspaceKind(
+                { worktreePath: thread.worktreePath ?? null, branch: thread.branch ?? null },
+                readEnvironmentScope(threadRef.environmentId, AuthSourceControlWriteScope),
+              ),
               supports: {
                 settlement: supportsSettlement,
                 autoSettleOptOut: supportsAutoSettleOptOut,
@@ -4811,6 +4819,12 @@ export default function Sidebar() {
                 description: error instanceof Error ? error.message : "The window did not open.",
               });
             });
+            return;
+          case "move-to-worktree":
+            await moveToWorktree(threadRef, thread.title);
+            return;
+          case "return-to-project":
+            await returnToProject(threadRef, thread.branch ?? null);
             return;
           case "archive": {
             if (confirmThreadArchive) {

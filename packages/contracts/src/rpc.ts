@@ -325,6 +325,12 @@ import {
 } from "./providerUsageLimits.ts";
 import { UsagePricing, UsageReadError, UsageSummary, UsageSummaryInput } from "./usage.ts";
 import {
+  ThreadMoveToWorktreeInput,
+  ThreadReturnToProjectInput,
+  ThreadReturnToProjectResult,
+} from "./threadWorkspace.ts";
+import { WorktreeMcpFailure, WorktreeMcpHandoffResult } from "./worktreeMcp.ts";
+import {
   ThreadSideQuestionError,
   ThreadSideQuestionInput,
   ThreadSideQuestionResult,
@@ -411,6 +417,8 @@ export const WS_METHODS = {
   agentInstructionsList: "agentInstructions.list",
   agentInstructionsWrite: "agentInstructions.write",
   threadsAskSideQuestion: "threads.askSideQuestion",
+  threadsMoveToWorktree: "threads.moveToWorktree",
+  threadsReturnToProject: "threads.returnToProject",
   projectsEnsureScratch: "projects.ensureScratch",
   projectsCreateNew: "projects.createNew",
 
@@ -1346,6 +1354,18 @@ const WsAgentInstructionsListRpc = Rpc.make(WS_METHODS.agentInstructionsList, {
   error: Schema.Union([AgentInstructionsError, EnvironmentAuthorizationError]),
 });
 
+const WsThreadsMoveToWorktreeRpc = Rpc.make(WS_METHODS.threadsMoveToWorktree, {
+  payload: ThreadMoveToWorktreeInput,
+  success: WorktreeMcpHandoffResult,
+  error: Schema.Union([WorktreeMcpFailure, EnvironmentAuthorizationError]),
+});
+
+const WsThreadsReturnToProjectRpc = Rpc.make(WS_METHODS.threadsReturnToProject, {
+  payload: ThreadReturnToProjectInput,
+  success: ThreadReturnToProjectResult,
+  error: Schema.Union([WorktreeMcpFailure, EnvironmentAuthorizationError]),
+});
+
 const WsThreadsAskSideQuestionRpc = Rpc.make(WS_METHODS.threadsAskSideQuestion, {
   payload: ThreadSideQuestionInput,
   success: ThreadSideQuestionResult,
@@ -2167,6 +2187,8 @@ export const WsRpcGroupPart3 = RpcGroup.make(
 
 export const WsRpcGroupPart4 = RpcGroup.make(
   WsThreadsAskSideQuestionRpc,
+  WsThreadsMoveToWorktreeRpc,
+  WsThreadsReturnToProjectRpc,
   WsTerminalObserveRpc,
   WsTerminalWriteRpc,
   WsTerminalResizeRpc,
