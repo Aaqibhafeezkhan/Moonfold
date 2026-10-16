@@ -1,5 +1,5 @@
-import { SourceControlProviderKind } from "@t3tools/contracts";
-import type { RepositoryIdentity, SourceControlProviderInfo } from "@t3tools/contracts";
+import { SourceControlProviderKind } from "@moonfold/contracts";
+import type { RepositoryIdentity, SourceControlProviderInfo } from "@moonfold/contracts";
 
 export interface ChangeRequestPresentation {
   readonly icon:
