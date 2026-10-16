@@ -1,17 +1,23 @@
 # Product usage data
 
-The T3 Code server sends product usage events to PostHog, associated with a hashed account or
-installation identifier. Events include the provider, model, reasoning effort, permission mode,
-turn result, duration, and main-agent token totals when available.
+Moonfold collects no product usage data by default and ships no analytics key.
 
-Events do not include prompts, responses, file contents, authentication tokens, conversation IDs,
-raw provider events, or child-agent output. Child-agent token use is excluded from the totals.
+You can opt in to sending anonymous product events to a PostHog project you control. Set all three
+variables in the server's environment before starting it:
 
-To disable collection, set `T3CODE_TELEMETRY_ENABLED=false` in the server's environment before
-starting it. This stops product events from being recorded or sent.
+```bash
+MOONFOLD_TELEMETRY_ENABLED=true
+MOONFOLD_POSTHOG_KEY=<your project key>
+MOONFOLD_POSTHOG_HOST=https://<your posthog host>
+```
 
-The desktop app reads the variable from your shell profile (for example `~/.zshrc`) on macOS and
-Linux, so export it there and restart the app. On Windows, set it as a user environment variable.
+Events are tied to a hashed installation identifier and include the provider, model, reasoning
+effort, permission mode, turn result, duration, and main-agent token totals when available. They
+never include prompts, responses, file contents, authentication tokens, conversation IDs, raw
+provider events, or child-agent output.
+
+The desktop app reads these variables from your shell profile (for example `~/.zshrc`) on macOS and
+Linux, so export them there and restart the app. On Windows, set them as user environment variables.
 
 ## Export diagnostics to your own receiver
 
@@ -24,8 +30,8 @@ saved endpoints are checked when the section opens. Checks send authentication h
 the signal's currently running endpoint and do not follow redirects. To check a new endpoint
 that requires authentication, save it and restart the server first.
 
-`T3CODE_OTLP_*_URL` and standard `OTEL_EXPORTER_OTLP_*` environment variables override the saved
-settings. For endpoints saved here or set with `T3CODE_OTLP_*_URL`, set `T3CODE_OTLP_HEADERS` for
-receivers that need authentication and `T3CODE_OTLP_PROTOCOL=http/protobuf` for receivers that do
+`MOONFOLD_OTLP_*_URL` and standard `OTEL_EXPORTER_OTLP_*` environment variables override the saved
+settings. For endpoints saved here or set with `MOONFOLD_OTLP_*_URL`, set `MOONFOLD_OTLP_HEADERS` for
+receivers that need authentication and `MOONFOLD_OTLP_PROTOCOL=http/protobuf` for receivers that do
 not accept JSON. An endpoint set with `OTEL_EXPORTER_OTLP_*` takes its headers and protocol from
 `OTEL_EXPORTER_OTLP_HEADERS` and `OTEL_EXPORTER_OTLP_PROTOCOL` instead.
