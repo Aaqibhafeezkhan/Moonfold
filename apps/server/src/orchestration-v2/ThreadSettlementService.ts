@@ -1,13 +1,13 @@
-import { backgroundWorkHoldsCompletion } from "@t3tools/shared/orchestrationV2PendingBackgroundWork";
-import { resolveProjectSettings } from "@t3tools/shared/projectSettings";
-import { visibleThreadPullRequests } from "@t3tools/shared/threadPullRequests";
+import { backgroundWorkHoldsCompletion } from "@moonfold/shared/orchestrationV2PendingBackgroundWork";
+import { resolveProjectSettings } from "@moonfold/shared/projectSettings";
+import { visibleThreadPullRequests } from "@moonfold/shared/threadPullRequests";
 import {
   CommandId,
   type ThreadId,
   type OrchestrationV2DomainEvent,
   type OrchestrationV2ThreadShell,
-} from "@t3tools/contracts";
-import { makeDrainableWorker } from "@t3tools/shared/DrainableWorker";
+} from "@moonfold/contracts";
+import { makeDrainableWorker } from "@moonfold/shared/DrainableWorker";
 import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
@@ -258,9 +258,9 @@ export class ThreadSettlementServiceV2 extends Context.Service<
     readonly start: () => Effect.Effect<void, never, Scope.Scope>;
     readonly drain: Effect.Effect<void>;
   }
->()("t3/orchestration-v2/ThreadSettlementService/ThreadSettlementServiceV2") {}
+>()("moonfold/orchestration-v2/ThreadSettlementService/ThreadSettlementServiceV2") {}
 
-function autoSettlementConfigured(settings: import("@t3tools/contracts").ServerSettings): boolean {
+function autoSettlementConfigured(settings: import("@moonfold/contracts").ServerSettings): boolean {
   if (settings.sidebarAutoSettleOnMerge || settings.sidebarAutoSettleAfterDays !== null) {
     return true;
   }
@@ -274,7 +274,7 @@ function autoSettlementConfigured(settings: import("@t3tools/contracts").ServerS
 /** Identity of every settlement input, so unrelated settings edits do not trigger a sweep. */
 /** @internal Exported for tests. */
 export function autoSettlementSettingsKey(
-  settings: import("@t3tools/contracts").ServerSettings,
+  settings: import("@moonfold/contracts").ServerSettings,
 ): string {
   return JSON.stringify([
     settings.sidebarAutoSettleOnMerge,

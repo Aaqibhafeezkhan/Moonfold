@@ -1,5 +1,5 @@
 import { revertCodexThread } from "../../provider/CodexThreadRevert.ts";
-import { historyResponseItems } from "@t3tools/provider-core/server/handoffBudget";
+import { historyResponseItems } from "@moonfold/provider-core/server/handoffBudget";
 import { makeProviderTextDeltaCoalescer } from "./ProviderTextDeltaCoalescer.ts";
 import {
   mcpToolPresentation,
@@ -12,7 +12,7 @@ import {
   completeCodexTurnTokenUsage,
   type CodexTurnTokenUsageState,
 } from "../../provider/CodexTurnTokenUsage.ts";
-import type { ManagedServerProvider } from "@t3tools/provider-core/server/snapshot";
+import type { ManagedServerProvider } from "@moonfold/provider-core/server/snapshot";
 import type { CodexEffectiveRuntime } from "../../provider/CodexManagedRuntime.ts";
 import {
   buildCodexInitializeParams,
@@ -31,17 +31,17 @@ import {
   OrchestrationV2ProviderGoal,
   ProviderDriverKind,
   type ProviderSetupError,
-} from "@t3tools/contracts";
-import { SKILL_MENTION_PATTERN } from "@t3tools/shared/composerInlineTokens";
-import { AgentScope } from "@t3tools/shared/AgentScope";
-import * as HostProcess from "@t3tools/shared/HostProcess";
+} from "@moonfold/contracts";
+import { SKILL_MENTION_PATTERN } from "@moonfold/shared/composerInlineTokens";
+import { AgentScope } from "@moonfold/shared/AgentScope";
+import * as HostProcess from "@moonfold/shared/HostProcess";
 import {
   COMPUTER_USE_TOOL_SOURCE,
   dynamicToolSurface,
   dynamicToolTitle,
-} from "@t3tools/shared/toolActivity";
-import { getModelSelectionStringOptionValue, modelSelectionsEqual } from "@t3tools/shared/model";
-import { resolveSpawnCommand } from "@t3tools/shared/shell";
+} from "@moonfold/shared/toolActivity";
+import { getModelSelectionStringOptionValue, modelSelectionsEqual } from "@moonfold/shared/model";
+import { resolveSpawnCommand } from "@moonfold/shared/shell";
 import type {
   ChatAttachment,
   OrchestrationV2AppThread,
@@ -69,7 +69,7 @@ import type {
   RuntimeMode,
   RuntimeRequestId,
   ThreadId,
-} from "@t3tools/contracts";
+} from "@moonfold/contracts";
 import * as CodexClient from "effect-codex-app-server/client";
 import * as CodexErrors from "effect-codex-app-server/errors";
 import * as CodexSchema from "effect-codex-app-server/schema";
@@ -95,7 +95,7 @@ import { ChildProcess, ChildProcessSpawner } from "effect/process";
 import { resolveAttachmentPath, resolveAttachmentPathById } from "../../attachmentStore.ts";
 import { getCodexServiceTierOptionValue } from "../../codexModelOptions.ts";
 import { ServerConfig } from "../../config.ts";
-import { expandHomePath } from "@t3tools/provider-core/server/pathExpansion";
+import { expandHomePath } from "@moonfold/provider-core/server/pathExpansion";
 import {
   buildCodexAdditionalContext,
   buildCodexDeveloperInstructions,
@@ -112,42 +112,42 @@ import {
   boundProviderEventForLogging,
   shouldPersistProviderEvent,
 } from "../../provider/EventNdjsonLogger.ts";
-import * as ProviderEventLoggers from "@t3tools/provider-core/server/ProviderEventLoggers";
+import * as ProviderEventLoggers from "@moonfold/provider-core/server/ProviderEventLoggers";
 import { codexAppServerArgs, resolveCodexLaunchArgs } from "../../provider/codexLaunchArgs.ts";
-import { mergeProviderInstanceEnvironment } from "@t3tools/provider-core/server/instanceEnvironment";
-import * as McpProviderSession from "@t3tools/provider-core/server/mcpSession";
-import * as McpProviderSessions from "@t3tools/provider-core/server/McpProviderSessions";
+import { mergeProviderInstanceEnvironment } from "@moonfold/provider-core/server/instanceEnvironment";
+import * as McpProviderSession from "@moonfold/provider-core/server/mcpSession";
+import * as McpProviderSessions from "@moonfold/provider-core/server/McpProviderSessions";
 import {
   MCP_APP_EXTENSION_ID,
   MCP_APP_MIME_TYPE,
   MCP_APP_OUTPUT_KEY,
   MCP_APP_RESOURCE_SCHEME,
-} from "@t3tools/shared/mcpApp";
+} from "@moonfold/shared/mcpApp";
 import { snapshotMcpApp } from "../../mcpApps/McpAppSnapshot.ts";
 import {
   ProviderAdapterDriverCreateError,
   type ProviderAdapterDriver,
   type ProviderAdapterDriverCreateInput,
-} from "@t3tools/provider-core/server/adapterDriver";
-import * as ProviderContinuationRequests from "@t3tools/provider-core/server/ProviderContinuationRequests";
-import { backgroundWorkNotification } from "@t3tools/provider-core/server/notification";
+} from "@moonfold/provider-core/server/adapterDriver";
+import * as ProviderContinuationRequests from "@moonfold/provider-core/server/ProviderContinuationRequests";
+import { backgroundWorkNotification } from "@moonfold/provider-core/server/notification";
 import {
   makeProviderFailure,
   makeProviderFailureTurnItem,
   makeProviderRetryTurnItem,
-} from "@t3tools/provider-core/server/failure";
-import { turnScopedSelectionTransition } from "@t3tools/provider-core/server/selectionTransition";
+} from "@moonfold/provider-core/server/failure";
+import { turnScopedSelectionTransition } from "@moonfold/provider-core/server/selectionTransition";
 import {
   isProviderNativeImageAttachment,
   providerMessageTextWithAttachmentPaths,
-} from "@t3tools/provider-core/server/attachmentPrompt";
+} from "@moonfold/provider-core/server/attachmentPrompt";
 import {
   makeSubagentChildThread,
   makeSubagentConversationArtifacts,
   subagentThreadTitle,
-} from "@t3tools/provider-core/server/subagentProjection";
-import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
-import * as ProviderAdapter from "@t3tools/provider-core/server/ProviderAdapter";
+} from "@moonfold/provider-core/server/subagentProjection";
+import * as IdAllocator from "@moonfold/provider-core/server/IdAllocator";
+import * as ProviderAdapter from "@moonfold/provider-core/server/ProviderAdapter";
 
 const CODEX_PROVIDER = ProviderDriverKind.make("codex");
 export const CODEX_DRIVER_KIND = CODEX_PROVIDER;
@@ -722,7 +722,7 @@ export function buildCodexTurnStartParams(input: {
   readonly codexInput: ReadonlyArray<CodexSchema.V2TurnStartParams__UserInput>;
   readonly runtimePolicy: ProviderAdapter.ProviderAdapterV2RuntimePolicy;
   readonly modelSelection: ModelSelection;
-  readonly hasT3Mcp?: boolean;
+  readonly hasMoonfoldMcp?: boolean;
   readonly browserToolsAvailable?: boolean;
   readonly deviceToolsAvailable?: boolean;
   /** ChatGPT token sharing does not accept service tiers. */
@@ -751,7 +751,7 @@ export function buildCodexTurnStartParams(input: {
         ? undefined
         : getCodexServiceTierOptionValue(input.modelSelection);
     const developerInstructions =
-      input.hasT3Mcp !== true
+      input.hasMoonfoldMcp !== true
         ? undefined
         : buildCodexDeveloperInstructions(input.runtimePolicy.interactionMode);
     // An app's context is text an MCP server wrote, so it goes in as untrusted
@@ -763,8 +763,8 @@ export function buildCodexTurnStartParams(input: {
         { kind: "untrusted" as const, value: entry.text },
       ]),
     );
-    const t3Context =
-      input.hasT3Mcp === true
+    const moonfoldContext =
+      input.hasMoonfoldMcp === true
         ? buildCodexAdditionalContext(
             { model: input.modelSelection.model, reasoningEffort: effort ?? "medium" },
             {
@@ -774,9 +774,9 @@ export function buildCodexTurnStartParams(input: {
           )
         : undefined;
     const additionalContext =
-      t3Context === undefined && Object.keys(appContext).length === 0
+      moonfoldContext === undefined && Object.keys(appContext).length === 0
         ? undefined
-        : { ...t3Context, ...appContext };
+        : { ...moonfoldContext, ...appContext };
     const collaborationMode: CodexSchema.ClientRequest__CollaborationMode | undefined =
       input.runtimePolicy.interactionMode !== "plan" && developerInstructions === undefined
         ? undefined
@@ -798,7 +798,7 @@ export function buildCodexTurnStartParams(input: {
       cwd: input.runtimePolicy.cwd,
       model: input.modelSelection.model,
       // Model catalogues can default summaries to "none". Request them on every
-      // turn, including resumed threads, for T3's reasoning timeline.
+      // turn, including resumed threads, for Moonfold's reasoning timeline.
       summary: "detailed",
       // Always explicit: omitting this on resume leaves Codex's previous
       // reviewer sticky after switching away from Auto mode.
@@ -1306,13 +1306,13 @@ export interface CodexAppServerClientFactoryShape {
 export class CodexAppServerClientFactory extends Context.Service<
   CodexAppServerClientFactory,
   CodexAppServerClientFactoryShape
->()("t3/orchestration-v2/Adapters/CodexAdapterV2/CodexAppServerClientFactory") {}
+>()("moonfold/orchestration-v2/Adapters/CodexAdapterV2/CodexAppServerClientFactory") {}
 
 /**
  * Config overrides sent with every `thread/start`, `thread/resume` and `thread/fork`.
  * Codex layers these above the user's and project's `config.toml`.
  *
- * - Codex 0.152 made the `update_plan` checklist tool opt-in; T3 renders it as
+ * - Codex 0.152 made the `update_plan` checklist tool opt-in; Moonfold renders it as
  *   the todo list.
  * - Codex waits this long for MCP servers before the first model request and
  *   leaves out any server still starting (default 1 s, too short for cold
@@ -1324,9 +1324,9 @@ export const CODEX_THREAD_CONFIG = {
   mcp_optional_startup_grace_ms: 10_000,
 } as const;
 
-// T3 wait tools can block for up to an hour. Keep Codex's MCP timeout above
+// Moonfold wait tools can block for up to an hour. Keep Codex's MCP timeout above
 // that limit so the server's own wait timeout ends a long call.
-const CODEX_T3_MCP_TOOL_TIMEOUT_SEC = 65 * 60;
+const CODEX_MOONFOLD_MCP_TOOL_TIMEOUT_SEC = 65 * 60;
 
 export function codexThreadRuntimeParams(input: {
   readonly mcpSession: McpProviderSession.McpProviderSessionConfig | undefined;
@@ -1347,9 +1347,9 @@ export function codexThreadRuntimeParams(input: {
         ? {}
         : {
             mcp_servers: {
-              "t3-code": {
+              moonfold: {
                 url: mcpSession.endpoint,
-                tool_timeout_sec: CODEX_T3_MCP_TOOL_TIMEOUT_SEC,
+                tool_timeout_sec: CODEX_MOONFOLD_MCP_TOOL_TIMEOUT_SEC,
                 http_headers: {
                   Authorization: mcpSession.authorizationHeader,
                 },
@@ -1692,7 +1692,7 @@ export interface CodexAdapterV2Options {
   readonly onUsageLimits?: ManagedServerProvider["applyUsageLimits"];
   /**
    * Resolves launch settings when each session opens, replacing `settings` and
-   * `environment`. Managed ChatGPT sign-in uses it to launch the T3-installed
+   * `environment`. Managed ChatGPT sign-in uses it to launch the Moonfold-installed
    * Codex with a current access token.
    */
   readonly resolveRuntime?: Effect.Effect<CodexEffectiveRuntime, ProviderSetupError, Scope.Scope>;
@@ -6292,7 +6292,7 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
               codexInput,
               runtimePolicy: turnInput.runtimePolicy,
               modelSelection: turnInput.modelSelection,
-              hasT3Mcp: mcpSession !== undefined,
+              hasMoonfoldMcp: mcpSession !== undefined,
               browserToolsAvailable: mcpSession?.browserToolsAvailable ?? true,
               deviceToolsAvailable: mcpSession?.capabilities?.has("device") ?? false,
               omitServiceTier: adapterOptions.resolveRuntime !== undefined,
@@ -6449,7 +6449,7 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
           );
 
         // MCP Apps reach their server through Codex's own MCP client, so any
-        // server the user configured for Codex works without T3 connecting to it.
+        // server the user configured for Codex works without Moonfold connecting to it.
         const mcpAppsError = (detail: string) => (cause: unknown) =>
           new ProviderAdapter.ProviderAdapterProtocolError({
             driver: CODEX_PROVIDER,

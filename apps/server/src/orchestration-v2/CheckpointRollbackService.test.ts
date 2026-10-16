@@ -9,14 +9,14 @@ import {
   ProviderSessionId,
   ProviderThreadId,
   ThreadId,
-} from "@t3tools/contracts";
+} from "@moonfold/contracts";
 import * as Effect from "effect/Effect";
 import * as Deferred from "effect/Deferred";
 import * as Fiber from "effect/Fiber";
 import * as FileSystem from "effect/FileSystem";
 import * as Path from "effect/Path";
 import * as Option from "effect/Option";
-import { symlinksSupported } from "@t3tools/shared/testing/symlinks";
+import { symlinksSupported } from "@moonfold/shared/testing/symlinks";
 import * as Layer from "effect/Layer";
 
 import * as GitWorkflow from "../git/GitWorkflowService.ts";
@@ -27,18 +27,18 @@ import { isCheckpointRestoreIsolated } from "./CheckpointRestoreSafety.ts";
 import * as CheckpointService from "./CheckpointService.ts";
 import * as CheckpointRollbackService from "./CheckpointRollbackService.ts";
 import * as ThreadCommandExecutor from "./ThreadCommandExecutor.ts";
-import * as KeyedLock from "@t3tools/shared/KeyedLock";
+import * as KeyedLock from "@moonfold/shared/KeyedLock";
 import * as EventSink from "./EventSink.ts";
-import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
+import * as IdAllocator from "@moonfold/provider-core/server/IdAllocator";
 import * as ProjectionStore from "./ProjectionStore.ts";
 import * as ProjectStore from "./ProjectStore.ts";
-import type * as ProviderAdapter from "@t3tools/provider-core/server/ProviderAdapter";
+import type * as ProviderAdapter from "@moonfold/provider-core/server/ProviderAdapter";
 import * as ProviderSessionManager from "./ProviderSessionManager.ts";
 import * as RuntimePolicy from "./RuntimePolicy.ts";
 
 // A root that does not exist never overlaps, so other owners decide isolation.
 const unrelatedProject = Option.some({
-  workspaceRoot: "/nonexistent/t3-rollback-project",
+  workspaceRoot: "/nonexistent/moonfold-rollback-project",
 } as never);
 const layerCheckpointRollbackService = CheckpointRollbackService.layer.pipe(
   Layer.provide(
@@ -400,7 +400,9 @@ it.effect.each([
   Effect.gen(function* () {
     const fileSystem = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
-    const workspaceRoot = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-rollback-" });
+    const workspaceRoot = yield* fileSystem.makeTempDirectoryScoped({
+      prefix: "moonfold-rollback-",
+    });
     const worktreePath = path.join(workspaceRoot, "worktree");
     yield* fileSystem.makeDirectory(worktreePath);
     const threadId = ThreadId.make("rollback-worktree");
@@ -723,7 +725,9 @@ it.effect.skipIf(!symlinksSupported)(
   () =>
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem;
-      const cwd = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-restore-isolation-" });
+      const cwd = yield* fileSystem.makeTempDirectoryScoped({
+        prefix: "moonfold-restore-isolation-",
+      });
       const path = yield* Path.Path;
       const alias = path.join(cwd, "alias");
       yield* fileSystem.symlink(cwd, alias);

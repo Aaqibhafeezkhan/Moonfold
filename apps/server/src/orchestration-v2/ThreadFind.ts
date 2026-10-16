@@ -6,9 +6,9 @@ import {
   type OrchestrationV2TurnItem,
   ThreadId,
   TurnItemId,
-} from "@t3tools/contracts";
-import { searchableMessageSegments, searchablePlanSegments } from "@t3tools/shared/threadFindText";
-import { countThreadSearchOccurrences } from "@t3tools/shared/threadSearch";
+} from "@moonfold/contracts";
+import { searchableMessageSegments, searchablePlanSegments } from "@moonfold/shared/threadFindText";
+import { countThreadSearchOccurrences } from "@moonfold/shared/threadSearch";
 import * as Cache from "effect/Cache";
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
