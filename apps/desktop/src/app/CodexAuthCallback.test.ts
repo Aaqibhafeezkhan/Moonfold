@@ -1,8 +1,8 @@
 // @effect-diagnostics nodeBuiltinImport:off globalFetch:off - Tests exercise the real native loopback listener without an OpenAI account.
 import * as NodeHttp from "node:http";
 import { describe, expect, it } from "vite-plus/test";
-import { codexAuthDeliveryUrl, readCodexAuthDelivery } from "@t3tools/shared/codexAuthHandoff";
-import { EnvironmentId, ProviderInstanceId } from "@t3tools/contracts";
+import { codexAuthDeliveryUrl, readCodexAuthDelivery } from "@moonfold/shared/codexAuthHandoff";
+import { EnvironmentId, ProviderInstanceId } from "@moonfold/contracts";
 import { receiveCodexAuthCallback, cancelCodexAuthCallback } from "./CodexAuthCallback.ts";
 
 async function freePort() {
@@ -51,12 +51,13 @@ describe("desktop Codex callback helper", () => {
     });
     expect(received).toBe(expected);
   });
-  it("returns hosted web to the exact instance and environment without putting the code in its query", async () => {
+  it("returns a local web client to the exact instance and environment without putting the code in its query", async () => {
     const authorizationUrl = request(await freePort());
     const expected = callback(authorizationUrl);
     const input = {
       authorizationUrl,
-      returnUrl: "https://app.t3.codes/settings/providers?environmentId=remote-one&instanceId=work",
+      returnUrl:
+        "http://localhost:5733/settings/providers?environmentId=remote-one&instanceId=work",
       environmentId: EnvironmentId.make("remote-one"),
       instanceId: ProviderInstanceId.make("work"),
       flowId: "flow-one",

@@ -3,14 +3,14 @@ import {
   ClaudeSettings,
   CodexSettings,
   ProviderDriverKind,
-} from "@t3tools/contracts";
-import { acpRegistryClient } from "@t3tools/provider-acp-registry/client";
-import { makeProviderClientRegistry } from "@t3tools/provider-core/client";
-import { cursorClient } from "@t3tools/provider-cursor/client";
-import { grokClient } from "@t3tools/provider-grok/client";
-import { museClient } from "@t3tools/provider-muse/client";
-import { openCodeClient } from "@t3tools/provider-opencode/client";
-import { piClient } from "@t3tools/provider-pi/client";
+} from "@moonfold/contracts";
+import { acpRegistryClient } from "@moonfold/provider-acp-registry/client";
+import { makeProviderClientRegistry } from "@moonfold/provider-core/client";
+import { cursorClient } from "@moonfold/provider-cursor/client";
+import { grokClient } from "@moonfold/provider-grok/client";
+import { museClient } from "@moonfold/provider-muse/client";
+import { openCodeClient } from "@moonfold/provider-opencode/client";
+import { piClient } from "@moonfold/provider-pi/client";
 
 /** The provider client definitions this web build ships, in presentation order. */
 export const providerClients = makeProviderClientRegistry([

@@ -1,5 +1,5 @@
 {
-  "name": "@t3tools/shared",
+  "name": "@moonfold/shared",
   "private": true,
   "type": "module",
   "exports": {
@@ -155,9 +155,9 @@
       "types": "./src/projectSettings.ts",
       "import": "./src/projectSettings.ts"
     },
-    "./t3ProjectFile": {
-      "types": "./src/t3ProjectFile.ts",
-      "import": "./src/t3ProjectFile.ts"
+    "./moonfoldProjectFile": {
+      "types": "./src/moonfoldProjectFile.ts",
+      "import": "./src/moonfoldProjectFile.ts"
     },
     "./orchestrationTiming": {
       "types": "./src/orchestrationTiming.ts",
@@ -387,9 +387,9 @@
       "types": "./src/orchestrationV2Timeline.ts",
       "import": "./src/orchestrationV2Timeline.ts"
     },
-    "./t3McpToolPresentation": {
-      "types": "./src/t3McpToolPresentation.ts",
-      "import": "./src/t3McpToolPresentation.ts"
+    "./moonfoldMcpToolPresentation": {
+      "types": "./src/moonfoldMcpToolPresentation.ts",
+      "import": "./src/moonfoldMcpToolPresentation.ts"
     },
     "./Array": {
       "types": "./src/Array.ts",
@@ -497,9 +497,9 @@
     "test": "vp test run --config ../../vite.config.ts --dir ."
   },
   "dependencies": {
+    "@moonfold/contracts": "workspace:*",
     "@noble/curves": "catalog:",
     "@noble/hashes": "catalog:",
-    "@t3tools/contracts": "workspace:*",
     "effect": "catalog:",
     "jose": "catalog:",
     "mdast-util-directive": "catalog:",

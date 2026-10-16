@@ -497,13 +497,13 @@ describe("GhosttyTerminalSurface visibility", () => {
       expect(openLink).toHaveBeenCalledOnce();
 
       vi.advanceTimersByTime(501);
-      surface.resetAndWrite("https://t3.codes");
+      surface.resetAndWrite("https://example.org");
       harness.flushFrame();
       harness.pointer("pointermove", 5, 0, modifiers);
       expect(surface.canvas.style.cursor).toBe("pointer");
       harness.pointer("pointerdown", 5, 1, modifiers);
       harness.pointer("pointerup", 5, 0, modifiers);
-      expect(openLink).toHaveBeenLastCalledWith("https://t3.codes", expect.any(Event));
+      expect(openLink).toHaveBeenLastCalledWith("https://example.org", expect.any(Event));
     },
   );
 
@@ -1018,7 +1018,7 @@ describe("terminalLinkAtPositionWithRange", () => {
     const cells = [
       cell("🙂"),
       cell(""),
-      ...Array.from("https://t3.codes", (character) => cell(character)),
+      ...Array.from("https://example.org", (character) => cell(character)),
     ];
     const row: GhosttyRow = {
       cells,
@@ -1030,9 +1030,9 @@ describe("terminalLinkAtPositionWithRange", () => {
       wrapsToNext: false,
     };
 
-    expect(terminalLinkAtPositionWithRange([row], 0, 2)?.text).toBe("https://t3.codes");
+    expect(terminalLinkAtPositionWithRange([row], 0, 2)?.text).toBe("https://example.org");
     expect(terminalLinkAtPositionWithRange([row], 0, cells.length - 1)?.text).toBe(
-      "https://t3.codes",
+      "https://example.org",
     );
     expect(terminalLinkAtPositionWithRange([row], 0, 0)).toBeNull();
     expect(terminalLinkAtPositionWithRange([row], 0, 8)?.range).toEqual({
@@ -1079,20 +1079,20 @@ describe("terminalLinkAtPositionWithRange", () => {
     const headCut = [row("ple.com/missing", true), row("head", true)];
     expect(terminalLinkAtPositionWithRange(headCut, 0, 4)).toBeNull();
     // The bottom row soft-wraps on below the viewport.
-    const tailCut = [row("https://t3.codes", false, true)];
+    const tailCut = [row("https://example.org", false, true)];
     expect(terminalLinkAtPositionWithRange(tailCut, 0, 8)).toBeNull();
     // A partial bottom row is provably complete and still resolves.
-    const complete = [row("https://t3.codes", false), row("", false)];
-    expect(terminalLinkAtPositionWithRange(complete, 0, 8)?.text).toBe("https://t3.codes");
+    const complete = [row("https://example.org", false), row("", false)];
+    expect(terminalLinkAtPositionWithRange(complete, 0, 8)?.text).toBe("https://example.org");
     // A wide grapheme earlier in the row must not break truncation detection:
     // the soft-wrap flag decides, not string-length-versus-cell-count.
     const wideFull: GhosttyRow = {
       cells: [
         { ...cell("🙂"), wide: 1 },
         { ...cell(""), wide: 2 },
-        ...Array.from("https://t3.code", (character) => cell(character)),
+        ...Array.from("https://moonfold.code", (character) => cell(character)),
       ],
-      text: "🙂 https://t3.code",
+      text: "🙂 https://moonfold.code",
       isWrapContinuation: false,
       wrapsToNext: true,
     };
@@ -1100,15 +1100,17 @@ describe("terminalLinkAtPositionWithRange", () => {
     // Unwritten trailing cells prove the bottom row is complete.
     const unwrittenTail: GhosttyRow = {
       cells: [
-        ...Array.from("https://t3.codes", (character) => cell(character)),
+        ...Array.from("https://example.org", (character) => cell(character)),
         cell(""),
         cell(""),
       ],
-      text: "https://t3.codes",
+      text: "https://example.org",
       isWrapContinuation: false,
       wrapsToNext: false,
     };
-    expect(terminalLinkAtPositionWithRange([unwrittenTail], 0, 8)?.text).toBe("https://t3.codes");
+    expect(terminalLinkAtPositionWithRange([unwrittenTail], 0, 8)?.text).toBe(
+      "https://example.org",
+    );
   });
 });
 

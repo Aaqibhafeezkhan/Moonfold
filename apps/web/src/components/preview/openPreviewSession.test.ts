@@ -5,7 +5,7 @@ import {
   type PreviewOpenInput,
   type PreviewSessionSnapshot,
   type ScopedThreadRef,
-} from "@t3tools/contracts";
+} from "@moonfold/contracts";
 import * as Cause from "effect/Cause";
 import { AsyncResult } from "effect/reactivity";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
@@ -33,7 +33,7 @@ const snapshot: PreviewSessionSnapshot = {
   tabId: "tab-1",
   navStatus: {
     _tag: "Loading",
-    url: "https://t3.chat/",
+    url: "https://example.net/",
     title: "",
   },
   canGoBack: false,
@@ -80,17 +80,17 @@ describe("openPreviewSession", () => {
     await openPreviewSession({
       openPreview: ({ input }) => open(input),
       threadRef,
-      url: "t3.chat",
+      url: "example.net",
     });
 
     expect(open).toHaveBeenCalledWith({
       threadId: "thread-1",
-      url: "t3.chat",
+      url: "example.net",
       viewport: FILL_PREVIEW_VIEWPORT,
       profileId: DEFAULT_BROWSER_PROFILE_ID,
     });
     expect(readThreadPreviewState(threadRef).snapshot).toEqual(snapshot);
-    expect(readThreadPreviewState(threadRef).recentlySeenUrls).toEqual(["https://t3.chat/"]);
+    expect(readThreadPreviewState(threadRef).recentlySeenUrls).toEqual(["https://example.net/"]);
   });
 
   it("returns failures without mutating preview state", async () => {
@@ -99,7 +99,7 @@ describe("openPreviewSession", () => {
     const result = await openPreviewSession({
       openPreview: async () => AsyncResult.failure(Cause.fail(failure)),
       threadRef,
-      url: "t3.chat",
+      url: "example.net",
     });
 
     expect(result._tag).toBe("Failure");
@@ -120,7 +120,7 @@ describe("openPreviewSession", () => {
         browserProfiles: [{ id: "work", name: "Work", kind: "persistent" }],
       });
       const openPreview = vi.fn(async () => AsyncResult.success(snapshot));
-      const input = { openPreview, threadRef, url: "https://t3.chat/" };
+      const input = { openPreview, threadRef, url: "https://example.net/" };
       const open = entryPoint === "session" ? openPreviewSession : openUrlInPreview;
 
       const result = await open(input);
@@ -154,7 +154,12 @@ describe("openUrlInPreview from a link", () => {
       AsyncResult.success(snapshot),
     );
 
-    await openUrlInPreview({ openPreview, threadRef, url: "https://t3.chat/", profileId: "work" });
+    await openUrlInPreview({
+      openPreview,
+      threadRef,
+      url: "https://example.net/",
+      profileId: "work",
+    });
 
     expect(openPreview.mock.calls[0]?.[0].input.profileId).toBe("work");
   });
@@ -165,7 +170,7 @@ describe("openUrlInPreview from a link", () => {
     await openUrlInPreview({
       openPreview: async () => AsyncResult.success(snapshot),
       threadRef,
-      url: "https://t3.chat/",
+      url: "https://example.net/",
       background: true,
     });
 
@@ -188,7 +193,7 @@ describe("openUrlInPreview from a link", () => {
         return AsyncResult.success(snapshot);
       },
       threadRef,
-      url: "https://t3.chat/",
+      url: "https://example.net/",
       background: true,
     });
 
@@ -207,7 +212,7 @@ describe("openUrlInPreview from a link", () => {
         return AsyncResult.success(snapshot);
       },
       threadRef,
-      url: "https://t3.chat/",
+      url: "https://example.net/",
       background: true,
     });
 
@@ -220,7 +225,7 @@ describe("openUrlInPreview from a link", () => {
     await openUrlInPreview({
       openPreview: async () => AsyncResult.success(snapshot),
       threadRef,
-      url: "https://t3.chat/",
+      url: "https://example.net/",
     });
 
     expect(readThreadPreviewState(threadRef).activeTabId).toBe("tab-1");

@@ -1,5 +1,5 @@
-import { formatPercent, formatTokens, formatUsd } from "@t3tools/shared/usageFormat";
-import { isModelCostUnknown, type ModelTotals } from "@t3tools/shared/usageMerge";
+import { formatPercent, formatTokens, formatUsd } from "@moonfold/shared/usageFormat";
+import { isModelCostUnknown, type ModelTotals } from "@moonfold/shared/usageMerge";
 import { useMemo } from "react";
 
 import { mergeAnsweredUsage, type EnvironmentUsageStatus } from "../../state/usage";

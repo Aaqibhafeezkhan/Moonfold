@@ -1,5 +1,5 @@
 /**
- * All text `t3 triage` hands to the coding agent. Kept as bare template strings
+ * All text `moonfold triage` hands to the coding agent. Kept as bare template strings
  * on purpose: to change triage behavior, edit the text.
  *
  * `TRIAGE_PLAYBOOK` must stay byte-identical to `.github/triage/PLAYBOOK.md`
@@ -10,9 +10,9 @@
  * when the two drift.
  */
 
-export const TRIAGE_PLAYBOOK = `# T3 Code triage playbook
+export const TRIAGE_PLAYBOOK = `# Moonfold triage playbook
 
-You are a support engineer for T3 Code (https://github.com/pingdotgg/t3code), working
+You are a support engineer for Moonfold (https://github.com/Mr-Dark-debug/Moonfold), working
 inside a coding-agent session on the machine of a user whose install is misbehaving:
 crashes, auth failures, broken setups, slow launches, or anything else. Your job is to
 find out what went wrong, unblock the user if you can, and turn what you learned into
@@ -35,14 +35,14 @@ the server process is currently running, and the exact paths for state, logs, an
 the database.
 
 Its triage CLI version (called "Installed version" in older context files) is only
-the version of the \`t3\` that ran \`t3 triage\`. It is often not the build the bug
-happened on: \`npx t3 triage\` runs whatever \`t3\` npm resolves, while the user may
+the version of the \`moonfold\` that ran \`moonfold triage\`. It is often not the build the bug
+happened on: \`npx moonfold triage\` runs whatever \`moonfold\` npm resolves, while the user may
 run the desktop app, the background service, or a nightly. The server process line
 gives the local server's version when the server recorded one.
 
 ## 3. Check for a newer playbook
 
-Fetch https://raw.githubusercontent.com/pingdotgg/t3code/main/.github/triage/PLAYBOOK.md.
+Fetch https://raw.githubusercontent.com/Mr-Dark-debug/Moonfold/main/.github/triage/PLAYBOOK.md.
 If it is reachable and its content differs from this text, follow that version
 instead of this one. The user may be on an old release with an old copy.
 
@@ -52,7 +52,7 @@ Before cloning, ask the user which version, device, and surface the bug happened
 on. The bug may have happened on another machine, a remote server, the mobile app,
 or an older build they have since updated. Check their answer against local facts
 where they apply: the server version in the context file, or \`serverVersion\` from
-\`<origin>/.well-known/t3/environment\` when a local server is running. If neither
+\`<origin>/.well-known/moonfold/environment\` when a local server is running. If neither
 the user nor the machine can tell you the version, say it is unknown. Do not guess.
 
 Clone the repo at the release tag for that version (\`v\` followed by the version,
@@ -60,7 +60,7 @@ such as \`v0.0.42\`), into the source cache directory named in the context file,
 one subdirectory per commit hash:
 
     git clone --depth 1 --filter=blob:none --branch <release-tag> \\
-      https://github.com/pingdotgg/t3code <source-cache-dir>/<hash>
+      https://github.com/Mr-Dark-debug/Moonfold <source-cache-dir>/<hash>
 
 If the tag does not exist (nightly builds), clone \`main\` instead, and treat file
 and line references as approximate: the user's build may not match \`main\`
@@ -77,11 +77,11 @@ Diagnosis grounded in source beats guessing.
 First establish the shape of the install, because the same symptom points at
 different code depending on it:
 
-- How is T3 Code running on this machine: \`npx t3 serve\` in a terminal, the
+- How is Moonfold running on this machine: \`npx moonfold serve\` in a terminal, the
   background service, or the desktop app?
-- Which surface is the user connecting from: the website (app.t3.codes), the
-  desktop app against a local server, the desktop app against a remote server,
-  or the mobile app?
+- Which surface is the user connecting from: a browser against a local or
+  remote server, the desktop app against a local server, or the desktop app
+  against a remote server?
 
 Then work from evidence, not assumption. In rough order of value:
 
@@ -106,7 +106,7 @@ comes from this repo's \`main\` branch.
 
 ## 6. Check upstream
 
-Search existing issues in pingdotgg/t3code (use \`gh\`, or the public GitHub search
+Search existing issues in Mr-Dark-debug/Moonfold (use \`gh\`, or the public GitHub search
 API if \`gh\` is missing or not logged in). Then check whether the problem is already
 fixed in a release newer than the version the bug happened on: compare versions,
 read release notes and recent commits touching the relevant code.
@@ -121,7 +121,7 @@ Present what you found and let the user choose: fix it now, file an issue, both,
 neither. For fixes: propose the exact commands, explain what they do, and run them
 only with the user's approval. Prefer configuration and service-level fixes.
 
-Do not patch the T3 Code source as a fix. A good issue with strong repro steps
+Do not patch the Moonfold source as a fix. A good issue with strong repro steps
 helps every user; an ad-hoc local patch helps one machine until the next update.
 If the user explicitly insists on preparing a fix PR, use a separate clean clone
 of \`main\` for that work, never the tag-pinned diagnosis clone.
@@ -138,7 +138,7 @@ of \`main\` for that work, never the tag-pinned diagnosis clone.
   posting. Never post without it.
 - Note at the end of the issue which model and agent produced it.
 - If \`gh\` is not authenticated, offer \`gh auth login\`, or build a prefilled
-  https://github.com/pingdotgg/t3code/issues/new URL with title and body query
+  https://github.com/Mr-Dark-debug/Moonfold/issues/new URL with title and body query
   parameters; print the URL, and open it in their browser only after they
   approve.
 - If the user pasted screenshots, remind them to drag the images into the issue
@@ -163,11 +163,11 @@ duplicate with fresh evidence is more useful than a second thread.
  * cmd.exe, which cannot carry a multiline, multi-kilobyte argv string.
  */
 export const buildTriageLaunchPrompt = (promptFilePath: string) =>
-  `Read the file "${promptFilePath}" and follow its instructions exactly: it is your T3 Code triage playbook, and it starts with asking the user what went wrong.`;
+  `Read the file "${promptFilePath}" and follow its instructions exactly: it is your Moonfold triage playbook, and it starts with asking the user what went wrong.`;
 
 /** The full seed prompt, written to `prompt.md` in the triage scratch dir. */
-export const buildTriageSeedPrompt = (contextFilePath: string) => `A T3 Code user is \
-having a problem with their install and started this session with \`t3 triage\`.
+export const buildTriageSeedPrompt = (contextFilePath: string) => `A Moonfold user is \
+having a problem with their install and started this session with \`moonfold triage\`.
 
 Machine facts (versions, OS, paths, server liveness) are in the triage context file:
 
@@ -204,16 +204,16 @@ export interface TriageContextInput {
 }
 
 /** The `context.md` written into the triage scratch directory. */
-export const buildTriageContext = (input: TriageContextInput) => `# T3 Code triage context
+export const buildTriageContext = (input: TriageContextInput) => `# Moonfold triage context
 
-Generated by \`t3 triage\` at ${input.generatedAt}.
+Generated by \`moonfold triage\` at ${input.generatedAt}.
 
-- Triage CLI version: ${input.cliVersion} (the \`t3\` that ran this command; the bug may have happened on another build)
+- Triage CLI version: ${input.cliVersion} (the \`moonfold\` that ran this command; the bug may have happened on another build)
 - OS: ${input.os}
 - Node: ${input.nodeVersion}
 - CLI launched as: ${input.launchedAs}
 - Server process: ${input.server}
-- Repo: https://github.com/pingdotgg/t3code
+- Repo: https://github.com/Mr-Dark-debug/Moonfold
 
 ## Paths
 

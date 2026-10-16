@@ -5,14 +5,14 @@
  * @module provider-opencode/server/usage
  */
 
-import { expandHomePath } from "@t3tools/provider-core/server/pathExpansion";
+import { expandHomePath } from "@moonfold/provider-core/server/pathExpansion";
 import {
   totalTokens,
   type ProviderUsageReader,
   type UsageRecord,
-} from "@t3tools/provider-core/server/usage";
-import * as HostProcess from "@t3tools/shared/HostProcess";
-import * as NodeSqliteClient from "@t3tools/shared/nodeSqliteClient";
+} from "@moonfold/provider-core/server/usage";
+import * as HostProcess from "@moonfold/shared/HostProcess";
+import * as NodeSqliteClient from "@moonfold/shared/nodeSqliteClient";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Option from "effect/Option";

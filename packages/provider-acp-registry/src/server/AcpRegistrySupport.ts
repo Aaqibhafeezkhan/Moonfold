@@ -9,16 +9,16 @@ import {
   type AcpRegistrySearchInput,
   type AcpRegistrySearchResult,
   type AcpRegistryDistribution as AcpRegistryDistributionKind,
-} from "@t3tools/contracts";
+} from "@moonfold/contracts";
 import type { AcpRegistryDistributionPreference } from "../settings.ts";
 import type { AcpRegistrySettings } from "../settings.ts";
-import { cliArchiveTarCommand } from "@t3tools/shared/cliRelease";
-import * as HostProcess from "@t3tools/shared/HostProcess";
+import { cliArchiveTarCommand } from "@moonfold/shared/cliRelease";
+import * as HostProcess from "@moonfold/shared/HostProcess";
 import {
   mergePathEntries,
   resolveSpawnCommand,
   SpawnExecutableResolution,
-} from "@t3tools/shared/shell";
+} from "@moonfold/shared/shell";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
 import * as Duration from "effect/Duration";
@@ -42,9 +42,9 @@ import * as HttpClientResponse from "effect/http/HttpClientResponse";
 import * as ChildProcess from "effect/process/ChildProcess";
 import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
 
-import { collectUint8StreamText } from "@t3tools/provider-core/server/collectStreamText";
-import * as ProviderHost from "@t3tools/provider-core/server/ProviderHost";
-import type * as AcpSessionRuntime from "@t3tools/provider-acp/server/AcpSessionRuntime";
+import { collectUint8StreamText } from "@moonfold/provider-core/server/collectStreamText";
+import * as ProviderHost from "@moonfold/provider-core/server/ProviderHost";
+import type * as AcpSessionRuntime from "@moonfold/provider-acp/server/AcpSessionRuntime";
 
 const ACP_REGISTRY_URL = "https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json";
 
@@ -523,7 +523,7 @@ export class AcpRegistryCatalog extends Context.Service<
       input: AcpRegistryManagedBinaryUninstallInput,
     ) => Effect.Effect<AcpRegistryManagedBinaryUninstallResult, AcpRegistryError>;
   }
->()("@t3tools/provider-acp-registry/server/AcpRegistrySupport/AcpRegistryCatalog") {}
+>()("@moonfold/provider-acp-registry/server/AcpRegistrySupport/AcpRegistryCatalog") {}
 
 const layer = (options: AcpRegistryCatalogOptions) =>
   Layer.effect(AcpRegistryCatalog, makeAcpRegistryCatalog(options));
@@ -531,7 +531,7 @@ const layer = (options: AcpRegistryCatalogOptions) =>
 /**
  * The server-lifetime catalog, with the runtime coordinator built alongside
  * it so setup, snapshots, and turn launch share one of each. Its cache lives
- * in the host's provider status cache and installed agents under the T3
+ * in the host's provider status cache and installed agents under the Moonfold
  * home's `tools` directory.
  */
 export const layerFromHost = Layer.merge(

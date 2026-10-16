@@ -15,7 +15,7 @@ build/
 .logs/
 release/
 release-mock/
-.t3
+.moonfold
 .idea/
 apps/web/.playwright
 apps/web/playwright-report
@@ -31,8 +31,6 @@ squashfs-root/
 dist-electron/
 .electron-runtime/
 .showcase/
-apps/mobile/.showcase/
-apps/mobile/.generated/
 /.generated/
 artifacts/app-store/screenshots/
 .github/pr-assets/

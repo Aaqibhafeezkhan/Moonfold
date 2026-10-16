@@ -4,7 +4,7 @@ import {
   ProjectId,
   type ProjectScript,
   type ResolvedKeybindingsConfig,
-} from "@t3tools/contracts";
+} from "@moonfold/contracts";
 import { AsyncResult } from "effect/reactivity";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";

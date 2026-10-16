@@ -94,9 +94,9 @@ describe("toolActivity", () => {
     ).toBe("Searched TODO in web");
     expect(
       formatSearchToolLabel({
-        input: { glob: "*.ts", path: "/tmp/t3chat-new" },
+        input: { glob: "*.ts", path: "/tmp/moonfoldchat-new" },
       }),
-    ).toBe("Searched files *.ts in t3chat-new");
+    ).toBe("Searched files *.ts in moonfoldchat-new");
     expect(
       formatSearchToolLabel({ rawInput: {}, input: { pattern: "TODO", path: "apps/web" } }),
     ).toBe("Searched TODO in web");
@@ -125,9 +125,9 @@ describe("toolActivity", () => {
   });
 
   it.each(["cua_repl.js", "node_repl.js", "js"])("uses the action title for %s", (toolName) => {
-    expect(dynamicToolTitle(toolName, { title: " Read the current T3 desktop window " })).toBe(
-      "Read the current T3 desktop window",
-    );
+    expect(
+      dynamicToolTitle(toolName, { title: " Read the current Moonfold desktop window " }),
+    ).toBe("Read the current Moonfold desktop window");
     const fallback = toolName === "cua_repl.js" ? "Computer use" : "Run JavaScript";
     expect(dynamicToolTitle(toolName, { title: " " })).toBe(fallback);
     expect(dynamicToolTitle(toolName, { title: 123 })).toBe(fallback);

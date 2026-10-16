@@ -1,15 +1,15 @@
-import { tokenizeCliArgs } from "@t3tools/shared/cliArgs";
+import { tokenizeCliArgs } from "@moonfold/shared/cliArgs";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 
-import type { McpProviderSessionConfig } from "@t3tools/provider-core/server/mcpSession";
+import type { McpProviderSessionConfig } from "@moonfold/provider-core/server/mcpSession";
 import {
-  PI_T3_MCP_EXTENSION_FILENAME,
-  PI_T3_MCP_EXTENSION_SOURCE,
-  T3_MCP_BEARER_ENV,
-  T3_MCP_URL_ENV,
-  T3_PI_RUNTIME_MODE_ENV,
-  T3_PI_MCP_EXTENSION_PATH_ENV,
+  PI_MOONFOLD_MCP_EXTENSION_FILENAME,
+  PI_MOONFOLD_MCP_EXTENSION_SOURCE,
+  MOONFOLD_MCP_BEARER_ENV,
+  MOONFOLD_MCP_URL_ENV,
+  MOONFOLD_PI_RUNTIME_MODE_ENV,
+  MOONFOLD_PI_MCP_EXTENSION_PATH_ENV,
 } from "./mcpExtensionSource.ts";
 
 const RESERVED_PI_LAUNCH_ARGUMENTS = new Set([
@@ -102,7 +102,7 @@ function normalizePiBuiltInEqualsArguments(args: ReadonlyArray<string>): Readonl
 
 /**
  * Pi launch arguments may configure resources, models, tools, trust, and
- * storage. T3 owns RPC mode and session identity, so arguments that select a
+ * storage. Moonfold owns RPC mode and session identity, so arguments that select a
  * different execution mode or native session are rejected before spawn.
  */
 export function resolvePiLaunchArgs(launchArgs: string): PiLaunchArgsResolution {
@@ -119,7 +119,7 @@ export function resolvePiLaunchArgs(launchArgs: string): PiLaunchArgsResolution 
     if (reserved !== undefined) {
       return {
         ok: false,
-        message: `Pi launch argument '${reserved}' is controlled by T3 Code and cannot be overridden.`,
+        message: `Pi launch argument '${reserved}' is controlled by Moonfold and cannot be overridden.`,
       };
     }
     if (arg === "--") {
@@ -154,7 +154,7 @@ export function resolvePiLaunchArgs(launchArgs: string): PiLaunchArgsResolution 
       continue;
     }
     if (arg.startsWith("-")) {
-      return { ok: false, message: `Pi launch argument '${arg}' is not supported by T3 Code.` };
+      return { ok: false, message: `Pi launch argument '${arg}' is not supported by Moonfold.` };
     }
     return {
       ok: false,
@@ -231,22 +231,22 @@ function withoutToolSelectionArgs(args: ReadonlyArray<string>): ReadonlyArray<st
   return filtered;
 }
 
-function piT3McpExtensionDestPath(cacheDir: string): string {
-  return `${cacheDir.replace(/\\/g, "/")}/${PI_T3_MCP_EXTENSION_FILENAME}`;
+function piMoonfoldMcpExtensionDestPath(cacheDir: string): string {
+  return `${cacheDir.replace(/\\/g, "/")}/${PI_MOONFOLD_MCP_EXTENSION_FILENAME}`;
 }
 
-export const materializePiT3McpExtension = Effect.fn("materializePiT3McpExtension")(function* (
-  cacheDir: string,
-) {
-  const fs = yield* FileSystem.FileSystem;
-  yield* fs.makeDirectory(cacheDir, { recursive: true });
-  const dest = piT3McpExtensionDestPath(cacheDir);
-  const existing = yield* fs.readFileString(dest).pipe(Effect.orElseSucceed(() => ""));
-  if (existing !== PI_T3_MCP_EXTENSION_SOURCE) {
-    yield* fs.writeFileString(dest, PI_T3_MCP_EXTENSION_SOURCE);
-  }
-  return dest;
-});
+export const materializePiMoonfoldMcpExtension = Effect.fn("materializePiMoonfoldMcpExtension")(
+  function* (cacheDir: string) {
+    const fs = yield* FileSystem.FileSystem;
+    yield* fs.makeDirectory(cacheDir, { recursive: true });
+    const dest = piMoonfoldMcpExtensionDestPath(cacheDir);
+    const existing = yield* fs.readFileString(dest).pipe(Effect.orElseSucceed(() => ""));
+    if (existing !== PI_MOONFOLD_MCP_EXTENSION_SOURCE) {
+      yield* fs.writeFileString(dest, PI_MOONFOLD_MCP_EXTENSION_SOURCE);
+    }
+    return dest;
+  },
+);
 
 export function buildPiRpcLaunch(input: {
   readonly launchArgs: ReadonlyArray<string>;
@@ -260,10 +260,11 @@ export function buildPiRpcLaunch(input: {
 }): {
   readonly args: ReadonlyArray<string>;
   readonly env: NodeJS.ProcessEnv;
-  readonly hasT3Mcp: boolean;
+  readonly hasMoonfoldMcp: boolean;
 } {
-  const hasT3Extension = input.disableExtensions !== true && input.extensionPath !== undefined;
-  const hasT3Mcp = hasT3Extension && input.mcpSession !== undefined;
+  const hasMoonfoldExtension =
+    input.disableExtensions !== true && input.extensionPath !== undefined;
+  const hasMoonfoldMcp = hasMoonfoldExtension && input.mcpSession !== undefined;
   const extensionSafeArgs =
     input.disableExtensions === true
       ? withoutExplicitExtensions(input.launchArgs)
@@ -281,41 +282,41 @@ export function buildPiRpcLaunch(input: {
     ...(input.disableTools === true ? ["--no-tools"] : []),
   ];
   if (
-    hasT3Extension &&
+    hasMoonfoldExtension &&
     input.extensionPath !== undefined &&
     !hasExplicitExtension(args, input.extensionPath)
   ) {
     args.push("--extension", input.extensionPath);
   }
   const environment = { ...input.environment };
-  // These values belong to the current T3 session. Never let a Pi child reuse
+  // These values belong to the current Moonfold session. Never let a Pi child reuse
   // credentials inherited from the server or a parent provider process.
-  delete environment[T3_MCP_URL_ENV];
-  delete environment[T3_MCP_BEARER_ENV];
-  delete environment[T3_PI_MCP_EXTENSION_PATH_ENV];
+  delete environment[MOONFOLD_MCP_URL_ENV];
+  delete environment[MOONFOLD_MCP_BEARER_ENV];
+  delete environment[MOONFOLD_PI_MCP_EXTENSION_PATH_ENV];
 
   return {
     args,
     env: {
       ...environment,
-      ...(hasT3Extension && input.extensionPath !== undefined
-        ? { [T3_PI_MCP_EXTENSION_PATH_ENV]: input.extensionPath }
+      ...(hasMoonfoldExtension && input.extensionPath !== undefined
+        ? { [MOONFOLD_PI_MCP_EXTENSION_PATH_ENV]: input.extensionPath }
         : {}),
-      ...(hasT3Extension && input.runtimeMode !== undefined
+      ...(hasMoonfoldExtension && input.runtimeMode !== undefined
         ? {
-            [T3_PI_RUNTIME_MODE_ENV]:
+            [MOONFOLD_PI_RUNTIME_MODE_ENV]:
               input.runtimeMode === "auto" ? "approval-required" : input.runtimeMode,
           }
         : {}),
-      ...(hasT3Mcp && input.mcpSession !== undefined
+      ...(hasMoonfoldMcp && input.mcpSession !== undefined
         ? {
-            [T3_MCP_URL_ENV]: input.mcpSession.endpoint,
-            [T3_MCP_BEARER_ENV]: bearerTokenFromAuthorizationHeader(
+            [MOONFOLD_MCP_URL_ENV]: input.mcpSession.endpoint,
+            [MOONFOLD_MCP_BEARER_ENV]: bearerTokenFromAuthorizationHeader(
               input.mcpSession.authorizationHeader,
             ),
           }
         : {}),
     },
-    hasT3Mcp,
+    hasMoonfoldMcp,
   };
 }

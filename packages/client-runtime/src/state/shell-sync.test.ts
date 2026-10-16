@@ -5,7 +5,7 @@ import {
   type OrchestrationV2ShellStreamItem,
   ThreadId,
   type ThreadPullRequestLink,
-} from "@t3tools/contracts";
+} from "@moonfold/contracts";
 import { describe, expect, it } from "@effect/vitest";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
@@ -960,9 +960,9 @@ describe("environment shell synchronization", () => {
     Effect.gen(function* () {
       const link = (number: number): ThreadPullRequestLink => ({
         host: "github.com",
-        repository: "pingdotgg/t3code",
+        repository: "moonfold-dev/moonfold",
         number,
-        url: `https://github.com/pingdotgg/t3code/pull/${number}`,
+        url: `https://github.com/moonfold-dev/moonfold/pull/${number}`,
         source: "agent",
         linkedAt: "2026-06-20T00:00:00.000Z",
         snapshot: null,
@@ -1057,9 +1057,9 @@ describe("environment shell synchronization", () => {
     Effect.gen(function* () {
       const link: ThreadPullRequestLink = {
         host: "github.com",
-        repository: "pingdotgg/t3code",
+        repository: "moonfold-dev/moonfold",
         number: 7,
-        url: "https://github.com/pingdotgg/t3code/pull/7",
+        url: "https://github.com/moonfold-dev/moonfold/pull/7",
         source: "agent",
         linkedAt: "2026-06-20T00:00:00.000Z",
         snapshot: null,
@@ -1140,9 +1140,9 @@ describe("environment shell synchronization", () => {
     Effect.gen(function* () {
       const link: ThreadPullRequestLink = {
         host: "github.com",
-        repository: "pingdotgg/t3code",
+        repository: "moonfold-dev/moonfold",
         number: 8,
-        url: "https://github.com/pingdotgg/t3code/pull/8",
+        url: "https://github.com/moonfold-dev/moonfold/pull/8",
         source: "agent",
         linkedAt: "2026-06-20T00:00:00.000Z",
         snapshot: null,
@@ -1207,9 +1207,9 @@ describe("environment shell synchronization", () => {
     Effect.gen(function* () {
       const link = (number: number): ThreadPullRequestLink => ({
         host: "github.com",
-        repository: "pingdotgg/t3code",
+        repository: "moonfold-dev/moonfold",
         number,
-        url: `https://github.com/pingdotgg/t3code/pull/${number}`,
+        url: `https://github.com/moonfold-dev/moonfold/pull/${number}`,
         source: "agent",
         linkedAt: "2026-06-20T00:00:00.000Z",
         snapshot: null,

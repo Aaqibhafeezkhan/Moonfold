@@ -1,4 +1,4 @@
-import type { EnvironmentId, ScopedThreadRef } from "@t3tools/contracts";
+import type { EnvironmentId, ScopedThreadRef } from "@moonfold/contracts";
 import {
   HTML_RENDER_COLUMN_WIDTH,
   htmlRenderFileName,
@@ -6,7 +6,7 @@ import {
   htmlRenderOutlineBoxes,
   type HtmlRenderOutlineBox,
   type HtmlRenderReference,
-} from "@t3tools/shared/htmlRender";
+} from "@moonfold/shared/htmlRender";
 import { Maximize2Icon } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 

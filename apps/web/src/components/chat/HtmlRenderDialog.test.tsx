@@ -3,9 +3,9 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
-import { htmlRenderTheme, HTML_RENDER_DEFAULT_FONTS } from "@t3tools/shared/htmlRender";
-import { T3_CODE_DARK_THEME_COLORS } from "@t3tools/shared/themePalettes";
-import { EnvironmentId, ThreadId } from "@t3tools/contracts";
+import { htmlRenderTheme, HTML_RENDER_DEFAULT_FONTS } from "@moonfold/shared/htmlRender";
+import { MOONFOLD_DARK_THEME_COLORS } from "@moonfold/shared/themePalettes";
+import { EnvironmentId, ThreadId } from "@moonfold/contracts";
 
 import { HtmlRenderDialog } from "./HtmlRenderDialog";
 import { HtmlRenderFrame } from "./HtmlRenderFrame";
@@ -33,7 +33,7 @@ vi.mock("../ui/toast", () => ({ toastManager: { add: showError } }));
 
 vi.mock("~/hooks/useHtmlRenderTheme", () => ({
   useHtmlRenderTheme: () =>
-    htmlRenderTheme(T3_CODE_DARK_THEME_COLORS, "dark", HTML_RENDER_DEFAULT_FONTS),
+    htmlRenderTheme(MOONFOLD_DARK_THEME_COLORS, "dark", HTML_RENDER_DEFAULT_FONTS),
 }));
 
 let root: Root;
@@ -171,7 +171,7 @@ it("routes links from the expanded page through its thread", async () => {
   await click("Open full screen");
   const frame = document.querySelector<HTMLIFrameElement>('[role="dialog"] iframe')!;
   frame.focus();
-  const url = "https://github.com/pingdotgg/t3code/pull/17561";
+  const url = "https://github.com/moonfold-dev/moonfold/pull/17561";
   await act(() => {
     window.dispatchEvent(
       new MessageEvent("message", {

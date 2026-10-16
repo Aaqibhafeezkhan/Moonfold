@@ -4,8 +4,8 @@ import {
   type DiscoveredLocalServer,
   type EnvironmentId,
   type ThreadId,
-} from "@t3tools/contracts";
-import { isLoopbackHost } from "@t3tools/shared/preview";
+} from "@moonfold/contracts";
+import { isLoopbackHost } from "@moonfold/shared/preview";
 import { useMemo } from "react";
 
 import { previewEnvironment } from "./state/preview";

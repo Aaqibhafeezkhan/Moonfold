@@ -1,10 +1,10 @@
-import { AuthDiagnosticsReadScope } from "@t3tools/contracts";
-import { AuthEnvironmentMaintainScope } from "@t3tools/contracts";
+import { AuthDiagnosticsReadScope } from "@moonfold/contracts";
+import { AuthEnvironmentMaintainScope } from "@moonfold/contracts";
 import type {
   EnvironmentId,
   ResourceTelemetryHistoryInput,
   ResourceTelemetrySnapshot,
-} from "@t3tools/contracts";
+} from "@moonfold/contracts";
 import * as Cause from "effect/Cause";
 import { useCallback } from "react";
 

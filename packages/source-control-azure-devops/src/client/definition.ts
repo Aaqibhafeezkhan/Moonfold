@@ -3,13 +3,13 @@
  *
  * @module source-control-azure-devops/client/definition
  */
-import { SourceControlProviderKind } from "@t3tools/contracts";
-import { canonicalRepositoryKey } from "@t3tools/shared/sourceControl";
+import { SourceControlProviderKind } from "@moonfold/contracts";
+import { canonicalRepositoryKey } from "@moonfold/shared/sourceControl";
 import {
   defineSourceControlClient,
   isChangeRequestAuthorityOfProject,
   isChangeRequestPath,
-} from "@t3tools/source-control-core/client/definition";
+} from "@moonfold/source-control-core/client/definition";
 
 const CHECKOUT_COMMAND = /^az\s+repos\s+pr\s+checkout\s+(.+)$/i;
 const CHANGE_REQUEST_REFERENCE =

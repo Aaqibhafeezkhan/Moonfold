@@ -1,5 +1,7 @@
 /**
- * Anonymous PostHog telemetry service.
+ * Anonymous PostHog telemetry service. Off by default: it sends nothing unless the user sets
+ * `MOONFOLD_TELEMETRY_ENABLED=true` together with their own `MOONFOLD_POSTHOG_KEY` and
+ * `MOONFOLD_POSTHOG_HOST`. Moonfold ships no project key.
  *
  * Persists an installation-scoped anonymous identifier, buffers events in
  * memory, and flushes batches over Effect's HTTP client. A failed batch is
@@ -8,8 +10,8 @@
  *
  * @module AnalyticsService
  */
-import * as HostProcess from "@t3tools/shared/HostProcess";
-import type { ClientOs } from "@t3tools/contracts";
+import * as HostProcess from "@moonfold/shared/HostProcess";
+import type { ClientOs } from "@moonfold/contracts";
 import * as Clock from "effect/Clock";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
@@ -67,15 +69,11 @@ export function retryDelayMs(failures: number, random: number): number {
 }
 
 const TelemetryEnvConfig = Config.all({
-  posthogKey: Config.String("T3CODE_POSTHOG_KEY").pipe(
-    Config.withDefault("phc_XOWci4oZP4VvLiEyrFqkFjP4CZn55mjYYBMREK5Wd6m"),
-  ),
-  posthogHost: Config.String("T3CODE_POSTHOG_HOST").pipe(
-    Config.withDefault("https://us.i.posthog.com"),
-  ),
-  enabled: Config.Boolean("T3CODE_TELEMETRY_ENABLED").pipe(Config.withDefault(true)),
-  flushBatchSize: Config.Number("T3CODE_TELEMETRY_FLUSH_BATCH_SIZE").pipe(Config.withDefault(20)),
-  maxBufferedEvents: Config.Number("T3CODE_TELEMETRY_MAX_BUFFERED_EVENTS").pipe(
+  posthogKey: Config.NonEmptyString("MOONFOLD_POSTHOG_KEY").pipe(Config.option),
+  posthogHost: Config.NonEmptyString("MOONFOLD_POSTHOG_HOST").pipe(Config.option),
+  enabled: Config.Boolean("MOONFOLD_TELEMETRY_ENABLED").pipe(Config.withDefault(false)),
+  flushBatchSize: Config.Number("MOONFOLD_TELEMETRY_FLUSH_BATCH_SIZE").pipe(Config.withDefault(20)),
+  maxBufferedEvents: Config.Number("MOONFOLD_TELEMETRY_MAX_BUFFERED_EVENTS").pipe(
     Config.withDefault(1_000),
   ),
   wslDistroName: Config.String("WSL_DISTRO_NAME").pipe(Config.option),
@@ -93,7 +91,7 @@ export class AnalyticsService extends Context.Service<
     /** Flush all currently queued telemetry events. */
     readonly flush: Effect.Effect<void>;
   }
->()("t3/telemetry/AnalyticsService") {
+>()("moonfold/telemetry/AnalyticsService") {
   /** No-op layer for callers that intentionally disable telemetry. */
   static readonly layerTest = Layer.succeed(
     AnalyticsService,
@@ -175,9 +173,12 @@ export const make = Effect.gen(function* () {
     events: ReadonlyArray<BufferedAnalyticsEvent>,
   ) {
     if (!telemetryConfig.enabled || !identifier) return;
+    if (Option.isNone(telemetryConfig.posthogKey) || Option.isNone(telemetryConfig.posthogHost)) {
+      return;
+    }
 
     const payload = {
-      api_key: telemetryConfig.posthogKey,
+      api_key: telemetryConfig.posthogKey.value,
       batch: events.map((event) => ({
         uuid: event.uuid,
         event: event.event,
@@ -188,7 +189,7 @@ export const make = Effect.gen(function* () {
           platform: hostPlatform,
           wsl: Option.getOrUndefined(telemetryConfig.wslDistroName),
           arch: hostArchitecture,
-          t3CodeVersion: packageJson.version,
+          moonfoldVersion: packageJson.version,
           clientType,
           serverOs: serverOsFromNodePlatform(hostPlatform),
           serverArch: hostArchitecture,
@@ -200,7 +201,7 @@ export const make = Effect.gen(function* () {
       })),
     };
 
-    yield* HttpClientRequest.post(`${telemetryConfig.posthogHost}/batch/`).pipe(
+    yield* HttpClientRequest.post(`${telemetryConfig.posthogHost.value}/batch/`).pipe(
       HttpClientRequest.bodyJson(payload),
       Effect.flatMap(httpClient.execute),
       Effect.flatMap(HttpClientResponse.filterStatusOk),

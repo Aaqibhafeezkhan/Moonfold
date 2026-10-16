@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from "vite-plus/test";
 // Native scroll delivery and animation frames advance independently here.
 function createList(bundle: string) {
   const source = NodeFS.readFileSync(
-    new URL(`../apps/mobile/node_modules/@legendapp/list/${bundle}`, import.meta.url),
+    new URL(`../apps/web/node_modules/@legendapp/list/${bundle}`, import.meta.url),
     "utf8",
   );
   const renderState = source.slice(

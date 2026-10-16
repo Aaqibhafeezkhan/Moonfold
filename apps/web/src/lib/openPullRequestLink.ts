@@ -1,17 +1,17 @@
-import type { EnvironmentId, PullRequestRef, ScopedThreadRef } from "@t3tools/contracts";
+import type { EnvironmentId, PullRequestRef, ScopedThreadRef } from "@moonfold/contracts";
 import { useAtomValue } from "@effect/atom-react";
 import { useNavigate } from "@tanstack/react-router";
 import { type MouseEvent, useCallback, useMemo } from "react";
 
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
-import { parseChangeRequestUrl, type ChangeRequestLink } from "@t3tools/shared/changeRequestUrl";
-import { sourceControlRepositorySelector } from "@t3tools/shared/sourceControl";
+import { sourceControlClients } from "@moonfold/client-runtime/source-control-clients";
+import { parseChangeRequestUrl, type ChangeRequestLink } from "@moonfold/shared/changeRequestUrl";
+import { sourceControlRepositorySelector } from "@moonfold/shared/sourceControl";
 
 import { useOpenLink } from "../browser/useOpenLink";
 import { useClientSettings } from "../hooks/useSettings";
 import { stackedThreadToast, toastManager } from "../components/ui/toast";
 import { useRightPanelStore } from "../rightPanelStore";
-import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
+import type { EnvironmentProject } from "@moonfold/client-runtime/state/shell";
 
 import { useProjects, useServerConfigs } from "../state/entities";
 import { serverEnvironment } from "../state/server";
@@ -24,7 +24,7 @@ export {
   pullRequestCandidateUrlFromReferenceAutolink,
   matchesLinkedPullRequestUrl,
   changeRequestRepositoryUrl,
-} from "@t3tools/shared/changeRequestUrl";
+} from "@moonfold/shared/changeRequestUrl";
 
 /**
  * The project a link belongs to, or nothing. Matched the way the server matches: the repository
@@ -124,7 +124,7 @@ export function findProjectOnChangeRequestHost(
  * should still be reading it afterwards. Any change request opens there, not only the thread's
  * own, since the panel is told which one to show.
  *
- * With "Open pull requests in T3 Code" turned off, every link is left alone.
+ * With "Open pull requests in Moonfold" turned off, every link is left alone.
  */
 /** Cmd/Ctrl-click and middle-click send a pull request to the browser instead of the panel. */
 export function shouldOpenPullRequestExternally(

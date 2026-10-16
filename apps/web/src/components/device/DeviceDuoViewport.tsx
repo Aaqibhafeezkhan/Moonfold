@@ -1,14 +1,14 @@
 import { useEffect, useRef, type RefObject } from "react";
-import type { DuoViewer } from "@t3tools/client-runtime/device/duo-viewer";
-import type { DeviceModelSource } from "@t3tools/client-runtime/device/model";
-import { createPhoneInteraction } from "@t3tools/client-runtime/device/phone-interaction";
-import { createCanvasFrameSink } from "@t3tools/client-runtime/device/frame";
-import type { DeviceScreenSize, DeviceStreamClient } from "@t3tools/client-runtime/device/stream";
-import { createDuoPinch } from "@t3tools/client-runtime/device/duo-control";
+import type { DuoViewer } from "@moonfold/client-runtime/device/duo-viewer";
+import type { DeviceModelSource } from "@moonfold/client-runtime/device/model";
+import { createPhoneInteraction } from "@moonfold/client-runtime/device/phone-interaction";
+import { createCanvasFrameSink } from "@moonfold/client-runtime/device/frame";
+import type { DeviceScreenSize, DeviceStreamClient } from "@moonfold/client-runtime/device/stream";
+import { createDuoPinch } from "@moonfold/client-runtime/device/duo-control";
 import { bindPhoneTrackpad } from "./phoneTrackpad";
 import { observeResize } from "../../lib/observeResize";
 
-const loadDuoViewer = () => import("@t3tools/client-runtime/device/duo-viewer");
+const loadDuoViewer = () => import("@moonfold/client-runtime/device/duo-viewer");
 
 /** Web shell for the framework-independent viewer. The decoded screen and input connection remain owned by DeviceStreamView. */
 export function DeviceDuoViewport(props: {
