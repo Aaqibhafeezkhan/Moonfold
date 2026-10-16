@@ -15,8 +15,8 @@ import { HttpClient, HttpClientResponse } from "effect/http";
 import * as GitHubApi from "./GitHubApi.ts";
 import * as GitHubCredentials from "./GitHubCredentials.ts";
 import * as GitHubQuota from "./GitHubQuota.ts";
-import * as SourceControlRateLimit from "@t3tools/source-control-core/server/SourceControlRateLimit";
-import * as TestSourceControlHost from "@t3tools/source-control-testing/TestSourceControlHost";
+import * as SourceControlRateLimit from "@moonfold/source-control-core/server/SourceControlRateLimit";
+import * as TestSourceControlHost from "@moonfold/source-control-testing/TestSourceControlHost";
 import * as GitHubPullRequestApi from "./GitHubPullRequestApi.ts";
 import * as GitHubPullRequestProvider from "./GitHubPullRequestProvider.ts";
 import { KnownWorkflowRuns } from "./gitHubConditionalChecks.ts";
@@ -1235,7 +1235,7 @@ layer("GitHubPullRequestApi.layer", (it) => {
       yield* cli.searchPullRequests({
         cwd: "/w",
         host: "github.com",
-        repositories: ["acme/web", "pingdotgg/t3code"],
+        repositories: ["acme/web", "moonfold-dev/moonfold"],
         state: "closed",
         involvement: "reviewing",
         viewer: "bilal",
@@ -1251,7 +1251,7 @@ layer("GitHubPullRequestApi.layer", (it) => {
       assert.strictEqual(
         searchQueryOfCall(0),
         'is:pr is:closed is:unmerged review-requested:bilal "pull requests page" ' +
-          "updated:<=2026-07-02T00:00:00Z sort:updated-desc repo:acme/web repo:pingdotgg/t3code",
+          "updated:<=2026-07-02T00:00:00Z sort:updated-desc repo:acme/web repo:moonfold-dev/moonfold",
       );
     }),
   );
@@ -1330,7 +1330,7 @@ layer("GitHubPullRequestApi.layer", (it) => {
         Effect.succeed(
           searchPage([
             searchItem(7, "acme/web", "2026-07-03T00:00:00Z"),
-            searchItem(9, "pingdotgg/t3code", "2026-07-02T00:00:00Z"),
+            searchItem(9, "moonfold-dev/moonfold", "2026-07-02T00:00:00Z"),
             // Not a pull request, which `is:pr` excludes and a decode skips rather than fails on.
             {},
           ]),
@@ -1341,7 +1341,7 @@ layer("GitHubPullRequestApi.layer", (it) => {
       const batch = yield* cli.searchPullRequests({
         cwd: "/w",
         host: "github.com",
-        repositories: ["acme/web", "pingdotgg/t3code"],
+        repositories: ["acme/web", "moonfold-dev/moonfold"],
         state: "open",
         involvement: "all",
         viewer: "bilal",
@@ -1352,7 +1352,7 @@ layer("GitHubPullRequestApi.layer", (it) => {
         batch.items.map((item) => [item.repository, item.number, item.author?.avatarUrl]),
         [
           ["acme/web", 7, "https://avatars/octocat"],
-          ["pingdotgg/t3code", 9, "https://avatars/octocat"],
+          ["moonfold-dev/moonfold", 9, "https://avatars/octocat"],
         ],
       );
       // The listing leaves the line counts to a read of their own.
