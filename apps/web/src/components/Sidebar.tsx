@@ -4821,7 +4821,10 @@ export default function Sidebar() {
             });
             return;
           case "move-to-worktree":
-            await moveToWorktree(threadRef, thread.title);
+            await moveToWorktree(threadRef, {
+              title: thread.title,
+              projectCwd: threadWorkspacePath,
+            });
             return;
           case "return-to-project":
             await returnToProject(threadRef, thread.branch ?? null);

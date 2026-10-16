@@ -36,8 +36,19 @@ export function useThreadWorkspaceTransfer() {
   });
 
   const moveToWorktree = useCallback(
-    async (threadRef: ScopedThreadRef, threadTitle: string) => {
-      const choice = await requestWorktreeMove(sanitizeFeatureBranchName(threadTitle));
+    async (
+      threadRef: ScopedThreadRef,
+      thread: { readonly title: string; readonly projectCwd: string | null },
+    ) => {
+      if (thread.projectCwd === null) {
+        failureToast("Could not move the thread", new Error("The project folder is unavailable."));
+        return;
+      }
+      const choice = await requestWorktreeMove({
+        environmentId: threadRef.environmentId,
+        projectCwd: thread.projectCwd,
+        suggestedBranch: sanitizeFeatureBranchName(thread.title),
+      });
       if (choice === null) return;
       const result = await moveThreadToWorktree({
         environmentId: threadRef.environmentId,

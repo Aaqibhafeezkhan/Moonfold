@@ -138,9 +138,11 @@ make your first commit before pushing.
 ## Move a thread between the project folder and a worktree
 
 A thread that started in the project folder can move into a worktree of its own: right-click it
-in the sidebar (or open the thread menu in its header), choose **Move to new worktree…**, and name
-the branch. With **Take uncommitted changes along** on, the folder's uncommitted changes, new files
-included, go with it and the project folder is left clean.
+in the sidebar (or open the thread menu in its header) and choose **Move to new worktree…**. Name
+a new branch, or pick **Existing worktree** to join one the project already has. With **Take
+uncommitted changes along** on, the folder's uncommitted changes, new files included, go with it
+and the project folder is left clean; an existing worktree must have no uncommitted changes of
+its own for that.
 
 **Bring back to project folder…** does the reverse. Commits on the worktree's branch are merged
 into the branch the project folder has checked out, uncommitted changes come over, and the thread

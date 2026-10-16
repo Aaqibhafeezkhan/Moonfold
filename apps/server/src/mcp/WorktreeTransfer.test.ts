@@ -235,3 +235,68 @@ describe("bringing a thread back to its project", () => {
     }).pipe(Effect.provide(gitLayer), Effect.scoped),
   );
 });
+
+describe("moving a thread into an existing worktree", () => {
+  it.effect("points the thread at it and brings the project's uncommitted changes", () =>
+    Effect.gen(function* () {
+      const fx = yield* fixture;
+      const existing = `${fx.worktrees}/existing`;
+      yield* fx.run(fx.project, ["worktree", "add", "-b", "feature/existing", existing]);
+      yield* fx.fs.writeFileString(`${fx.project}/notes.md`, "draft\n");
+
+      const result = yield* Effect.gen(function* () {
+        const service = yield* WorktreeMcpService.WorktreeMcpService;
+        return yield* service.moveToNewWorktree({
+          threadId,
+          worktreePath: existing,
+          carryChanges: true,
+        });
+      }).pipe(Effect.provide(fx.layer));
+
+      expect(result.branch).toBe("feature/existing");
+      // Stored the way git lists it, like the paths of worktrees Moonfold creates.
+      expect(result.worktreePath).toBe(existing);
+      expect(fx.thread.branch).toBe("feature/existing");
+      expect(fx.thread.worktreePath).toBe(result.worktreePath);
+      expect(yield* status(fx, fx.project)).toBe("");
+      expect(yield* fx.fs.readFileString(`${existing}/notes.md`)).toBe("draft\n");
+    }).pipe(Effect.provide(gitLayer), Effect.scoped),
+  );
+
+  it.effect("refuses a folder that is not one of the project's worktrees", () =>
+    Effect.gen(function* () {
+      const fx = yield* fixture;
+      const error = yield* Effect.gen(function* () {
+        const service = yield* WorktreeMcpService.WorktreeMcpService;
+        return yield* service.moveToNewWorktree({
+          threadId,
+          worktreePath: fx.worktrees,
+          carryChanges: false,
+        });
+      }).pipe(Effect.provide(fx.layer), Effect.flip);
+      expect(failureCode(error)).toBe("invalid_request");
+      expect(fx.thread.worktreePath).toBeNull();
+    }).pipe(Effect.provide(gitLayer), Effect.scoped),
+  );
+
+  it.effect("keeps the target's own uncommitted work safe", () =>
+    Effect.gen(function* () {
+      const fx = yield* fixture;
+      const existing = `${fx.worktrees}/busy`;
+      yield* fx.run(fx.project, ["worktree", "add", "-b", "feature/busy", existing]);
+      yield* fx.fs.writeFileString(`${existing}/theirs.md`, "keep me\n");
+      yield* fx.fs.writeFileString(`${fx.project}/mine.md`, "mine\n");
+      const error = yield* Effect.gen(function* () {
+        const service = yield* WorktreeMcpService.WorktreeMcpService;
+        return yield* service.moveToNewWorktree({
+          threadId,
+          worktreePath: existing,
+          carryChanges: true,
+        });
+      }).pipe(Effect.provide(fx.layer), Effect.flip);
+      expect(failureCode(error)).toBe("invalid_request");
+      expect(yield* fx.fs.readFileString(`${existing}/theirs.md`)).toBe("keep me\n");
+      expect(yield* fx.fs.readFileString(`${fx.project}/mine.md`)).toBe("mine\n");
+    }).pipe(Effect.provide(gitLayer), Effect.scoped),
+  );
+});

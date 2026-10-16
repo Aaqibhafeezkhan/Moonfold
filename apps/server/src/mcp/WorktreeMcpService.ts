@@ -44,7 +44,10 @@ export class WorktreeMcpService extends Context.Service<
     readonly status: (
       scope: McpInvocationScope,
     ) => Effect.Effect<WorktreeMcpStatusResult, WorktreeMcpFailure>;
-    /** The user moves an idle thread into a new worktree, optionally with its changes. */
+    /**
+     * The user moves an idle thread from the project folder into a new worktree or an existing
+     * one, optionally with the folder's uncommitted changes.
+     */
     readonly moveToNewWorktree: (
       input: ThreadMoveToWorktreeInput,
     ) => Effect.Effect<WorktreeMcpHandoffResult, WorktreeMcpFailure>;
@@ -580,8 +583,104 @@ const make = Effect.gen(function* () {
       ),
     );
 
+  /**
+   * The repository's worktrees by resolved path: the path as git spells it (how thread worktree
+   * paths are stored) and the branch checked out there.
+   */
+  const listWorktrees = (cwd: string) =>
+    runGit(cwd, ["worktree", "list", "--porcelain"]).pipe(
+      Effect.map((result) => {
+        const worktrees = new Map<string, { path: string; branch: string | null }>();
+        let current: { path: string; branch: string | null } | null = null;
+        for (const line of result.stdout.split(/\r?\n/)) {
+          if (line.startsWith("worktree ")) {
+            current = { path: line.slice("worktree ".length), branch: null };
+            worktrees.set(path.resolve(current.path), current);
+          } else if (current !== null && line.startsWith("branch ")) {
+            current.branch = line.slice("branch ".length).replace(/^refs\/heads\//, "");
+          }
+        }
+        return worktrees;
+      }),
+    );
+
+  const performMoveToExisting = Effect.fn("WorktreeMcpService.performMoveToExisting")(function* (
+    threadId: ThreadId,
+    requestedPath: string,
+    carryChanges: boolean,
+  ) {
+    const target = userTarget(threadId);
+    const projection = yield* requireIdle(target);
+    if (projection.thread.worktreePath !== null) {
+      return yield* failure(
+        "already_in_worktree",
+        `This thread already works in ${projection.thread.worktreePath}. Bring it back to the project folder first.`,
+      );
+    }
+    const project = yield* loadProject(target, projection.thread.projectId);
+    const projectCwd = project.workspaceRoot;
+    const resolved = path.resolve(requestedPath);
+    if (resolved === path.resolve(projectCwd)) {
+      return yield* failure("invalid_request", "This thread already works in the project folder.");
+    }
+    const worktree = (yield* listWorktrees(projectCwd)).get(resolved);
+    if (worktree === undefined) {
+      return yield* failure(
+        "invalid_request",
+        `${requestedPath} is not a worktree of ${projectCwd}.`,
+      );
+    }
+    const { path: worktreePath, branch } = worktree;
+    let carried = false;
+    if (carryChanges) {
+      // The carry undoes a failed apply with a hard reset, so the target must have nothing
+      // of its own to lose.
+      if (yield* hasUncommittedChanges(worktreePath)) {
+        return yield* failure(
+          "invalid_request",
+          `${worktreePath} has uncommitted changes of its own. Commit or stash them there, or move without taking changes along.`,
+        );
+      }
+      carried = yield* carryUncommittedChanges(projectCwd, worktreePath);
+    }
+    const ids = yield* handoffIds(target);
+    yield* threadManagement
+      .dispatch({
+        type: "thread.metadata.update",
+        commandId: ids.commandId,
+        threadId,
+        branch,
+        worktreePath,
+        expectedWorktreePath: null,
+      })
+      .pipe(asOperationFailed("Unable to point the thread at the worktree"));
+    yield* Effect.forEach([projectCwd, worktreePath], (cwd) =>
+      vcsStatusBroadcaster
+        .refreshStatus(cwd)
+        .pipe(Effect.ignoreCause({ log: true }), Effect.forkDetach),
+    );
+    const result: WorktreeMcpHandoffResult = {
+      worktreePath,
+      branch: branch ?? "HEAD",
+      baseRef: branch ?? "HEAD",
+      startedFromOrigin: false,
+      setupScript: { status: "skipped" },
+      continuation: { status: "skipped" },
+      note: carried
+        ? "The thread now works in the existing worktree, with the project folder's uncommitted changes."
+        : "The thread now works in the existing worktree.",
+    };
+    return result;
+  });
+
   const moveToNewWorktree: WorktreeMcpService["Service"]["moveToNewWorktree"] = (input) => {
     const target = userTarget(input.threadId);
+    if ("worktreePath" in input) {
+      return exclusively(
+        input.threadId,
+        performMoveToExisting(input.threadId, input.worktreePath, input.carryChanges),
+      );
+    }
     return exclusively(
       input.threadId,
       requireIdle(target).pipe(
