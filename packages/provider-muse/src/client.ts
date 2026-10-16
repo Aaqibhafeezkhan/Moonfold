@@ -4,8 +4,8 @@
  *
  * @module provider-muse/client
  */
-import { ProviderDriverKind } from "@t3tools/contracts";
-import { defineProviderClient } from "@t3tools/provider-core/client";
+import { ProviderDriverKind } from "@moonfold/contracts";
+import { defineProviderClient } from "@moonfold/provider-core/client";
 
 import { MuseSettings } from "./settings.ts";
 

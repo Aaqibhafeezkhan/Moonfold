@@ -9,9 +9,9 @@ import {
   type ProcessExit,
   type SpawnedMspConnection,
 } from "@muse-code/sdk";
-import type { RuntimeMode } from "@t3tools/contracts";
-import * as HostProcess from "@t3tools/shared/HostProcess";
-import { SpawnExecutableResolution } from "@t3tools/shared/shell";
+import type { RuntimeMode } from "@moonfold/contracts";
+import * as HostProcess from "@moonfold/shared/HostProcess";
+import { SpawnExecutableResolution } from "@moonfold/shared/shell";
 import * as Effect from "effect/Effect";
 
 export interface MuseSdkHost {
@@ -162,10 +162,10 @@ export function museServeArgs(
   return args;
 }
 
-/** What T3 sends in MSP `initialize`; only full hosts ask for session MCP servers. */
+/** What Moonfold sends in MSP `initialize`; only full hosts ask for session MCP servers. */
 export function museInitializeParams(readOnly = false) {
   return {
-    clientInfo: { name: "t3_code", title: "T3 Code", version: "1" },
+    clientInfo: { name: "moonfold", title: "Moonfold", version: "1" },
     capabilities: { requestedCapabilities: readOnly ? [] : ["sessionMcp"] },
   };
 }
