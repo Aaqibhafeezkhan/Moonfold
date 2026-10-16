@@ -7,7 +7,7 @@
  * AGENTS.md / SYSTEM.md context, settings.json, custom models, and auth all
  * load exactly as they do in the `pi` TUI. Sessions are stored by Pi itself
  * (default `~/.pi/agent/sessions/`), and the session file path is the durable
- * `nativeThreadRef`, so a thread started in T3 can be resumed from the TUI
+ * `nativeThreadRef`, so a thread started in Moonfold can be resumed from the TUI
  * and vice versa.
  *
  * Turn lifecycle: `agent_settled` is the only terminal signal. `agent_end`
@@ -21,12 +21,12 @@
  * `select`/`input`/`editor` → user_input_request); answers travel back as
  * `extension_ui_response`. `notify` becomes a completed activity item.
  * Terminal-only decoration such as status, widget, title, and editor-text
- * updates has no matching T3 surface and is ignored.
+ * updates has no matching Moonfold surface and is ignored.
  */
-import * as HostProcess from "@t3tools/shared/HostProcess";
-import { AgentScope } from "@t3tools/shared/AgentScope";
-import { getModelSelectionStringOptionValue } from "@t3tools/shared/model";
-import { readToolOutputImage } from "@t3tools/shared/toolOutput";
+import * as HostProcess from "@moonfold/shared/HostProcess";
+import { AgentScope } from "@moonfold/shared/AgentScope";
+import { getModelSelectionStringOptionValue } from "@moonfold/shared/model";
+import { readToolOutputImage } from "@moonfold/shared/toolOutput";
 import * as Predicate from "effect/Predicate";
 import {
   defaultInstanceIdForDriver,
@@ -47,7 +47,7 @@ import {
   type ProviderApprovalDecision,
   type ProviderInstanceId,
   type OrchestrationV2ProviderTurnTokenUsage,
-} from "@t3tools/contracts";
+} from "@moonfold/contracts";
 import { PiSettings } from "../settings.ts";
 import * as Cause from "effect/Cause";
 import * as DateTime from "effect/DateTime";
@@ -64,24 +64,24 @@ import * as Semaphore from "effect/Semaphore";
 import * as Stream from "effect/Stream";
 import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
 
-import * as ProviderHost from "@t3tools/provider-core/server/ProviderHost";
-import { mcpToolPresentation } from "@t3tools/provider-core/server/mcpToolPresentation";
-import * as McpProviderSessions from "@t3tools/provider-core/server/McpProviderSessions";
+import * as ProviderHost from "@moonfold/provider-core/server/ProviderHost";
+import { mcpToolPresentation } from "@moonfold/provider-core/server/mcpToolPresentation";
+import * as McpProviderSessions from "@moonfold/provider-core/server/McpProviderSessions";
 import { parsePiCompactCommand, type PiCompactCommand } from "./commands.ts";
-import { mergeProviderInstanceEnvironment } from "@t3tools/provider-core/server/instanceEnvironment";
-import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
-import * as ProviderAdapter from "@t3tools/provider-core/server/ProviderAdapter";
-import * as ProviderContinuationRequests from "@t3tools/provider-core/server/ProviderContinuationRequests";
+import { mergeProviderInstanceEnvironment } from "@moonfold/provider-core/server/instanceEnvironment";
+import * as IdAllocator from "@moonfold/provider-core/server/IdAllocator";
+import * as ProviderAdapter from "@moonfold/provider-core/server/ProviderAdapter";
+import * as ProviderContinuationRequests from "@moonfold/provider-core/server/ProviderContinuationRequests";
 import {
   ProviderAdapterDriverCreateError,
   type ProviderAdapterDriver,
   type ProviderAdapterDriverCreateInput,
-} from "@t3tools/provider-core/server/adapterDriver";
+} from "@moonfold/provider-core/server/adapterDriver";
 import {
   makeProviderFailure,
   makeProviderRetryTurnItem,
-} from "@t3tools/provider-core/server/failure";
-import { turnScopedSelectionTransition } from "@t3tools/provider-core/server/selectionTransition";
+} from "@moonfold/provider-core/server/failure";
+import { turnScopedSelectionTransition } from "@moonfold/provider-core/server/selectionTransition";
 import {
   makePiRpcConnection,
   parsePiModelSlug,
@@ -93,7 +93,7 @@ import {
 } from "./rpc.ts";
 import {
   buildPiRpcLaunch,
-  materializePiT3McpExtension,
+  materializePiMoonfoldMcpExtension,
   resolvePiLaunchArgs,
 } from "./mcpInjection.ts";
 import { PI_FILE_CHANGE_TOOLS } from "./mcpExtensionSource.ts";
@@ -114,7 +114,7 @@ const PI_REQUEST_TIMEOUT_MS = 15_000;
 // Session lifecycle hooks reload extensions, MCP servers and language servers.
 const PI_SESSION_TIMEOUT_MS = 60_000;
 const PI_UNSOLICITED_ACTIVITY_ERROR =
-  "Pi started agent work outside an active T3 turn. The session was stopped to prevent invisible tool execution.";
+  "Pi started agent work outside an active Moonfold turn. The session was stopped to prevent invisible tool execution.";
 const SETTLE_PROBE_MAX_ATTEMPTS = 3;
 const SETTLE_PROBE_RETRY_DELAY = Duration.millis(100);
 
@@ -164,7 +164,7 @@ const PiProviderCapabilitiesV2 = {
     supportsDynamicToolCallbacks: false,
   },
   approvals: {
-    // Pi exposes a blocking tool_call extension hook. The T3 bridge uses it
+    // Pi exposes a blocking tool_call extension hook. The Moonfold bridge uses it
     // for supervised and auto-accept modes and forwards its confirmations
     // through the same extension UI protocol as user-installed extensions.
     supportsCommandApproval: true,
@@ -183,7 +183,7 @@ const PiProviderCapabilitiesV2 = {
     planDeltasHaveItemIds: false,
   },
   subagents: {
-    // T3 delegation uses the shared MCP `delegate_task` path. Installed Pi
+    // Moonfold delegation uses the shared MCP `delegate_task` path. Installed Pi
     // subagent extensions are observed best-effort, but their official tool
     // runs children with --no-session and exposes no resumable child id.
     supportsSubagents: true,
@@ -199,7 +199,7 @@ const PiProviderCapabilitiesV2 = {
     acceptsSyntheticUserContext: true,
     canGenerateSummaries: false,
     canConsumeHandoffSummaries: true,
-    // T3 delivers both full and delta handoffs through Pi's normal user-message
+    // Moonfold delivers both full and delta handoffs through Pi's normal user-message
     // input, so neither strategy depends on a Pi-specific context hook.
     supportsDeltaHandoff: true,
     supportsFullThreadHandoff: true,
@@ -465,7 +465,7 @@ interface PendingPiPrompt {
 }
 
 /**
- * The T3 bridge confirms tool calls as `Allow <tool>?`. Edits surface as
+ * The Moonfold bridge confirms tool calls as `Allow <tool>?`. Edits surface as
  * file-change approvals so clients render them like other providers' edits;
  * every other confirmation, including ones from user extensions, is a command.
  */
@@ -534,7 +534,7 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
       // hook. Materialize it even when this session has no MCP credential so
       // Supervised never silently degrades to unrestricted tool execution.
       const extensionPath = yield* provideCacheFs(
-        materializePiT3McpExtension(host.paths.providerStatusCacheDir),
+        materializePiMoonfoldMcpExtension(host.paths.providerStatusCacheDir),
       );
       const resolvedLaunchArgs = resolvePiLaunchArgs(options.settings.launchArgs);
       if (!resolvedLaunchArgs.ok) {
@@ -1176,7 +1176,7 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
       /**
        * Observe the result shape from Pi's official example subagent extension.
        * The extension runs children with --no-session, so these entries are
-       * visible in T3's shared subagent UI without inventing a child thread.
+       * visible in Moonfold's shared subagent UI without inventing a child thread.
        * Unknown or changed result shapes stay ordinary dynamic tool output.
        */
       const emitSubagentTasks = Effect.fnUntraced(function* (
@@ -1354,7 +1354,7 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
           method !== "input" &&
           method !== "editor"
         ) {
-          // Terminal decoration has no matching T3 surface.
+          // Terminal decoration has no matching Moonfold surface.
           yield* Effect.logDebug("Ignoring pi extension UI update.", { method });
           return;
         }
@@ -1477,7 +1477,7 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
           ).pipe(
             Effect.andThen(
               Queue.offer(connection.events, {
-                type: "t3.ui_request_expired",
+                type: "moonfold.ui_request_expired",
                 requestId: String(requestId),
                 pending,
               }),
@@ -1548,7 +1548,7 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
        * `get_entries` is append-ordered and keeps abandoned branches, so both
        * come from walking the leaf's `parentId` chain, never from list order.
        * A leaf that no longer descends from the previous one means something
-       * outside T3 rewound the session, such as an extension calling
+       * outside Moonfold rewound the session, such as an extension calling
        * `navigateTree`. The user entries left on the active branch are then
        * returned so orchestration can roll back runs that fell off it.
        * Pure bookkeeping: failures degrade to the synthetic refs.
@@ -1729,7 +1729,7 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
           Effect.matchEffect({
             onSuccess: (data) =>
               Queue.offer(connection.events, {
-                type: "t3.settle_probe",
+                type: "moonfold.settle_probe",
                 providerTurnId,
                 settleAfterAgentActivity,
                 settleProbeGeneration,
@@ -1741,7 +1741,7 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
             // agent events for one.
             onFailure: () =>
               Queue.offer(connection.events, {
-                type: "t3.settle_probe",
+                type: "moonfold.settle_probe",
                 providerTurnId,
                 settleAfterAgentActivity,
                 settleProbeGeneration,
@@ -1773,7 +1773,7 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
           threadState?.activeTurn === null &&
           pendingWake !== null &&
           !interactiveUiRequest &&
-          !String(event["type"]).startsWith("t3.") &&
+          !String(event["type"]).startsWith("moonfold.") &&
           event["type"] !== "response"
         ) {
           pendingWake.events.push(event);
@@ -2161,7 +2161,7 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
             }
             return;
           }
-          case "t3.ui_request_expired": {
+          case "moonfold.ui_request_expired": {
             const requestId = recordString(event, "requestId");
             if (requestId === undefined) return;
             const pending = pendingPrompts.get(requestId);
@@ -2170,7 +2170,7 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
             yield* cancelPrompt(pending, yield* DateTime.now);
             return;
           }
-          case "t3.flush_extension_errors": {
+          case "moonfold.flush_extension_errors": {
             // Startup extension failures are informational and do not block
             // Pi, so attach them to the next real turn instead of creating a
             // standalone failed run.
@@ -2179,12 +2179,12 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
             }
             return;
           }
-          case "t3.rollback_barrier": {
+          case "moonfold.rollback_barrier": {
             if (rollbackBarrier !== null && event["barrier"] === rollbackBarrier)
               yield* Deferred.succeed(rollbackBarrier, undefined);
             return;
           }
-          case "t3.settle_probe": {
+          case "moonfold.settle_probe": {
             // New work increments the generation before the pump can consume
             // a stale idle snapshot, so only a current snapshot may settle.
             const data = event["data"];
@@ -2612,7 +2612,7 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
             // Resolved before the turn is installed: a failure here (an
             // unreadable attachment) must not leave `activeTurn` set, which
             // would reject every later turn as already active.
-            // Orchestration instructions reach pi through the T3 MCP
+            // Orchestration instructions reach pi through the Moonfold MCP
             // extension's before_agent_start system-prompt hook, never by
             // wrapping the user text: a wrapped first message would no
             // longer start with "/" and slash commands would stop expanding.
@@ -2697,7 +2697,7 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
                   kind: "turn_start",
                 });
               } else if (payload !== null) {
-                // Pi may already be streaming before its wake reaches T3.
+                // Pi may already be streaming before its wake reaches Moonfold.
                 // Let Pi atomically queue the prompt or start an idle run.
                 yield* connection.send({
                   type: "prompt",
@@ -2736,7 +2736,7 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
                 yield* finalizeTurn(state);
               }
               if (outOfTurnExtensionErrors.length > 0) {
-                yield* Queue.offer(connection.events, { type: "t3.flush_extension_errors" });
+                yield* Queue.offer(connection.events, { type: "moonfold.flush_extension_errors" });
               }
             }).pipe(
               sessionEventPermit.withPermits(1),
@@ -3086,7 +3086,7 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
                   // RPC responses bypass the pump. Drain preceding native events
                   // before deciding whether this fork can replace their binding.
                   const queued = yield* Queue.offer(connection.events, {
-                    type: "t3.rollback_barrier",
+                    type: "moonfold.rollback_barrier",
                     barrier,
                   });
                   if (!queued) return yield* protocolError("Pi transport closed during rollback");
