@@ -43,6 +43,7 @@ function nativeConfig(
     detectAgentImports: unused,
     importAgentConfig: unused,
     readAccountUsage: unused,
+    setThreadArchived: unused,
   } satisfies NativeConfig;
 }
 

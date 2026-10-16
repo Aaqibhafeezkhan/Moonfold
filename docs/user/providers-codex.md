@@ -121,6 +121,11 @@ threads use.
   agents on the computer and copies the ones you pick into Codex.
 - **Account usage** shows the tokens the signed-in account has used, as OpenAI reports them.
 
+## Archived threads
+
+Archiving a Codex thread in Moonfold also archives it in Codex, so it leaves the thread lists of the
+Codex CLI and other Codex apps too. Unarchiving it in Moonfold brings it back in both.
+
 ## Codex says I hit a usage limit
 
 When Codex stops on a usage limit, the thread names the window that ran out and

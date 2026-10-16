@@ -357,6 +357,16 @@ export function makeCodexNativeConfig<OpenError>(input: {
           }),
         IMPORT_TIMEOUT,
       ),
+    setThreadArchived: ({ nativeThreadId, archived }) =>
+      call(
+        undefined,
+        `Codex could not ${archived ? "archive" : "unarchive"} the thread.`,
+        (client) =>
+          (archived
+            ? client.request("thread/archive", { threadId: nativeThreadId })
+            : client.request("thread/unarchive", { threadId: nativeThreadId })
+          ).pipe(Effect.asVoid),
+      ),
     readAccountUsage: () =>
       call(undefined, "Codex could not read the account's usage.", (client) =>
         client.request("account/usage/read", null).pipe(Effect.map(codexAccountUsageFromResponse)),

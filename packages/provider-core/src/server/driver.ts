@@ -144,6 +144,11 @@ export interface ProviderInstance {
       readonly itemIds: ReadonlyArray<string>;
     }) => Effect.Effect<ProviderAgentImportResult, ProviderDriverError>;
     readonly readAccountUsage: () => Effect.Effect<ProviderAccountUsage, ProviderDriverError>;
+    /** Mirrors Moonfold's archive state onto the provider's own copy of a thread. */
+    readonly setThreadArchived: (input: {
+      readonly nativeThreadId: string;
+      readonly archived: boolean;
+    }) => Effect.Effect<void, ProviderDriverError>;
   };
   readonly acpSessionManagement?: {
     readonly listSessions: (input: {

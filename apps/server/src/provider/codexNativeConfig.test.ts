@@ -353,6 +353,40 @@ describe("Codex native config", () => {
     }).pipe(Effect.provide(NodeServices.layer)),
   );
 
+  it.effect("archives and unarchives Codex's copy of a thread", () =>
+    Effect.gen(function* () {
+      const thread = {
+        id: "native-1",
+        sessionId: "native-1",
+        forkedFromId: null,
+        preview: "",
+        ephemeral: false,
+        modelProvider: "openai",
+        createdAt: 1782622440,
+        updatedAt: 1782622440,
+        status: { type: "notLoaded" },
+        path: "/home/dev/.codex/sessions/native-1.jsonl",
+        cwd: "/work/app",
+        cliVersion: "0.161.0",
+        source: "vscode",
+        threadSource: null,
+        agentNickname: null,
+        agentRole: null,
+        gitInfo: null,
+        name: null,
+        turns: [],
+      };
+      const archive = replayConfig("archive", [
+        ...request(1, "thread/archive", { threadId: "native-1" }, {}),
+      ]);
+      yield* archive.config.setThreadArchived({ nativeThreadId: "native-1", archived: true });
+      const unarchive = replayConfig("unarchive", [
+        ...request(1, "thread/unarchive", { threadId: "native-1" }, { thread }),
+      ]);
+      yield* unarchive.config.setThreadArchived({ nativeThreadId: "native-1", archived: false });
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
+
   it.effect("reads account usage with days oldest first", () =>
     Effect.gen(function* () {
       const { config } = replayConfig("usage", [
