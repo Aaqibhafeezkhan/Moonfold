@@ -899,17 +899,47 @@ export type CodexGoalCommand =
   | { readonly type: "clear" }
   | { readonly type: "pause" }
   | { readonly type: "resume" }
-  | { readonly type: "set"; readonly objective: string };
+  | { readonly type: "budget"; readonly tokenBudget: number | null }
+  | { readonly type: "set"; readonly objective: string; readonly tokenBudget?: number };
+
+/** Parses a token count such as `50000`, `200k` or `1.5m`. */
+function parseTokenCount(value: string): number | null {
+  const match = /^(\d+(?:\.\d+)?)([km])?$/iu.exec(value);
+  if (match === null) return null;
+  const suffix = match[2]?.toLowerCase();
+  const scale = suffix === "k" ? 1_000 : suffix === "m" ? 1_000_000 : 1;
+  const count = Math.round(Number(match[1]) * scale);
+  return Number.isSafeInteger(count) && count > 0 ? count : null;
+}
 
 /**
  * Parses a `/goal` message the way the Codex TUI does: `clear`, `pause` and
  * `resume` control the current goal, a bare `/goal` shows it, and any other
- * text becomes the new objective. Returns null for every other message.
+ * text becomes the new objective. Moonfold adds token budgets: `--budget <n>`
+ * before or after an objective, and `budget <n>` or `budget off` for the
+ * current goal. Returns null for every other message.
  */
 export function parseCodexGoalCommand(text: string): CodexGoalCommand | null {
   const match = /^\/goal(?:\s+([\s\S]*))?$/u.exec(text.trim());
   if (match === null) return null;
   const argument = (match[1] ?? "").trim();
+  const budget = /^budget\s+(\S+)$/iu.exec(argument);
+  if (budget !== null) {
+    if (/^(?:off|none|clear)$/iu.test(budget[1]!)) return { type: "budget", tokenBudget: null };
+    const tokenBudget = parseTokenCount(budget[1]!);
+    if (tokenBudget !== null) return { type: "budget", tokenBudget };
+  }
+  const flagged =
+    /^--budget\s+(\S+)\s+([\s\S]+)$/iu.exec(argument) ??
+    /^([\s\S]+?)\s+--budget\s+(\S+)$/iu.exec(argument);
+  if (flagged !== null) {
+    const leading = argument.startsWith("--");
+    const tokenBudget = parseTokenCount(leading ? flagged[1]! : flagged[2]!);
+    const objective = (leading ? flagged[2]! : flagged[1]!).trim();
+    if (tokenBudget !== null && objective.length > 0) {
+      return { type: "set", objective, tokenBudget };
+    }
+  }
   switch (argument.toLowerCase()) {
     case "":
     case "edit":
@@ -974,8 +1004,12 @@ function providerGoalFromCodex(goal: CodexThreadGoal): OrchestrationV2ProviderGo
 
 const providerGoalsEqual = Schema.toEquivalence(Schema.NullOr(OrchestrationV2ProviderGoal));
 
+const formatTokens = (count: number) => count.toLocaleString("en-US");
+
 function describeCodexGoal(goal: OrchestrationV2ProviderGoal): string {
-  return `Goal ${goal.status.replace("_", " ")}: ${goal.objective}`;
+  const summary = `Goal ${goal.status.replace("_", " ")}: ${goal.objective}`;
+  if (goal.tokenBudget == null) return summary;
+  return `${summary} (${formatTokens(goal.tokensUsed ?? 0)} of ${formatTokens(goal.tokenBudget)} tokens)`;
 }
 
 // Codex starts the next goal turn milliseconds after the last one completes.
@@ -6481,6 +6515,20 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
             if (current === null && command.type !== "set") {
               return yield* completeGoalCommandTurn(turnInput, "No goal is set.");
             }
+            if (command.type === "budget") {
+              // Changes only the budget; Codex keeps the objective, status and usage.
+              const { goal } = yield* client.request("thread/goal/set", {
+                threadId,
+                tokenBudget: command.tokenBudget,
+              });
+              goalsByNativeThread.set(threadId, providerGoalFromCodex(goal));
+              return yield* completeGoalCommandTurn(
+                turnInput,
+                command.tokenBudget === null
+                  ? "Goal budget removed."
+                  : `Goal budget set to ${formatTokens(command.tokenBudget)} tokens.`,
+              );
+            }
             if (command.type === "pause") {
               const { goal } = yield* client.request("thread/goal/set", {
                 threadId,
@@ -6500,6 +6548,7 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
                 threadId,
                 objective: command.objective,
                 status: "paused",
+                ...(command.tokenBudget === undefined ? {} : { tokenBudget: command.tokenBudget }),
               });
               goalsByNativeThread.set(threadId, providerGoalFromCodex(goal));
             }

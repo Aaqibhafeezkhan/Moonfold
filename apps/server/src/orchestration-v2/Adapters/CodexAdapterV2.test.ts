@@ -8691,6 +8691,85 @@ describe("CodexAdapterV2 post-settle continuation", () => {
       assert.isNull(CodexAdapterV2.parseCodexGoalCommand("set a /goal"));
     });
 
+    it("parses goal token budgets", () => {
+      assert.deepEqual(CodexAdapterV2.parseCodexGoalCommand("/goal --budget 200k Ship it"), {
+        type: "set",
+        objective: "Ship it",
+        tokenBudget: 200_000,
+      });
+      assert.deepEqual(CodexAdapterV2.parseCodexGoalCommand("/goal Ship it --budget 1.5M"), {
+        type: "set",
+        objective: "Ship it",
+        tokenBudget: 1_500_000,
+      });
+      assert.deepEqual(CodexAdapterV2.parseCodexGoalCommand("/goal budget 50000"), {
+        type: "budget",
+        tokenBudget: 50_000,
+      });
+      assert.deepEqual(CodexAdapterV2.parseCodexGoalCommand("/goal budget off"), {
+        type: "budget",
+        tokenBudget: null,
+      });
+      // Anything that is not a token count stays part of the objective.
+      assert.deepEqual(CodexAdapterV2.parseCodexGoalCommand("/goal budget the release"), {
+        type: "set",
+        objective: "budget the release",
+      });
+      assert.deepEqual(CodexAdapterV2.parseCodexGoalCommand("/goal Ship it --budget lots"), {
+        type: "set",
+        objective: "Ship it --budget lots",
+      });
+      assert.deepEqual(CodexAdapterV2.parseCodexGoalCommand("/goal --budget 0 Ship it"), {
+        type: "set",
+        objective: "--budget 0 Ship it",
+      });
+    });
+
+    it.effect("changes only the token budget with /goal budget", () =>
+      Effect.gen(function* () {
+        const transcript = makeCodexReplayTranscript({
+          scenario: "goal-budget",
+          entries: [
+            ...sessionStart,
+            ...request(
+              3,
+              "thread/goal/get",
+              { threadId: nativeThreadId },
+              { goal: codexGoal("active", 10) },
+            ),
+            ...request(
+              4,
+              "thread/goal/set",
+              { threadId: nativeThreadId, tokenBudget: 200_000 },
+              { goal: { ...codexGoal("active", 10), tokenBudget: 200_000 } },
+            ),
+          ],
+        });
+        const harness = yield* makeCodexReplayHarness(transcript);
+        yield* harness.runtime.startTurn(yield* goalTurnInput(harness, "/goal budget 200k"));
+        yield* harness.firstTerminal;
+
+        assert.include(
+          harness.events.flatMap((event) =>
+            event.type === "message.updated" && event.message.role === "assistant"
+              ? [event.message.text]
+              : [],
+          ),
+          "Goal budget set to 200,000 tokens.",
+        );
+        const goals = harness.events.flatMap((event) =>
+          event.type === "provider_thread.updated" ? [event.providerThread.goal ?? null] : [],
+        );
+        assert.equal(goals.at(-1)?.tokenBudget, 200_000);
+        assert.equal(goals.at(-1)?.status, "active");
+      }).pipe(
+        Effect.scoped,
+        Effect.provide(
+          Layer.mergeAll(IdAllocator.layer, McpProviderSessions.layer, NodeServices.layer),
+        ),
+      ),
+    );
+
     it.effect("keeps a /goal run open across the turns Codex continues on its own", () =>
       Effect.gen(function* () {
         const transcript = makeCodexReplayTranscript({

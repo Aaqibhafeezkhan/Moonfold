@@ -700,6 +700,21 @@ describe("presentProviderGoal", () => {
     });
   });
 
+  it("shows a fresh token budget before any tokens are used", () => {
+    expect(
+      presentProviderGoal(
+        { objective: "Ship the feature", status: "active", tokensUsed: 0, tokenBudget: 200_000 },
+        true,
+      ).usage,
+    ).toBe("0 / 200k tokens");
+    expect(
+      presentProviderGoal(
+        { objective: "Ship the feature", status: "active", tokensUsed: 0, tokenBudget: null },
+        true,
+      ).usage,
+    ).toBeNull();
+  });
+
   it("counts Claude evaluator checks and never offers resume", () => {
     expect(
       presentProviderGoal({ objective: "All tests pass", status: "active", checks: 1 }, true),

@@ -415,12 +415,12 @@ export function presentProviderGoal(
   working: boolean,
 ): ProviderGoalPresentation {
   const usage: Array<string> = [];
-  if (goal.tokensUsed !== undefined && goal.tokensUsed > 0) {
-    usage.push(
-      goal.tokenBudget == null
-        ? `${formatGoalTokens(goal.tokensUsed)} tokens`
-        : `${formatGoalTokens(goal.tokensUsed)} / ${formatGoalTokens(goal.tokenBudget)} tokens`,
-    );
+  // A budget shows from the start so the user sees the limit they set.
+  const tokensUsed = goal.tokensUsed ?? 0;
+  if (goal.tokenBudget != null) {
+    usage.push(`${formatGoalTokens(tokensUsed)} / ${formatGoalTokens(goal.tokenBudget)} tokens`);
+  } else if (tokensUsed > 0) {
+    usage.push(`${formatGoalTokens(tokensUsed)} tokens`);
   }
   if (goal.timeUsedSeconds !== undefined && goal.timeUsedSeconds >= 60) {
     usage.push(formatDuration(goal.timeUsedSeconds * 1_000));

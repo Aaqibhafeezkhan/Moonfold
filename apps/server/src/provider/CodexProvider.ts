@@ -766,7 +766,7 @@ export const checkCodexProviderStatus = Effect.fn("checkCodexProviderStatus")(fu
       {
         name: "goal",
         description: "Set a goal Codex keeps working toward until it is done",
-        input: { hint: "Objective, or pause, resume, clear" },
+        input: { hint: "Objective [--budget 200k], or pause, resume, clear, budget <tokens|off>" },
       },
       {
         name: "review",
