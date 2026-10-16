@@ -108,6 +108,7 @@ import {
   deriveThreadRuntime,
   presentPendingBackgroundWork,
   presentProviderGoal,
+  summarizeThreadTokenUsage,
 } from "@moonfold/client-runtime/state/thread-execution";
 import { threadSupportsProviderHandoff } from "@moonfold/client-runtime/state/thread-workflows";
 import { resolvePendingHandoff } from "@moonfold/client-runtime/handoff";
@@ -3723,6 +3724,20 @@ export default function ChatView(props: ChatViewProps) {
         ),
       ),
     [activeThreadLiveTokenUsage, serverVisibleTurnItems, serverProjection],
+  );
+  const serverRuns = serverProjection?.runs;
+  const serverAttempts = serverProjection?.attempts;
+  const serverProviderTurns = serverProjection?.providerTurns;
+  const threadTokenUsage = useMemo(
+    () =>
+      serverRuns && serverAttempts && serverProviderTurns
+        ? summarizeThreadTokenUsage({
+            runs: serverRuns,
+            attempts: serverAttempts,
+            providerTurns: serverProviderTurns,
+          })
+        : [],
+    [serverAttempts, serverProviderTurns, serverRuns],
   );
   const pendingBackgroundTasks = useMemo(() => {
     if (serverProjection === null || serverProjection === undefined) {
@@ -11640,6 +11655,7 @@ export default function ChatView(props: ChatViewProps) {
                               activeThreadModelSelection={activeThread?.modelSelection}
                               activeProjectId={activeProject?.id ?? null}
                               activeContextWindow={activeContextWindow}
+                              threadTokenUsage={threadTokenUsage}
                               activeTasksProgress={activeComposerTasksProgress}
                               activeTaskSteps={activeComposerTaskSteps}
                               compactThreadUnavailable={compactThreadUnavailable}

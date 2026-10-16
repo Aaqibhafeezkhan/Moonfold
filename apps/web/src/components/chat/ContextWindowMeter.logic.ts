@@ -1,4 +1,6 @@
+import type { ThreadTokenUsageGroup } from "@moonfold/client-runtime/state/thread-execution";
 import type { ModelSelection, ProviderDriverKind, ProviderInstanceId } from "@moonfold/contracts";
+import { formatModelSlugName } from "@moonfold/shared/model";
 import {
   CLAUDE_RESUME_COMPACTION_NEVER_ANSWER,
   isClaudeResumeCompactionQuestion,
@@ -7,6 +9,7 @@ import {
   resolveSelectableProviderInstanceEntry,
   type ProviderInstanceEntry,
 } from "../../providerInstances";
+import { formatContextWindowTokens } from "~/lib/contextWindow";
 import { getTriggerDisplayModelName, type ModelEsque } from "./providerIconUtils";
 
 // Used when the provider did not report its cache TTL: Claude's 1h cache plus slack.
@@ -146,4 +149,27 @@ export function formatContextWindowCost(cost: {
 }): string {
   const fractionDigits = Math.abs(cost.amount) > 0 && Math.abs(cost.amount) < 0.01 ? 4 : 2;
   return `${cost.currency} ${cost.amount.toFixed(fractionDigits)}`;
+}
+
+/** One row of the meter's per-thread breakdown: what ran, how much, and how much came from cache. */
+export function presentThreadUsageGroup(group: ThreadTokenUsageGroup): {
+  readonly label: string;
+  readonly total: string;
+  readonly detail: string;
+} {
+  const label = [formatModelSlugName(group.model), group.effort, group.speed]
+    .filter((part) => part !== null)
+    .join(" · ");
+  const cachedShare =
+    group.inputTokens > 0 ? Math.round((group.cachedInputTokens / group.inputTokens) * 100) : 0;
+  const detail = [
+    `${formatContextWindowTokens(group.inputTokens)} in (${cachedShare}% cached)`,
+    `${formatContextWindowTokens(group.outputTokens)} out`,
+    `${group.turns} ${group.turns === 1 ? "turn" : "turns"}`,
+  ].join(" · ");
+  return {
+    label,
+    total: `${group.partial ? "≥ " : ""}${formatContextWindowTokens(group.inputTokens + group.outputTokens)}`,
+    detail,
+  };
 }
