@@ -22,6 +22,7 @@ import {
   buildBranchNamePrompt,
   buildCommitMessagePrompt,
   buildPrContentPrompt,
+  buildSideQuestionPrompt,
   buildThreadTitlePrompt,
 } from "@moonfold/provider-core/server/textGenerationPrompts";
 import {
@@ -345,11 +346,22 @@ export const makeMuseTextGeneration = Effect.fn("makeMuseTextGeneration")(functi
   // Muse runs in an empty read-only directory and cannot be pointed at a checkout to read.
   const generateReviewGuide: ProviderTextGeneration["generateReviewGuide"] = () =>
     Effect.fail(investigationUnsupported("generateReviewGuide", "Muse Code"));
+  const answerSideQuestion: ProviderTextGeneration["answerSideQuestion"] = Effect.fn(
+    "MuseTextGeneration.answerSideQuestion",
+  )(function* (input) {
+    const generated = yield* runMuseJson({
+      operation: "answerSideQuestion",
+      ...buildSideQuestionPrompt(input),
+      modelSelection: input.modelSelection,
+    });
+    return { answer: generated.answer.trim() };
+  });
   return {
     generateCommitMessage,
     generatePrContent,
     generateBranchName,
     generateThreadTitle,
     generateReviewGuide,
+    answerSideQuestion,
   } satisfies ProviderTextGeneration;
 });

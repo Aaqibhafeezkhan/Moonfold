@@ -211,6 +211,7 @@ import * as ProjectEnrichmentService from "./project/ProjectEnrichmentService.ts
 import * as ProjectService from "./project/ProjectService.ts";
 import * as ProviderNativeConfigService from "./provider/ProviderNativeConfigService.ts";
 import * as AgentInstructions from "./project/AgentInstructions.ts";
+import * as ThreadSideQuestions from "./orchestration-v2/ThreadSideQuestions.ts";
 import * as ManagedProjectFolders from "./project/ManagedProjectFolders.ts";
 import { projectMutationOperation } from "./project/ProjectMutation.ts";
 import * as ProjectSetupScriptRunner from "./project/ProjectSetupScriptRunner.ts";
@@ -1300,6 +1301,7 @@ const buildWsRpcHandlers = (
     const providerAuth = yield* ProviderAuthService.ProviderAuthService;
     const providerNativeConfig = yield* ProviderNativeConfigService.ProviderNativeConfigService;
     const agentInstructions = yield* AgentInstructions.AgentInstructions;
+    const threadSideQuestions = yield* ThreadSideQuestions.ThreadSideQuestions;
     const providerInstallation = yield* makeProviderInstallation();
     const serverSelfUpdate = yield* ServerSelfUpdate.ServerSelfUpdate;
     const config = yield* ServerConfig.ServerConfig;
@@ -2362,6 +2364,7 @@ const buildWsRpcHandlers = (
         }),
       [WS_METHODS.agentInstructionsList]: (input) => agentInstructions.list(input),
       [WS_METHODS.agentInstructionsWrite]: (input) => agentInstructions.write(input),
+      [WS_METHODS.threadsAskSideQuestion]: (input) => threadSideQuestions.ask(input),
       [WS_METHODS.providerMcpServersList]: (input) => providerNativeConfig.listMcpServers(input),
       [WS_METHODS.providerMcpServerLogin]: (input) => providerNativeConfig.loginMcpServer(input),
       [WS_METHODS.providerMcpServersReload]: (input) =>

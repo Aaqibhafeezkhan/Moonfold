@@ -493,3 +493,28 @@ export function buildThreadTitlePrompt(input: ThreadTitlePromptInput) {
 
   return { prompt, outputSchema };
 }
+
+const SIDE_QUESTION_PROMPT = [
+  "You are answering a quick side question about a coding conversation between a user and an",
+  "AI coding agent. The conversation is below. Answer the user's question directly and briefly,",
+  "using only what the conversation shows; say so plainly when it does not contain the answer.",
+  "Do not continue the agent's work and do not propose running commands.",
+].join(" ");
+
+/** Prompt for a question asked beside a thread; the reply never joins the thread. */
+export function buildSideQuestionPrompt(input: {
+  readonly conversation: string;
+  readonly question: string;
+}) {
+  const prompt = `${SIDE_QUESTION_PROMPT}
+
+Conversation:
+${input.conversation}
+
+Question:
+${input.question}
+
+Reply as JSON with one key, "answer", holding Markdown.`;
+  const outputSchema = Schema.Struct({ answer: Schema.String });
+  return { prompt, outputSchema };
+}

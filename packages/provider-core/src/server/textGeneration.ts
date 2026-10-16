@@ -70,6 +70,19 @@ export interface ThreadTitleGenerationInput {
   modelSelection: ModelSelection;
 }
 
+/** A question about a thread, answered beside it without joining its conversation. */
+export interface SideQuestionInput {
+  cwd: string;
+  /** The thread's recent conversation, oldest first, already trimmed to fit. */
+  conversation: string;
+  question: string;
+  modelSelection: ModelSelection;
+}
+
+export interface SideQuestionResult {
+  answer: string;
+}
+
 export interface ThreadTitleGenerationResult {
   title: string;
   needsRefinement?: boolean | undefined;
@@ -142,6 +155,11 @@ export interface ProviderTextGeneration {
   readonly generateThreadTitle: (
     input: ThreadTitleGenerationInput,
   ) => Effect.Effect<ThreadTitleGenerationResult, TextGenerationError>;
+
+  /** Answer a question about a thread from its conversation, without tools. */
+  readonly answerSideQuestion: (
+    input: SideQuestionInput,
+  ) => Effect.Effect<SideQuestionResult, TextGenerationError>;
 
   /** Explain a change request to the maintainer deciding whether it lands. */
   readonly generateReviewGuide: (

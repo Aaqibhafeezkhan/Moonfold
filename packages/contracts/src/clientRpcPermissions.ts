@@ -14,6 +14,8 @@ export const CLIENT_GUARDED_RPC_SCOPES = {
   [WS_METHODS.serverRunStorageCleanup]: AuthSettingsWriteScope,
   // Instruction files steer every agent run, so writing one is a settings change.
   [WS_METHODS.agentInstructionsWrite]: AuthSettingsWriteScope,
+  // A side question runs the thread's model, like starting a turn.
+  [WS_METHODS.threadsAskSideQuestion]: AuthOrchestrationOperateScope,
   // Endpoint checks exist to configure exports, so they need the same grant as saving them.
   [WS_METHODS.serverCheckOtlpEndpoint]: AuthSettingsWriteScope,
   [WS_METHODS.pullRequestsRunAction]: AuthSourceControlWriteScope,

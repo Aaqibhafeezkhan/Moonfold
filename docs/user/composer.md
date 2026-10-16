@@ -123,6 +123,14 @@ the text is an unedited recalled prompt, with the caret on the first visual line
 the last visual line for `ArrowDown`, counting wrapped lines. Editing a recalled prompt turns it
 into a normal draft.
 
+## Ask on the side
+
+Select the question-mark bubble in the thread header to ask a quick question about the thread,
+such as "which files did the agent change?". The thread's model answers from the recent
+conversation in that popover. Nothing is added to the thread, and a turn that is running carries
+on. The model has no tools here, so it answers only from what the conversation shows. Answers are
+gone when you leave the thread.
+
 ## Send a failed message again
 
 When the agent's latest turn fails, select **Send again** under the error to send the same message

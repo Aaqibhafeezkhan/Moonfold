@@ -25,6 +25,7 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { toastManager } from "../ui/toast";
 import { Toggle } from "../ui/toggle";
 import { isThreadPopoutWindow } from "~/threadPopout";
+import { SideQuestionPopover } from "./SideQuestionPopover";
 import { useThreadActionMenu } from "~/hooks/useThreadActionMenu";
 import { readLocalApi } from "~/localApi";
 import { threadEnvironment } from "../../state/threads";
@@ -438,6 +439,12 @@ export const ChatHeader = memo(function ChatHeader({
           )}
         </WorkspaceBreadcrumbItem>
       </WorkspaceBreadcrumb>
+      {isServerThread ? (
+        <SideQuestionPopover
+          key={`${activeThreadEnvironmentId}:${activeThreadId}`}
+          threadRef={activeThreadRef}
+        />
+      ) : null}
       {isThreadPopoutWindow ? <KeepWindowOnTopToggle /> : null}
     </div>
   );

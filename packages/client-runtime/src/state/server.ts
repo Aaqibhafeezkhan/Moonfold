@@ -1052,6 +1052,10 @@ export function createServerEnvironmentAtoms<R, E>(
         runStream(WS_METHODS.providerMcpServerLogin, input),
       idleTtlMs: 0,
     }),
+    askThreadSideQuestion: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:threads:ask-side-question",
+      tag: WS_METHODS.threadsAskSideQuestion,
+    }),
     listAgentInstructions: createEnvironmentRpcCommand(runtime, {
       label: "environment-data:agent-instructions:list",
       tag: WS_METHODS.agentInstructionsList,

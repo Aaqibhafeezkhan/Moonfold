@@ -273,6 +273,8 @@ export const makeManagedCodexProvider = Effect.fn("makeManagedCodexProvider")(fu
       protect("generateThreadTitle", nativeGeneration.generateThreadTitle(value)),
     generateReviewGuide: (value) =>
       protect("generateReviewGuide", nativeGeneration.generateReviewGuide(value)),
+    answerSideQuestion: (value) =>
+      protect("answerSideQuestion", nativeGeneration.answerSideQuestion(value)),
   };
   const nativeConfig = makeCodexNativeConfig({
     driver: DRIVER,

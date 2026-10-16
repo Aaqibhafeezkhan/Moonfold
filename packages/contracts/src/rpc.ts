@@ -325,6 +325,11 @@ import {
 } from "./providerUsageLimits.ts";
 import { UsagePricing, UsageReadError, UsageSummary, UsageSummaryInput } from "./usage.ts";
 import {
+  ThreadSideQuestionError,
+  ThreadSideQuestionInput,
+  ThreadSideQuestionResult,
+} from "./sideQuestion.ts";
+import {
   AgentInstructionsError,
   AgentInstructionsList,
   AgentInstructionsListInput,
@@ -405,6 +410,7 @@ export const WS_METHODS = {
   projectsMutate: "projects.mutate",
   agentInstructionsList: "agentInstructions.list",
   agentInstructionsWrite: "agentInstructions.write",
+  threadsAskSideQuestion: "threads.askSideQuestion",
   projectsEnsureScratch: "projects.ensureScratch",
   projectsCreateNew: "projects.createNew",
 
@@ -1340,6 +1346,12 @@ const WsAgentInstructionsListRpc = Rpc.make(WS_METHODS.agentInstructionsList, {
   error: Schema.Union([AgentInstructionsError, EnvironmentAuthorizationError]),
 });
 
+const WsThreadsAskSideQuestionRpc = Rpc.make(WS_METHODS.threadsAskSideQuestion, {
+  payload: ThreadSideQuestionInput,
+  success: ThreadSideQuestionResult,
+  error: Schema.Union([ThreadSideQuestionError, EnvironmentAuthorizationError]),
+});
+
 const WsAgentInstructionsWriteRpc = Rpc.make(WS_METHODS.agentInstructionsWrite, {
   payload: AgentInstructionsWriteInput,
   success: AgentInstructionsWriteResult,
@@ -2154,6 +2166,7 @@ export const WsRpcGroupPart3 = RpcGroup.make(
 ).middleware(RpcScopeAuthorization);
 
 export const WsRpcGroupPart4 = RpcGroup.make(
+  WsThreadsAskSideQuestionRpc,
   WsTerminalObserveRpc,
   WsTerminalWriteRpc,
   WsTerminalResizeRpc,
