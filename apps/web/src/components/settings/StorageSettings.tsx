@@ -107,11 +107,15 @@ function RetentionControl({
   value,
   onChange,
   minimum = 1,
+  maximum = 3650,
+  unit = "days",
 }: {
   label: string;
   value: number | null;
   onChange: (value: number | null) => void;
   minimum?: number;
+  maximum?: number;
+  unit?: string;
 }) {
   const [draft, setDraft] = useState(value);
   const [savedValue, setSavedValue] = useState(value);
@@ -126,7 +130,7 @@ function RetentionControl({
         <NumberField
           value={draft}
           min={minimum}
-          max={3650}
+          max={maximum}
           step={1}
           size="sm"
           className="w-auto"
@@ -134,21 +138,21 @@ function RetentionControl({
           onValueCommitted={(next) => {
             if (next === null) setDraft(value);
             else {
-              const days = Math.min(3650, Math.max(minimum, Math.round(next)));
-              setDraft(days);
-              onChange(days);
+              const clamped = Math.min(maximum, Math.max(minimum, Math.round(next)));
+              setDraft(clamped);
+              onChange(clamped);
             }
           }}
         >
           <NumberFieldGroup>
             <NumberFieldDecrement aria-label={`Decrease ${label}`} />
             <NumberFieldInput
-              aria-label={`${label} in days`}
+              aria-label={`${label} in ${unit}`}
               size={new Intl.NumberFormat().format(draft ?? value).length}
               className="field-sizing-content w-auto min-w-[1ch] grow-0 text-right"
             />
             <span aria-hidden="true" className="self-center pr-2 text-xs">
-              days
+              {unit}
             </span>
             <NumberFieldIncrement aria-label={`Increase ${label}`} />
           </NumberFieldGroup>
@@ -276,7 +280,8 @@ function CleanupSection() {
       rules.worktreeSettledAfterDays !== null ||
       rules.worktreeOnMerge ||
       rules.worktreeOnDelete ||
-      rules.worktreeUnchanged;
+      rules.worktreeUnchanged ||
+      rules.worktreeKeepRecent !== null;
     return (
       settings.storageCleanup.browserArtifactsAfterDays !== null ||
       settings.storageCleanup.logsAfterDays !== null ||
@@ -567,6 +572,35 @@ export function StorageSettingsPanel() {
                       onChange={(worktreeSettledAfterDays) =>
                         updateWorktree({ worktreeSettledAfterDays })
                       }
+                    />
+                  }
+                />
+              )}
+            {connectedEnvironments.length > 0 &&
+              connectedEnvironments.every(
+                (environment) =>
+                  environment.serverConfig?.environment.capabilities.worktreeKeepRecentCleanup ===
+                  true,
+              ) && (
+                <SettingsRow
+                  title="Keep only recent worktrees"
+                  status={[
+                    ruleStatus("worktreeKeepRecent"),
+                    environments.length > connectedEnvironments.length
+                      ? "Offline machines will not get this setting"
+                      : undefined,
+                  ]
+                    .filter(Boolean)
+                    .join(". ")}
+                  description="Keep this many of each project's most recently active worktrees and remove older ones. Branches and thread history are kept."
+                  serverScoped={!isProjectScope}
+                  control={
+                    <RetentionControl
+                      label="Keep only recent worktrees"
+                      value={settings.worktreeKeepRecent}
+                      maximum={1000}
+                      unit="worktrees"
+                      onChange={(worktreeKeepRecent) => updateWorktree({ worktreeKeepRecent })}
                     />
                   }
                 />

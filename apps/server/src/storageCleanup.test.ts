@@ -985,6 +985,46 @@ describe("settled worktree retention", () => {
   );
 });
 
+describe("keep-recent worktree retention", () => {
+  it.effect("removes worktrees beyond the most recent ones and keeps the rest", () =>
+    Effect.gen(function* () {
+      yield* TestClock.setTime(NOW_MS);
+      const fixture = yield* cleanupFixture();
+      const older = `${fixture.config.worktreesDir}/older`;
+      yield* fixture.command(fixture.repo, ["worktree", "add", "-b", "older", older]);
+      fixture.setSettings({
+        storageCleanup: { ...DEFAULT_SERVER_SETTINGS.storageCleanup, worktreeKeepRecent: 1 },
+      });
+      fixture.setThreads([
+        shell({ branch: "feature", worktreePath: fixture.worktree, updatedAt: at(-DAY_MS) }),
+        shell({
+          id: ThreadId.make("thread-2"),
+          branch: "older",
+          worktreePath: older,
+          updatedAt: at(-5 * DAY_MS),
+        }),
+      ]);
+      const report = yield* fixture.service.runNow;
+
+      expect(yield* fixture.fs.exists(older)).toBe(false);
+      expect(yield* fixture.fs.exists(fixture.worktree)).toBe(true);
+      expect(report.counts.removed).toBe(1);
+      expect(report.entries).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: expect.stringContaining("older"),
+            outcome: "removed",
+          }),
+          expect.objectContaining({
+            outcome: "kept",
+            reason: "One of the 1 most recently active worktrees",
+          }),
+        ]),
+      );
+    }).pipe(Effect.provide(cleanupTestLayer), Effect.scoped),
+  );
+});
+
 describe("settled worktree rechecks", () => {
   it.live.each([{ settledAt: null }, { settledAt: at(DAY_MS) }])(
     "keeps a checkout changed during measurement (%j)",

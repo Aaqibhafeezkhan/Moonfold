@@ -83,6 +83,7 @@ beforeEach(() => {
       worktreeOnMerge: false,
       worktreeOnDelete: false,
       worktreeUnchanged: false,
+      worktreeKeepRecent: null,
       browserArtifactsAfterDays: null,
       logsAfterDays: null,
     },
