@@ -325,6 +325,13 @@ import {
 } from "./providerUsageLimits.ts";
 import { UsagePricing, UsageReadError, UsageSummary, UsageSummaryInput } from "./usage.ts";
 import {
+  AgentInstructionsError,
+  AgentInstructionsList,
+  AgentInstructionsListInput,
+  AgentInstructionsWriteInput,
+  AgentInstructionsWriteResult,
+} from "./agentInstructions.ts";
+import {
   ProviderAccountUsage,
   ProviderAgentImportDetectResult,
   ProviderAgentImportInput,
@@ -396,6 +403,8 @@ export const WS_METHODS = {
   projectsSearchEntries: "projects.searchEntries",
   projectsWriteFile: "projects.writeFile",
   projectsMutate: "projects.mutate",
+  agentInstructionsList: "agentInstructions.list",
+  agentInstructionsWrite: "agentInstructions.write",
   projectsEnsureScratch: "projects.ensureScratch",
   projectsCreateNew: "projects.createNew",
 
@@ -1325,6 +1334,18 @@ const WsProjectsWriteFileRpc = Rpc.make(WS_METHODS.projectsWriteFile, {
   error: Schema.Union([ProjectWriteFileError, EnvironmentAuthorizationError]),
 });
 
+const WsAgentInstructionsListRpc = Rpc.make(WS_METHODS.agentInstructionsList, {
+  payload: AgentInstructionsListInput,
+  success: AgentInstructionsList,
+  error: Schema.Union([AgentInstructionsError, EnvironmentAuthorizationError]),
+});
+
+const WsAgentInstructionsWriteRpc = Rpc.make(WS_METHODS.agentInstructionsWrite, {
+  payload: AgentInstructionsWriteInput,
+  success: AgentInstructionsWriteResult,
+  error: Schema.Union([AgentInstructionsError, EnvironmentAuthorizationError]),
+});
+
 const WsProjectsMutateRpc = Rpc.make(WS_METHODS.projectsMutate, {
   payload: ProjectMutation,
   success: Project,
@@ -2084,6 +2105,8 @@ export const WsRpcGroup = RpcGroup.make(
   WsProjectsCreateNewRpc,
   WsProjectsWriteFileRpc,
   WsProjectsMutateRpc,
+  WsAgentInstructionsListRpc,
+  WsAgentInstructionsWriteRpc,
   WsShellOpenInEditorRpc,
   WsFilesystemBrowseRpc,
   WsFilesystemGetMetadataRpc,

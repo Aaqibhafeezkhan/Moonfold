@@ -31,6 +31,8 @@ const RPC_AGGREGATES = {
   [ORCHESTRATION_V2_WS_METHODS.subscribeShell]: "orchestrationV2",
   [ORCHESTRATION_V2_WS_METHODS.subscribeThread]: "orchestrationV2",
   [WS_METHODS.projectsMutate]: "orchestration",
+  [WS_METHODS.agentInstructionsList]: "server",
+  [WS_METHODS.agentInstructionsWrite]: "server",
   [WS_METHODS.serverProbe]: "server",
   [WS_METHODS.serverGetConfig]: "server",
   [WS_METHODS.serverRefreshProviders]: "server",

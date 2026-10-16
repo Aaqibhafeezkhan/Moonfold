@@ -1052,6 +1052,14 @@ export function createServerEnvironmentAtoms<R, E>(
         runStream(WS_METHODS.providerMcpServerLogin, input),
       idleTtlMs: 0,
     }),
+    listAgentInstructions: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:agent-instructions:list",
+      tag: WS_METHODS.agentInstructionsList,
+    }),
+    writeAgentInstructions: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:agent-instructions:write",
+      tag: WS_METHODS.agentInstructionsWrite,
+    }),
     listProviderMcpServers: createEnvironmentRpcCommand(runtime, {
       label: "environment-data:provider:mcp-servers:list",
       tag: WS_METHODS.providerMcpServersList,

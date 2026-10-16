@@ -1,4 +1,7 @@
 // @effect-diagnostics nodeBuiltinImport:off - CLI integration exercises Node HTTP and filesystem boundaries.
+// @effect-diagnostics anyUnknownInErrorContext:off - Inferring Command.runWith over the whole CLI here exceeds
+// TypeScript's nested inference limit (the WebSocket RPC group has 200+ methods) and widens to any. The
+// CLI's real requirements stay fully typed; binCli.types.test.ts fails if they ever become any.
 import * as NodeHttp from "node:http";
 import * as NodeFS from "node:fs";
 import * as NodeOS from "node:os";
