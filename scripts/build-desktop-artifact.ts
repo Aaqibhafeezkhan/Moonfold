@@ -2901,7 +2901,7 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
       category: "Development",
       synopsis: "Desktop GUI for coding agents",
       // Required by the .deb control file.
-      maintainer: "T3 Tools <hello@t3.codes>",
+      maintainer: "Moonfold contributors <https://github.com/Mr-Dark-debug/Moonfold>",
       // electron-builder turns these into MimeType=x-scheme-handler/<scheme>;
       // in the .desktop entry (Exec already gets %U), so browsers can hand
       // t3code:// OAuth callbacks to the app.
@@ -3872,8 +3872,8 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
       "T3 Code is an open-source desktop app for coding agents. Work with your existing agent subscriptions, review code changes, and run commands in your projects. Connect from desktop, web, or mobile to continue working remotely.",
     license: "MIT",
     // Required by the .deb control file.
-    homepage: "https://t3.codes",
-    author: "T3 Tools",
+    homepage: "https://github.com/Mr-Dark-debug/Moonfold",
+    author: "Moonfold contributors",
     main: "apps/desktop/dist-electron/boot.cjs",
     build: yield* createBuildConfig(
       options.platform,
