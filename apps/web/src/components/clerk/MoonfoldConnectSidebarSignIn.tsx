@@ -3,22 +3,22 @@ import { LogInIcon } from "lucide-react";
 
 import { hasCloudPublicConfig } from "../../cloud/publicConfig";
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "../ui/sidebar";
-import { T3_CONNECT_ACCOUNT_PAGES } from "./T3ConnectAccountPages";
-import { useT3ConnectAuthPrompt } from "./useT3ConnectAuthPrompt";
+import { MOONFOLD_CONNECT_ACCOUNT_PAGES } from "./MoonfoldConnectAccountPages";
+import { useMoonfoldConnectAuthPrompt } from "./useMoonfoldConnectAuthPrompt";
 
-export function T3ConnectSidebarSignIn() {
+export function MoonfoldConnectSidebarSignIn() {
   if (!hasCloudPublicConfig()) return null;
 
-  return <ConfiguredT3ConnectSidebarSignIn />;
+  return <ConfiguredMoonfoldConnectSidebarSignIn />;
 }
 
-export function T3ConnectSidebarAvatar() {
+export function MoonfoldConnectSidebarAvatar() {
   if (!hasCloudPublicConfig()) return null;
 
-  return <ConfiguredT3ConnectSidebarAvatar />;
+  return <ConfiguredMoonfoldConnectSidebarAvatar />;
 }
 
-function ConfiguredT3ConnectSidebarAvatar() {
+function ConfiguredMoonfoldConnectSidebarAvatar() {
   const { isLoaded, isSignedIn } = useAuth();
 
   if (!isLoaded || !isSignedIn) return null;
@@ -32,7 +32,7 @@ function ConfiguredT3ConnectSidebarAvatar() {
         },
       }}
     >
-      {T3_CONNECT_ACCOUNT_PAGES.map((page) => (
+      {MOONFOLD_CONNECT_ACCOUNT_PAGES.map((page) => (
         <UserButton.UserProfilePage
           key={page.url}
           label={page.label}
@@ -46,9 +46,9 @@ function ConfiguredT3ConnectSidebarAvatar() {
   );
 }
 
-function ConfiguredT3ConnectSidebarSignIn() {
+function ConfiguredMoonfoldConnectSidebarSignIn() {
   const { isLoaded, isSignedIn } = useAuth();
-  const { authPrompt, openAuthPrompt } = useT3ConnectAuthPrompt();
+  const { authPrompt, openAuthPrompt } = useMoonfoldConnectAuthPrompt();
 
   if (!isLoaded || isSignedIn) return null;
 
@@ -58,7 +58,7 @@ function ConfiguredT3ConnectSidebarSignIn() {
         <SidebarMenuItem>
           <SidebarMenuButton onClick={openAuthPrompt}>
             <LogInIcon />
-            <span>Sign in to T3 Connect</span>
+            <span>Sign in to Moonfold Connect</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>

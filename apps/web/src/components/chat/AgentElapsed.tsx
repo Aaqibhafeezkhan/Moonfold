@@ -1,6 +1,6 @@
-import type { RuntimeSubagent } from "@t3tools/client-runtime/state/subagentRuntime";
-import { isOrchestrationV2WorkActive } from "@t3tools/contracts";
-import { deriveSubagentElapsedMs } from "@t3tools/shared/orchestrationTiming";
+import type { RuntimeSubagent } from "@moonfold/client-runtime/state/subagentRuntime";
+import { isOrchestrationV2WorkActive } from "@moonfold/contracts";
+import { deriveSubagentElapsedMs } from "@moonfold/shared/orchestrationTiming";
 import { useEffect, useRef } from "react";
 
 function formatElapsedSeconds(totalSeconds: number): string {

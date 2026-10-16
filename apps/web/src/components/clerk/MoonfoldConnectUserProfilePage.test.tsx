@@ -1,9 +1,9 @@
-import type { EnvironmentId } from "@t3tools/contracts";
-import type { RelayClientEnvironmentRecord } from "@t3tools/contracts/relay";
+import type { EnvironmentId } from "@moonfold/contracts";
+import type { RelayClientEnvironmentRecord } from "@moonfold/contracts/relay";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vite-plus/test";
 
-import { T3ConnectEnvironmentRow } from "./T3ConnectUserProfilePage";
+import { MoonfoldConnectEnvironmentRow } from "./MoonfoldConnectUserProfilePage";
 
 const environment: RelayClientEnvironmentRecord = {
   environmentId: "environment-1" as EnvironmentId,
@@ -24,7 +24,7 @@ function renderRow({
   readonly mutationPending?: boolean;
 } = {}) {
   return renderToStaticMarkup(
-    <T3ConnectEnvironmentRow
+    <MoonfoldConnectEnvironmentRow
       environment={environment}
       confirmationOpen={confirmationOpen}
       mutationPending={mutationPending}
@@ -34,7 +34,7 @@ function renderRow({
   );
 }
 
-describe("T3 Connect environment row", () => {
+describe("Moonfold Connect environment row", () => {
   it("keeps deregistration confirmation inline and collapsed by default", () => {
     const markup = renderRow();
 

@@ -1,4 +1,4 @@
-import type { EnvironmentId, ScopedThreadRef } from "@t3tools/contracts";
+import type { EnvironmentId, ScopedThreadRef } from "@moonfold/contracts";
 import { type RefObject, useEffect, useEffectEvent, useSyncExternalStore } from "react";
 
 /**
@@ -9,7 +9,7 @@ import { type RefObject, useEffect, useEffectEvent, useSyncExternalStore } from 
  * re-render the ghost.
  */
 
-export const THREAD_CONTEXT_DROP_EVENT = "t3-thread-context-drop";
+export const THREAD_CONTEXT_DROP_EVENT = "moonfold-thread-context-drop";
 
 export function useThreadContextDrop(
   targetRef: RefObject<EventTarget | null>,
