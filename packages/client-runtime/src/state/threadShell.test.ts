@@ -5,7 +5,7 @@ import {
   RuntimeRequestId,
   ThreadId,
   type OrchestrationV2ShellSnapshot,
-} from "@t3tools/contracts";
+} from "@moonfold/contracts";
 import * as Option from "effect/Option";
 import { Atom, AtomRegistry } from "effect/reactivity";
 import { describe, expect, it } from "vite-plus/test";

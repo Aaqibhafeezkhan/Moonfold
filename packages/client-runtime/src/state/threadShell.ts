@@ -6,8 +6,8 @@ import type {
   ScopedProjectRef,
   ScopedThreadRef,
   ThreadId,
-} from "@t3tools/contracts";
-import { isProviderNativeSubagentThread } from "@t3tools/contracts";
+} from "@moonfold/contracts";
+import { isProviderNativeSubagentThread } from "@moonfold/contracts";
 import { Atom } from "effect/reactivity";
 
 import type { EnvironmentThreadShell, PendingSubagentRequest } from "./models.ts";
