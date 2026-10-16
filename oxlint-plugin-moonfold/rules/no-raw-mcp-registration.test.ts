@@ -2,12 +2,12 @@ import { assert, describe } from "@effect/vitest";
 
 import { createOxlintRuleHarness } from "../test/utils.ts";
 
-const rule = createOxlintRuleHarness("t3code/no-raw-mcp-registration");
-const testFile = createOxlintRuleHarness("t3code/no-raw-mcp-registration", {
+const rule = createOxlintRuleHarness("moonfold/no-raw-mcp-registration");
+const testFile = createOxlintRuleHarness("moonfold/no-raw-mcp-registration", {
   filename: "server.test.ts",
 });
 
-describe("t3code/no-raw-mcp-registration", () => {
+describe("moonfold/no-raw-mcp-registration", () => {
   rule.valid(
     "allows the rest of effect/ai and type-only McpServer imports",
     `
@@ -95,7 +95,7 @@ describe("t3code/no-raw-mcp-registration", () => {
   rule.invalid(
     "reports McpServer.resource and McpServer.prompt",
     `
-      export const resource = McpServer.resource({ uri: "t3://x", name: "x", content: "x" });
+      export const resource = McpServer.resource({ uri: "moonfold://x", name: "x", content: "x" });
       export const prompt = McpServer.prompt({ name: "x", content: () => "x" });
     `,
   );
