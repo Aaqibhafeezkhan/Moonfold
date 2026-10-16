@@ -90,7 +90,8 @@ function main(): void {
   const hits: Array<BrandHit> = [];
   for (const file of files) {
     const absolute = NodePath.join(repoRoot, file);
-    if (!NodeFS.existsSync(absolute)) continue;
+    // Submodule gitlinks are listed too; CI checks them out as directories.
+    if (!NodeFS.statSync(absolute, { throwIfNoEntry: false })?.isFile()) continue;
     const bytes = NodeFS.readFileSync(absolute);
     if (bytes.includes(0)) continue;
     hits.push(...findBrandHits(file, bytes.toString("utf8")));
