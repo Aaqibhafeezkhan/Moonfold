@@ -25,6 +25,7 @@ import type {
   ProviderOptionDescriptor,
   ServerProviderModel,
   ServerProviderSkill,
+  RuntimeMode,
 } from "@moonfold/contracts";
 import { PREFERRED_DEFAULT_CODEX_MODELS, ServerSettingsError } from "@moonfold/contracts";
 
@@ -85,6 +86,29 @@ export interface CodexAppServerProviderSnapshot {
   readonly version: string | undefined;
   readonly models: ReadonlyArray<ServerProviderModel>;
   readonly skills: ReadonlyArray<ServerProviderSkill>;
+  /** Permission modes Codex's effective requirements allow; undefined when Codex did not say. */
+  readonly allowedRuntimeModes?: ReadonlyArray<RuntimeMode>;
+}
+
+/** The built-in Codex permission profile each Moonfold permission mode runs under. */
+const RUNTIME_MODE_PERMISSION_PROFILES: Readonly<Record<RuntimeMode, string>> = {
+  "approval-required": ":read-only",
+  "auto-accept-edits": ":workspace",
+  auto: ":workspace",
+  "full-access": ":danger-full-access",
+};
+
+/**
+ * Permission modes whose Codex profile the effective requirements (for example an
+ * organization's managed config) allow. A profile Codex does not list stays allowed.
+ */
+export function codexAllowedRuntimeModes(
+  profiles: CodexSchema.V2PermissionProfileListResponse["data"],
+): ReadonlyArray<RuntimeMode> {
+  const allowedById = new Map(profiles.map((profile) => [profile.id, profile.allowed]));
+  return (Object.keys(RUNTIME_MODE_PERMISSION_PROFILES) as Array<RuntimeMode>).filter(
+    (mode) => allowedById.get(RUNTIME_MODE_PERMISSION_PROFILES[mode]) !== false,
+  );
 }
 
 const REASONING_EFFORT_LABELS: Readonly<Record<string, string>> = {
@@ -502,7 +526,7 @@ const probeCodexAppServerProvider = Effect.fn("probeCodexAppServerProvider")(fun
     } satisfies CodexAppServerProviderSnapshot;
   }
 
-  const [skillsResponse, models, rateLimits] = yield* Effect.all(
+  const [skillsResponse, models, rateLimits, allowedRuntimeModes] = yield* Effect.all(
     [
       client.request("skills/list", {
         cwds: [input.cwd],
@@ -533,6 +557,17 @@ const probeCodexAppServerProvider = Effect.fn("probeCodexAppServerProvider")(fun
               ),
             ),
           ),
+      // Older CLIs lack the method; then every mode stays available.
+      client.request("permissionProfile/list", { cwd: input.cwd }).pipe(
+        Effect.map((response) => codexAllowedRuntimeModes(response.data)),
+        Effect.timeoutOption(Duration.millis(RATE_LIMITS_PROBE_TIMEOUT_MS)),
+        Effect.map(Option.getOrUndefined),
+        Effect.catch((error) =>
+          Effect.logDebug("Codex permission profile read failed.", { cause: error }).pipe(
+            Effect.as(undefined),
+          ),
+        ),
+      ),
     ],
     { concurrency: "unbounded" },
   );
@@ -545,6 +580,7 @@ const probeCodexAppServerProvider = Effect.fn("probeCodexAppServerProvider")(fun
       appendCustomCodexModels(models, input.customModels ?? []),
     ),
     skills: parseCodexSkillsListResponse(skillsResponse, input.cwd),
+    ...(allowedRuntimeModes === undefined ? {} : { allowedRuntimeModes }),
   } satisfies CodexAppServerProviderSnapshot;
 });
 
@@ -756,7 +792,10 @@ export const checkCodexProviderStatus = Effect.fn("checkCodexProviderStatus")(fu
           });
 
   return buildServerProvider({
-    presentation: CODEX_PRESENTATION,
+    presentation:
+      snapshot.allowedRuntimeModes === undefined
+        ? CODEX_PRESENTATION
+        : { ...CODEX_PRESENTATION, supportedRuntimeModes: snapshot.allowedRuntimeModes },
     enabled: codexSettings.enabled,
     checkedAt,
     models: snapshot.models,

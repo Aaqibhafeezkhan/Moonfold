@@ -25,6 +25,10 @@ Providers enforce permissions differently. Some read-only actions can proceed in
 including OpenCode and Antigravity, fall back to asking. On Grok, commands its review blocks come
 to you for approval.
 
+Codex hides a mode when your Codex requirements (for example, settings your organization
+manages) don't allow the permission level it needs. Without full access allowed, for instance,
+**Full access** is not offered.
+
 Muse Code offers only **Supervised** and **Full access**. A Muse thread already set to another mode
 runs in **Supervised**.
 
