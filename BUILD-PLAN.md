@@ -48,37 +48,37 @@ Non-goals for the beta: hosted cloud service, accounts, billing, resale of token
 
 Source of truth for Codex features: official docs index at learn.chatgpt.com/llms.txt and the pages below. "Verify T3" means check in Phase 0 whether T3 already has it.
 
-| Feature | How we get it | Phase |
-|---|---|---|
-| Projects, chats, threads, pinned, archived | T3 has projects/threads; add archive/pin via `thread/archive`, `thread/metadata/update` | 2 |
-| Parallel threads, worktrees, PR flow, diff review | T3 has these; verify and polish | 2 |
-| Goals with token budget | `thread/goal/set/get/clear`, `thread/goal/updated` | 2 |
-| Plan mode, plan items | `turn/plan/updated`, `plan` items, collaboration modes | 2 |
-| Steer vs queue follow-up setting | `turn/steer` vs queued `turn/start`; setting in General | 2 |
-| Review mode (uncommitted, branch, commit, custom) | `review/start` | 2 |
-| Fork, revert, compact thread | `thread/fork`, `thread/revert`, `thread/compact/start` | 2 |
-| Approvals and permission profiles | approval requests, `permissionProfile/list`; T3 has permission modes | 2 |
-| Model and effort pickers | `model/list` (never hard-code), per-provider equivalents | 2 |
-| Usage and rate-limit meter, usage profile | `account/rateLimits/read`, `account/rateLimits/updated`, `account/usage/read` | 2 |
-| Skills manager | `skills/list`, `skills/config/write`, `skills/changed`, SKILL.md editor | 2 |
-| MCP manager with OAuth and status | `mcpServerStatus/list`, `mcpServer/oauth/login`, `config/mcpServer/reload` | 2 |
-| AGENTS.md and personalization editor | files plus `config/read`, `config/value/write` | 2 |
-| Hooks viewer | `hooks/list`, `hook/started`, `hook/completed` | 2 |
-| Sub-agent tree | `thread/list` with `parentThreadId` (experimental), `collabToolCall` items | 2 |
-| Import from other agents | `externalAgentConfig/detect` and `import`; our own importer for non-Codex sources | 2 |
-| Settings parity (General, Notifications, Appearance with themes and fonts, Keyboard shortcuts, Personalization, Archived) | build, using public docs as the checklist | 2 |
-| Pop-out chat window, always on top | Electron BrowserWindow | 2 |
-| Scheduled tasks (standalone and inside a chat) | our own scheduler: cron engine in the server, optional background service (T3 has one), runs a real turn with skills | 3 |
-| Built-in browser pane with page comments | Electron WebContentsView, annotation overlay, comments become prompt context | 3 |
-| Computer use | our own MCP server, per-OS native automation, permission gated, off by default | 3 |
-| Artifacts viewer (md, pdf, docx, xlsx, images, html) | renderers for open formats | 3 |
-| Plugins (skills + MCP + apps bundle) | our own marketplace on git repos. The protocol's `plugin/*` methods are marked under development, so do not use them in shipped code | 3 |
-| Memories | local memory store (SQLite), per-project and global, user controlled, visible and editable | 3 |
-| Image generation and image inputs | image input via `localImage` items; generation through an MCP tool, provider agnostic | 3 |
-| Voice, pets, appshots | stretch goals, only after everything above is solid | 8+ |
-| Provider handoff on limits | our event log plus handoff engine | 4 |
-| Gemini CLI and more providers | adapters, ACP evaluation | 5 |
-| Remote access, background service, mobile pairing | T3 has them; rebuild on our own relay or drop for beta | 1, 7 |
+| Feature                                                                                                                   | How we get it                                                                                                                        | Phase |
+| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----- |
+| Projects, chats, threads, pinned, archived                                                                                | T3 has projects/threads; add archive/pin via `thread/archive`, `thread/metadata/update`                                              | 2     |
+| Parallel threads, worktrees, PR flow, diff review                                                                         | T3 has these; verify and polish                                                                                                      | 2     |
+| Goals with token budget                                                                                                   | `thread/goal/set/get/clear`, `thread/goal/updated`                                                                                   | 2     |
+| Plan mode, plan items                                                                                                     | `turn/plan/updated`, `plan` items, collaboration modes                                                                               | 2     |
+| Steer vs queue follow-up setting                                                                                          | `turn/steer` vs queued `turn/start`; setting in General                                                                              | 2     |
+| Review mode (uncommitted, branch, commit, custom)                                                                         | `review/start`                                                                                                                       | 2     |
+| Fork, revert, compact thread                                                                                              | `thread/fork`, `thread/revert`, `thread/compact/start`                                                                               | 2     |
+| Approvals and permission profiles                                                                                         | approval requests, `permissionProfile/list`; T3 has permission modes                                                                 | 2     |
+| Model and effort pickers                                                                                                  | `model/list` (never hard-code), per-provider equivalents                                                                             | 2     |
+| Usage and rate-limit meter, usage profile                                                                                 | `account/rateLimits/read`, `account/rateLimits/updated`, `account/usage/read`                                                        | 2     |
+| Skills manager                                                                                                            | `skills/list`, `skills/config/write`, `skills/changed`, SKILL.md editor                                                              | 2     |
+| MCP manager with OAuth and status                                                                                         | `mcpServerStatus/list`, `mcpServer/oauth/login`, `config/mcpServer/reload`                                                           | 2     |
+| AGENTS.md and personalization editor                                                                                      | files plus `config/read`, `config/value/write`                                                                                       | 2     |
+| Hooks viewer                                                                                                              | `hooks/list`, `hook/started`, `hook/completed`                                                                                       | 2     |
+| Sub-agent tree                                                                                                            | `thread/list` with `parentThreadId` (experimental), `collabToolCall` items                                                           | 2     |
+| Import from other agents                                                                                                  | `externalAgentConfig/detect` and `import`; our own importer for non-Codex sources                                                    | 2     |
+| Settings parity (General, Notifications, Appearance with themes and fonts, Keyboard shortcuts, Personalization, Archived) | build, using public docs as the checklist                                                                                            | 2     |
+| Pop-out chat window, always on top                                                                                        | Electron BrowserWindow                                                                                                               | 2     |
+| Scheduled tasks (standalone and inside a chat)                                                                            | our own scheduler: cron engine in the server, optional background service (T3 has one), runs a real turn with skills                 | 3     |
+| Built-in browser pane with page comments                                                                                  | Electron WebContentsView, annotation overlay, comments become prompt context                                                         | 3     |
+| Computer use                                                                                                              | our own MCP server, per-OS native automation, permission gated, off by default                                                       | 3     |
+| Artifacts viewer (md, pdf, docx, xlsx, images, html)                                                                      | renderers for open formats                                                                                                           | 3     |
+| Plugins (skills + MCP + apps bundle)                                                                                      | our own marketplace on git repos. The protocol's `plugin/*` methods are marked under development, so do not use them in shipped code | 3     |
+| Memories                                                                                                                  | local memory store (SQLite), per-project and global, user controlled, visible and editable                                           | 3     |
+| Image generation and image inputs                                                                                         | image input via `localImage` items; generation through an MCP tool, provider agnostic                                                | 3     |
+| Voice, pets, appshots                                                                                                     | stretch goals, only after everything above is solid                                                                                  | 8+    |
+| Provider handoff on limits                                                                                                | our event log plus handoff engine                                                                                                    | 4     |
+| Gemini CLI and more providers                                                                                             | adapters, ACP evaluation                                                                                                             | 5     |
+| Remote access, background service, mobile pairing                                                                         | T3 has them; rebuild on our own relay or drop for beta                                                                               | 1, 7  |
 
 ## 4. Phases
 
@@ -231,6 +231,7 @@ Goal: an original mark that reads as developer tooling, not a copy of anything. 
 Concept: Moonfold. A moon (crescent or phase) combined with a fold, one path that folds over and continues, which also reads as handoff. Keep it to one idea.
 
 Deliverables:
+
 - Three distinct concepts as SVG, rendered and screenshot-checked at 1024, 128, 32 and 16 px. Pick one with the owner.
 - Final master SVG, rounded-square app icon, macOS template tray icon (monochrome), Windows .ico, Linux PNG set, favicon, wordmark in an open-licensed font, light and dark variants, social preview 1280x640.
 - Palette: not black and white (OpenAI), not clay orange (Anthropic), not near-black cube (Cursor). Suggest deep ink navy with one signal accent (amber or electric violet), then verify contrast.

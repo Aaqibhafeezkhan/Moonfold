@@ -22,13 +22,16 @@ The market is crowded. T3 Code, its forks (Threadlines, OK Code and others), Con
 ## 3. Timeline
 
 T minus 14 to 7 days: private beta
+
 - Recruit 20 to 30 testers from the places the users already are: r/ClaudeAI, r/OpenAI, r/ChatGPTCoding, the T3, Claude Code and Codex Discords, X, LinkedIn. Ask for bugs, not stars.
 - Fix everything that breaks the first 5 minutes. Install friction kills launches.
 
 T minus 7 to 1 days
+
 - Record the final GIF and videos. Write the posts below. Line up 5 to 10 real developers who will try it on launch day and comment honestly (no scripts, no asking for upvotes in a coordinated way).
 
 Launch day (Tuesday to Thursday, around 14:00 to 16:00 Berlin time to hit US morning)
+
 1. Tag the release, flip the repo to polished state.
 2. Show HN: "Show HN: Moonfold, an open-source workspace where your coding task survives agent usage limits". Put the GIF and the honest limits in the first comment. Be present for hours answering.
 3. X thread (GIF first, then three features, then repo link).
@@ -38,6 +41,7 @@ Launch day (Tuesday to Thursday, around 14:00 to 16:00 Berlin time to hit US mor
 7. YouTube: a 5 to 8 minute demo and build-story video on your channel, link in the repo.
 
 T plus 1 to 30 days
+
 - Answer every issue in under 24 hours for the first two weeks. Ship a patch release within 3 days with a visible changelog. Thank bug reporters publicly.
 - Blog post (dev.to and your site): "How I made coding agents hand off context when limits hit". Technical posts keep paying stars for months.
 - Submit to relevant awesome lists, directories and newsletters (each has its own rules, read them).
