@@ -1,8 +1,9 @@
 import { SettingsGroup } from "./SettingsGroup";
 import { ChevronRightIcon } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 import { cn } from "~/lib/utils";
+import { useStableCallback } from "~/hooks/useStableCallback";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";
 import { useSettingsSearchTarget, useSettingsSearchTargetId } from "./settingsLayout";
 
@@ -17,6 +18,7 @@ export function FoldedSettingsSection({
   summary,
   control,
   headerPlacement = "inside",
+  onOpenChange,
   children,
 }: {
   readonly id: string;
@@ -24,9 +26,16 @@ export function FoldedSettingsSection({
   readonly summary?: string | null;
   readonly control?: ReactNode;
   readonly headerPlacement?: "inside" | "outside";
+  /** Called whenever the section opens or closes, for content that loads on first open. */
+  readonly onOpenChange?: (open: boolean) => void;
   readonly children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  // A settings search can open the section during render, so report from an effect.
+  const reportOpen = useStableCallback((next: boolean) => onOpenChange?.(next));
+  useEffect(() => {
+    reportOpen(open);
+  }, [open, reportOpen]);
   const searchTargetId = useSettingsSearchTargetId();
   const targetRef = useSettingsSearchTarget<HTMLElement>(id);
   // A search jump lands inside the fold, so open it before the scroll runs.

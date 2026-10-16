@@ -35,6 +35,8 @@ import * as ElectronMenu from "../../electron/ElectronMenu.ts";
 import * as ElectronShell from "../../electron/ElectronShell.ts";
 import * as ElectronTheme from "../../electron/ElectronTheme.ts";
 import * as ElectronWindow from "../../electron/ElectronWindow.ts";
+import * as DesktopQuickWindow from "../../window/DesktopQuickWindow.ts";
+import * as DesktopWindow from "../../window/DesktopWindow.ts";
 import * as Electron from "electron";
 import * as MacPermissions from "../../permissions/MacPermissions.ts";
 import { safariPermissionCheck } from "../../preview/BrowserImport/SafariPermission.ts";
@@ -316,6 +318,56 @@ export const openExternal = DesktopIpc.makeIpcMethod({
   handler: Effect.fn("desktop.ipc.window.openExternal")(function* (url) {
     const shell = yield* ElectronShell.ElectronShell;
     return yield* shell.openExternal(url);
+  }),
+});
+
+/** A renderer route to one thread, such as `/env-id/thread-id`; nothing else opens a window. */
+const ThreadWindowPath = Schema.String.check(
+  Schema.isMaxLength(512),
+  Schema.isPattern(/^\/[^/?#\s]+\/[^/?#\s]+$/),
+);
+
+export const openThreadWindow = DesktopIpc.makeIpcMethod({
+  channel: IpcChannels.OPEN_THREAD_WINDOW_CHANNEL,
+  payload: ThreadWindowPath,
+  result: Schema.Void,
+  handler: Effect.fn("desktop.ipc.window.openThreadWindow")(function* (path) {
+    const desktopWindow = yield* DesktopWindow.DesktopWindow;
+    yield* desktopWindow.openThreadWindow(path);
+  }),
+});
+
+export const setWindowAlwaysOnTop = DesktopIpc.makeIpcMethod({
+  channel: IpcChannels.SET_WINDOW_ALWAYS_ON_TOP_CHANNEL,
+  payload: Schema.Boolean,
+  result: Schema.Boolean,
+  handler: Effect.fn("desktop.ipc.window.setWindowAlwaysOnTop")(function* (enabled, event) {
+    if (event === undefined) return false;
+    const desktopWindow = yield* DesktopWindow.DesktopWindow;
+    return yield* desktopWindow.setThreadWindowAlwaysOnTop({
+      webContentsId: event.sender.id,
+      enabled,
+    });
+  }),
+});
+
+export const getQuickWindowStatus = DesktopIpc.makeIpcMethod({
+  channel: IpcChannels.GET_QUICK_WINDOW_STATUS_CHANNEL,
+  payload: Schema.Void,
+  result: DesktopQuickWindow.DesktopQuickWindowStatus,
+  handler: Effect.fn("desktop.ipc.window.getQuickWindowStatus")(function* () {
+    const quickWindow = yield* DesktopQuickWindow.DesktopQuickWindow;
+    return yield* quickWindow.status;
+  }),
+});
+
+export const setQuickWindowShortcutSuppressed = DesktopIpc.makeIpcMethod({
+  channel: IpcChannels.SET_QUICK_WINDOW_SHORTCUT_SUPPRESSED_CHANNEL,
+  payload: Schema.Boolean,
+  result: Schema.Void,
+  handler: Effect.fn("desktop.ipc.window.setQuickWindowShortcutSuppressed")(function* (suppressed) {
+    const quickWindow = yield* DesktopQuickWindow.DesktopQuickWindow;
+    yield* quickWindow.setSuppressed(suppressed);
   }),
 });
 

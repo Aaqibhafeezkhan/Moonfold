@@ -361,6 +361,9 @@ interface TimelineRowSharedState {
   onCancelWorktreeSetup: (() => void) | null;
   retryableWorkspacePreparationRunIds: ReadonlySet<RunId>;
   onRetryWorkspacePreparation: ((runId: RunId) => void) | null;
+  /** The latest run, when it failed and its message can be sent again. */
+  retryableFailedRunIds: ReadonlySet<RunId>;
+  onRetryFailedRun: ((runId: RunId) => void) | null;
   onWorktreeSetupWorkLocally: (() => void) | null;
   onOpenWorktreeSetupTerminal: ((terminalId: string) => void) | null;
   workGroupViewState: WorkGroupViewState;
@@ -466,6 +469,8 @@ interface MessagesTimelineProps {
   /** Runs whose failed workspace preparation can be retried, keyed by run id. */
   retryableWorkspacePreparationRunIds?: ReadonlySet<RunId>;
   onRetryWorkspacePreparation?: (runId: RunId) => void;
+  retryableFailedRunIds?: ReadonlySet<RunId>;
+  onRetryFailedRun?: (runId: RunId) => void;
   onWorktreeSetupWorkLocally?: () => void;
   onOpenWorktreeSetupTerminal?: (terminalId: string) => void;
   isPreparingWorktree?: boolean;
@@ -581,6 +586,8 @@ const ConversationTimeline = memo(function ConversationTimeline({
   onCancelWorktreeSetup,
   retryableWorkspacePreparationRunIds = EMPTY_RUN_IDS,
   onRetryWorkspacePreparation,
+  retryableFailedRunIds = EMPTY_RUN_IDS,
+  onRetryFailedRun,
   onWorktreeSetupWorkLocally,
   onOpenWorktreeSetupTerminal,
   isPreparingWorktree = false,
@@ -1383,6 +1390,8 @@ const ConversationTimeline = memo(function ConversationTimeline({
       onCancelWorktreeSetup: onCancelWorktreeSetup ?? null,
       retryableWorkspacePreparationRunIds,
       onRetryWorkspacePreparation: onRetryWorkspacePreparation ?? null,
+      retryableFailedRunIds,
+      onRetryFailedRun: onRetryFailedRun ?? null,
       onWorktreeSetupWorkLocally: onWorktreeSetupWorkLocally ?? null,
       onOpenWorktreeSetupTerminal: onOpenWorktreeSetupTerminal ?? null,
       workGroupViewState,
@@ -1421,6 +1430,8 @@ const ConversationTimeline = memo(function ConversationTimeline({
       onCancelWorktreeSetup,
       retryableWorkspacePreparationRunIds,
       onRetryWorkspacePreparation,
+      retryableFailedRunIds,
+      onRetryFailedRun,
       onWorktreeSetupWorkLocally,
       onOpenWorktreeSetupTerminal,
       workGroupViewState,
@@ -3075,6 +3086,7 @@ function ProposedPlanTimelineRow({
   return (
     <div className="min-w-0 px-1 py-0.5">
       <ProposedPlanCard
+        planId={row.proposedPlan.id}
         planMarkdown={row.proposedPlan.planMarkdown}
         environmentId={ctx.activeThreadEnvironmentId}
         threadRef={ctx.threadRef ?? undefined}
@@ -5533,7 +5545,12 @@ function WorkEntryLogRow(props: WorkEntryRowProps) {
   const { workEntry, workspaceRoot, displayLabel } = props;
   const ctx = use(TimelineRowCtx);
   const { threadRef, onImageExpand, timestampFormat } = ctx;
-  const { retryableWorkspacePreparationRunIds, onRetryWorkspacePreparation } = ctx;
+  const {
+    retryableWorkspacePreparationRunIds,
+    onRetryWorkspacePreparation,
+    retryableFailedRunIds,
+    onRetryFailedRun,
+  } = ctx;
   const threadTarget = useThreadReadTarget(workEntry, ctx.activeThreadEnvironmentId);
   const createdThread =
     workEntry.projectedItem?.item.type === "thread_created"
@@ -5612,6 +5629,20 @@ function WorkEntryLogRow(props: WorkEntryRowProps) {
             >
               <RotateCcwIcon aria-hidden />
               Retry
+            </Button>
+          </div>
+        ) : failureItem.runId !== null &&
+          retryableFailedRunIds.has(failureItem.runId) &&
+          onRetryFailedRun ? (
+          <div className="ms-7 pb-1">
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              onClick={() => failureItem.runId !== null && onRetryFailedRun(failureItem.runId)}
+            >
+              <RotateCcwIcon aria-hidden />
+              Send again
             </Button>
           </div>
         ) : null}

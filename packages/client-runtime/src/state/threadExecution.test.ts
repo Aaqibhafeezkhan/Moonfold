@@ -27,6 +27,7 @@ import {
   deriveRunlessWorkStartedAt,
   deriveThreadActivityRun,
   deriveThreadRuntime,
+  summarizeThreadTokenUsage,
   threadRuntimeHasInterruptibleRun,
 } from "./threadExecution.ts";
 import { threadRuntimeCanArchive, type ThreadRuntimeSummary } from "./models.ts";
@@ -700,6 +701,21 @@ describe("presentProviderGoal", () => {
     });
   });
 
+  it("shows a fresh token budget before any tokens are used", () => {
+    expect(
+      presentProviderGoal(
+        { objective: "Ship the feature", status: "active", tokensUsed: 0, tokenBudget: 200_000 },
+        true,
+      ).usage,
+    ).toBe("0 / 200k tokens");
+    expect(
+      presentProviderGoal(
+        { objective: "Ship the feature", status: "active", tokensUsed: 0, tokenBudget: null },
+        true,
+      ).usage,
+    ).toBeNull();
+  });
+
   it("counts Claude evaluator checks and never offers resume", () => {
     expect(
       presentProviderGoal({ objective: "All tests pass", status: "active", checks: 1 }, true),
@@ -716,5 +732,87 @@ describe("presentProviderGoal", () => {
     expect(
       presentProviderGoal({ objective: "All tests pass", status: "active" }, false).title,
     ).toBe("Goal set");
+  });
+});
+
+describe("summarizeThreadTokenUsage", () => {
+  const selection = (
+    model: string,
+    options: ReadonlyArray<{ id: string; value: string | boolean }>,
+  ) => ({ instanceId: ProviderInstanceId.make("codex"), model, options });
+  const usage = (input: number, cached: number, output: number, status = "complete") => ({
+    usageScope: "main_agent",
+    usageStatus: status,
+    inputTokens: input,
+    cachedInputTokens: cached,
+    outputTokens: output,
+    reasoningTokens: 10,
+    hasSubagents: false,
+  });
+
+  it("groups each turn under its run's model, effort and speed, largest first", () => {
+    const groups = summarizeThreadTokenUsage({
+      runs: [
+        {
+          id: RunId.make("run-1"),
+          modelSelection: selection("gpt-5.4", [{ id: "reasoningEffort", value: "high" }]),
+        },
+        {
+          id: RunId.make("run-2"),
+          modelSelection: selection("gpt-5.4", [
+            { id: "reasoningEffort", value: "high" },
+            { id: "serviceTier", value: "default" },
+          ]),
+        },
+        {
+          id: RunId.make("run-3"),
+          modelSelection: selection("gpt-5.4-mini", [{ id: "fastMode", value: true }]),
+        },
+      ],
+      attempts: [
+        { id: "attempt-1", runId: RunId.make("run-1") },
+        { id: "attempt-2", runId: RunId.make("run-2") },
+        { id: "attempt-3", runId: RunId.make("run-3") },
+      ],
+      providerTurns: [
+        { runAttemptId: "attempt-1", turnTokenUsage: usage(1_000, 400, 100) },
+        // A goal keeps one run across several native turns.
+        { runAttemptId: "attempt-1", turnTokenUsage: usage(2_000, 1_600, 200) },
+        { runAttemptId: "attempt-2", turnTokenUsage: usage(500, 0, 50, "partial") },
+        { runAttemptId: "attempt-3", turnTokenUsage: usage(100, 0, 10) },
+        {
+          runAttemptId: "attempt-3",
+          turnTokenUsage: { ...usage(0, 0, 0), usageStatus: "unavailable" },
+        },
+        { runAttemptId: null, turnTokenUsage: usage(9_999, 0, 0) },
+        // A locally answered slash command reports zero usage and is not counted.
+        { runAttemptId: "attempt-3", turnTokenUsage: usage(0, 0, 0) },
+      ],
+    } as never);
+
+    expect(groups).toEqual([
+      {
+        model: "gpt-5.4",
+        effort: "high",
+        speed: null,
+        turns: 3,
+        inputTokens: 3_500,
+        cachedInputTokens: 2_000,
+        outputTokens: 350,
+        reasoningTokens: 30,
+        partial: true,
+      },
+      {
+        model: "gpt-5.4-mini",
+        effort: null,
+        speed: "fast",
+        turns: 1,
+        inputTokens: 100,
+        cachedInputTokens: 0,
+        outputTokens: 10,
+        reasoningTokens: 10,
+        partial: false,
+      },
+    ]);
   });
 });

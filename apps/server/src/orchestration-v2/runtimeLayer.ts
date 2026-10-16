@@ -8,6 +8,9 @@ import * as McpAppRequests from "../mcpApps/McpAppRequests.ts";
 import * as ProviderSessionRuntime from "../persistence/ProviderSessionRuntime.ts";
 import * as TextGeneration from "../textGeneration/TextGeneration.ts";
 import * as ProviderAuthService from "../provider/ProviderAuthService.ts";
+import * as ProviderNativeConfigService from "../provider/ProviderNativeConfigService.ts";
+import * as AgentInstructions from "../project/AgentInstructions.ts";
+import * as ThreadSideQuestions from "./ThreadSideQuestions.ts";
 import * as AgentSessionImporter from "../project/AgentSessionImporter.ts";
 import * as AgentSessionScanner from "../project/AgentSessionScanner.ts";
 import * as ProjectService from "../project/ProjectService.ts";
@@ -351,6 +354,12 @@ export const layer = Layer.mergeAll(
 export const layerProduction = Layer.mergeAll(
   layer.pipe(Layer.provide(layerProjectService)),
   layerProjectService,
+  // Settings services that read the providers' and projects' own files.
+  Layer.mergeAll(
+    ProviderNativeConfigService.layer,
+    AgentInstructions.layer,
+    ThreadSideQuestions.layer.pipe(Layer.provide(ProjectionStore.layer)),
+  ).pipe(Layer.provide(layerProjectService)),
   layerManagedProjectFoldersProvided,
   layerThreadLaunchProvided,
   layerThreadLifecycleProvided,

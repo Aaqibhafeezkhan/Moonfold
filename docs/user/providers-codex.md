@@ -92,6 +92,40 @@ in the thread on web or desktop. Some tools offer access for one request,
 the current session, or permanently. See [Permission modes](./permission-modes.md)
 for command and file approvals.
 
+## Review changes
+
+Send `/review` to have Codex review your uncommitted changes. The review runs in the thread, and
+the findings arrive as Codex's reply.
+
+- `/review branch main` reviews everything on your branch against `main`.
+- `/review commit <sha>` reviews one commit.
+- `/review` followed by any other text reviews with those instructions, for example
+  `/review focus on error handling`.
+
+The diff panel has a review button on Codex threads. It puts the matching command for the
+changes on screen into the composer, so you can add a focus before you send.
+
+## Manage Codex's MCP servers, skills and hooks
+
+Open **Settings → Providers**, select a Codex provider, and open the section you need. Each one
+reads Codex's own configuration on the computer running that environment, so it matches what Codex
+threads use.
+
+- **MCP servers** lists every server with its tools and any startup error. Select **Sign in** for a
+  server that needs it; a remote session finishes the sign-in in a browser on the computer running
+  the environment. Select **Reload config** after editing Codex's `config.toml`.
+- **Skills** lists the skills Codex can use. Turn one off to stop Codex offering it, or select
+  **View** to read its `SKILL.md`. Pick a project to include that project's skills.
+- **Hooks** shows the commands Codex runs on its own events. Edit them in Codex's configuration.
+- **Import from other agents** finds skills, MCP servers and recent sessions from other coding
+  agents on the computer and copies the ones you pick into Codex.
+- **Account usage** shows the tokens the signed-in account has used, as OpenAI reports them.
+
+## Archived threads
+
+Archiving a Codex thread in Moonfold also archives it in Codex, so it leaves the thread lists of the
+Codex CLI and other Codex apps too. Unarchiving it in Moonfold brings it back in both.
+
 ## Codex says I hit a usage limit
 
 When Codex stops on a usage limit, the thread names the window that ran out and

@@ -12,6 +12,10 @@ import { WS_METHODS } from "./rpc.ts";
 /** Incremental client enforcement; the server still authorizes every request. */
 export const CLIENT_GUARDED_RPC_SCOPES = {
   [WS_METHODS.serverRunStorageCleanup]: AuthSettingsWriteScope,
+  // Instruction files steer every agent run, so writing one is a settings change.
+  [WS_METHODS.agentInstructionsWrite]: AuthSettingsWriteScope,
+  // A side question runs the thread's model, like starting a turn.
+  [WS_METHODS.threadsAskSideQuestion]: AuthOrchestrationOperateScope,
   // Endpoint checks exist to configure exports, so they need the same grant as saving them.
   [WS_METHODS.serverCheckOtlpEndpoint]: AuthSettingsWriteScope,
   [WS_METHODS.pullRequestsRunAction]: AuthSourceControlWriteScope,
@@ -36,6 +40,9 @@ export const CLIENT_GUARDED_RPC_SCOPES = {
   [WS_METHODS.gitRunStackedAction]: AuthSourceControlWriteScope,
   [WS_METHODS.gitPreparePullRequestThread]: AuthSourceControlWriteScope,
   [WS_METHODS.vcsCreateWorktree]: AuthSourceControlWriteScope,
+  // Moving a thread's checkout creates or merges branches and moves uncommitted work.
+  [WS_METHODS.threadsMoveToWorktree]: AuthSourceControlWriteScope,
+  [WS_METHODS.threadsReturnToProject]: AuthSourceControlWriteScope,
   [WS_METHODS.vcsRemoveWorktree]: AuthSourceControlWriteScope,
   [WS_METHODS.vcsCreateRef]: AuthSourceControlWriteScope,
   [WS_METHODS.vcsSwitchRef]: AuthSourceControlWriteScope,

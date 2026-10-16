@@ -9,6 +9,7 @@ import {
 import { canSnooze, effectiveSnoozed } from "@moonfold/client-runtime/state/thread-settled";
 import {
   AuthOrchestrationOperateScope,
+  AuthSourceControlWriteScope,
   type ScopedThreadRef,
   type ThreadId,
 } from "@moonfold/contracts";
@@ -19,6 +20,7 @@ import { resolveSnoozePresets } from "../components/Sidebar.snooze";
 import {
   buildThreadActionMenuItems,
   threadActionRequiresOperate,
+  threadWorkspaceKind,
   type ThreadActionMenuId,
 } from "../components/threadActionMenu.logic";
 import { stackedThreadToast, toastManager } from "../components/ui/toast";
@@ -47,6 +49,8 @@ import { useCopyToClipboard } from "./useCopyToClipboard";
 import { useNewThreadHandler } from "./useHandleNewThread";
 import { useClientSettings } from "./useSettings";
 import { useThreadActions } from "./useThreadActions";
+import { useThreadWorkspaceTransfer } from "./useThreadWorkspaceTransfer";
+import { canPopOutThreads, openThreadInNewWindow } from "../threadPopout";
 
 function failureToast(title: string, error: unknown) {
   toastManager.add(
@@ -104,6 +108,7 @@ export function useThreadActionMenu(input: {
     reportFailure: false,
   });
   const handleNewThread = useNewThreadHandler();
+  const { moveToWorktree, returnToProject } = useThreadWorkspaceTransfer();
   const confirmThreadDelete = useClientSettings((s) => s.confirmThreadDelete);
   const confirmThreadArchive = useClientSettings((s) => s.confirmThreadArchive);
   const timestampFormat = useClientSettings((s) => s.timestampFormat);
@@ -158,6 +163,11 @@ export function useThreadActionMenu(input: {
           canSnoozeNow: canSnooze(thread, { now: now.toISOString() }),
           isRegeneratingTitle,
           isRunning: !threadRuntimeCanArchive(thread.runtime),
+          canOpenInWindow: canPopOutThreads(),
+          workspace: threadWorkspaceKind(
+            { worktreePath: thread.worktreePath ?? null, branch: thread.branch ?? null },
+            readEnvironmentScope(threadRef.environmentId, AuthSourceControlWriteScope),
+          ),
           supports,
           snoozePresets,
         });
@@ -288,6 +298,17 @@ export function useThreadActionMenu(input: {
           case "copy-thread-id":
             copyThreadIdToClipboard(thread.id, { threadId: thread.id });
             return;
+          case "open-in-window":
+            void openThreadInNewWindow(threadRef).catch((error: unknown) =>
+              failureToast("Could not open a new window", error),
+            );
+            return;
+          case "move-to-worktree":
+            await moveToWorktree(threadRef, { title: thread.title, projectCwd });
+            return;
+          case "return-to-project":
+            await returnToProject(threadRef, thread.branch ?? null);
+            return;
           case "archive": {
             if (confirmThreadArchive) {
               const confirmed = await settlePromise(() =>
@@ -352,11 +373,13 @@ export function useThreadActionMenu(input: {
       handleNewThread,
       logicalProjectKeyByPhysicalKey,
       markThreadUnread,
+      moveToWorktree,
       onStartRename,
       pinThread,
       projectCwd,
       projectGroupingSettings,
       projects,
+      returnToProject,
       router,
       setThreadAutoSettle,
       settleThread,

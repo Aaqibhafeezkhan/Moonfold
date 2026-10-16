@@ -1,5 +1,49 @@
 # Progress
 
+## Phase 2: Codex-parity layer A (complete, 2026-10-17)
+
+Plan: docs/plans/phase-2.md. Gate: docs/QA-PHASE2.md. Decisions: DECISIONS D-17 to D-24.
+
+### Done
+
+- Codex protocol: contract test against the pinned schema; native review (`/review`, diff panel
+  button); `/goal` token budgets; Codex MCP servers (status, OAuth sign-in, reload), skills
+  (enable/disable), hooks (grouped by source, runs shown in the thread), imports from other agents
+  and account usage on the Codex provider card; archive sync with Codex's own thread; permission
+  modes limited to what Codex's requirements allow.
+- Built by Moonfold: keybinding search by keystroke; pop-out thread windows with keep-on-top;
+  agent instructions editor (Settings → Personalization); keep only the N most recent worktrees;
+  edit a proposed plan before implementing; send a failed message again; ask a side question;
+  move a thread into a new or existing worktree and bring it back; per-thread usage by model,
+  effort and speed; desktop quick window on a global hotkey.
+- WebSocket RPCs split into four groups so TypeScript keeps checking handler requirements (D-19).
+
+### Verification (real output, Windows 11)
+
+- Typecheck exit 0; `vp fmt --check` clean; brand and icon checks clean; lint 0 errors in tracked
+  code.
+- Tests vs the baseline worktree: web 6869/6869, client-runtime 2088/2088, contracts 667/667;
+  server 94 failed / 6022 passed with the same failing cases as the baseline; desktop the same 33;
+  other packages only baseline failures, plus three load timeouts that also fail in the baseline.
+- Live: every item in docs/QA-PHASE2.md against real Codex (0.161.0) and Claude Code (Haiku 5.5),
+  including the quick window in the real Electron app with the hotkey pressed through Windows.
+
+### Not verified / open
+
+- "Send a failed message again", hook runs in the thread and the permission-profile picker are
+  covered by unit tests only (no failed run, no hooks and no restricted profiles on this machine).
+- Codex CLI on this machine is 0.161.0; the schema pin is 0.163.0.
+- Plan mode is an upstream legacy setting (off by default); plan editing works when it is on.
+- `moonfold-website/` is still untracked and untouched.
+
+### Next step
+
+Phase 3 (BUILD-PLAN): scheduler, plugins and skills marketplace, memories, artifacts viewer,
+browser pane with page comments, computer use. Start in plan mode with docs/plans/phase-3.md.
+Recon so far: the scheduler has interval, fixed-time and webhook schedules with last-run state
+only (no one-off, cron/RRULE, run history or completion notifications); the preview browser and
+HTML renders exist; plugins, memories, image generation and computer use do not.
+
 ## Phase 1: rebrand and repo hygiene (complete, 2026-10-16)
 
 Plan: docs/plans/phase-1.md. Decisions: DECISIONS D-12 to D-16.
@@ -44,9 +88,7 @@ Plan: docs/plans/phase-1.md. Decisions: DECISIONS D-12 to D-16.
 
 ### Next step
 
-Phase 2 (docs/plans/phase-2.md): pinned protocol contract test, review mode, goal budget, MCP and skills
-managers, instructions editor, hooks, agent import, account usage, archive sync, keystroke search,
-pop-out chat.
+Phase 2 (done, see above).
 
 ## Phase 0: recon and decisions (complete, 2026-10-16)
 

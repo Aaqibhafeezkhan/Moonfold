@@ -47,3 +47,30 @@ export function workspacePreparationRetryRunIds(
   }
   return retryable;
 }
+
+/**
+ * The thread's latest run when it failed and sending its message again can help. A workspace
+ * preparation failure has its own retry, and a usage limit fails again until it resets, so
+ * neither is offered. Returns null when a later run exists or the latest one did not fail.
+ */
+export function retryableFailedRun(
+  runs: ReadonlyArray<Pick<OrchestrationV2Run, "id" | "ordinal" | "status" | "userMessageId">>,
+  items: ReadonlyArray<OrchestrationV2TurnItem>,
+): Pick<OrchestrationV2Run, "id" | "userMessageId"> | null {
+  const latest = runs.reduce<(typeof runs)[number] | null>(
+    (current, run) => (current === null || run.ordinal > current.ordinal ? run : current),
+    null,
+  );
+  if (latest === null || latest.status !== "failed") return null;
+  const failure = items.find(
+    (item): item is Extract<OrchestrationV2TurnItem, { type: "error" }> =>
+      item.type === "error" && item.status === "failed" && item.runId === latest.id,
+  );
+  if (
+    failure?.failure.class === "usage_limit" ||
+    failure?.failure.code === ORCHESTRATION_V2_WORKSPACE_PREPARATION_FAILURE_CODE
+  ) {
+    return null;
+  }
+  return { id: latest.id, userMessageId: latest.userMessageId };
+}

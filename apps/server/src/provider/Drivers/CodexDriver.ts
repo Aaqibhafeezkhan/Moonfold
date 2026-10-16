@@ -74,6 +74,7 @@ import {
 } from "./CodexHomeLayout.ts";
 import { makeManagedCodexProvider } from "./CodexManagedProvider.ts";
 import { codexUsageReader } from "./codexUsage.ts";
+import { makeCodexNativeConfig } from "../codexNativeConfig.ts";
 import * as CodexInstallation from "../CodexInstallation.ts";
 import * as ServerSecretStore from "../../auth/ServerSecretStore.ts";
 import * as ServerEnvironment from "../../environment/ServerEnvironment.ts";
@@ -372,6 +373,20 @@ export const CodexDriver: ProviderDriver<CodexSettings, CodexDriverEnv, Path.Pat
             ),
           );
 
+      const nativeConfig = makeCodexNativeConfig({
+        driver: DRIVER_KIND,
+        instanceId,
+        userCwd: yield* HostProcess.HomeDirectory,
+        open: (cwd) =>
+          withCodexAppServerClient({
+            binaryPath: effectiveConfig.binaryPath,
+            homePath: effectiveConfig.homePath,
+            launchArgs: resolveCodexLaunchArgs(effectiveConfig.launchArgs, processEnv),
+            cwd,
+            environment: processEnv,
+          }).pipe(Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner)),
+      });
+
       return {
         instanceId,
         driverKind: DRIVER_KIND,
@@ -382,6 +397,7 @@ export const CodexDriver: ProviderDriver<CodexSettings, CodexDriverEnv, Path.Pat
         snapshot,
         snapshotForCwd,
         consumeResetCredit,
+        ...(effectiveConfig.enabled ? { nativeConfig } : {}),
         orchestrationAdapter,
         textGeneration,
       } satisfies ProviderInstance;

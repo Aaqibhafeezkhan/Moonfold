@@ -123,6 +123,22 @@ export class DesktopWindow extends Context.Service<
     // produce a stranded window pointing at nothing.
     readonly handleBackendNotReady: Effect.Effect<void>;
     readonly flushMainWindowBounds: Effect.Effect<void>;
+    /**
+     * Opens one thread in its own window. `path` is the renderer route of the thread; the
+     * window loads the same app marked as a pop-out, so it starts with the sidebar closed.
+     */
+    readonly openThreadWindow: (path: string) => Effect.Effect<void, DesktopWindowError>;
+    /**
+     * The global hotkey's small window for starting a thread from anywhere: opens it on the
+     * display under the pointer, brings it back when it is hidden or behind, and hides it when
+     * it is already in front.
+     */
+    readonly toggleQuickWindow: Effect.Effect<void, DesktopWindowError>;
+    /** Keeps a pop-out window above other windows. False when the sender is not a pop-out. */
+    readonly setThreadWindowAlwaysOnTop: (input: {
+      readonly webContentsId: number;
+      readonly enabled: boolean;
+    }) => Effect.Effect<boolean>;
     readonly prepareCaptureReveal: Effect.Effect<void>;
     readonly dispatchMenuAction: (
       action: string,
@@ -362,14 +378,96 @@ export const make = Effect.gen(function* () {
   // open (or retry) the real main. That is the failure the pool's swallowed
   // post-readiness window-open error would otherwise strand the user in:
   // splash up, backend ready, no main, and activation only re-reveals splash.
+  // Thread windows popped out of the main window. Like the splash, they are never the main
+  // window: with the main window closed, menu actions and activation must open a new one.
+  const threadWindows = new Set<Electron.BrowserWindow>();
   const withoutSplash = (window: Option.Option<Electron.BrowserWindow>) =>
     Ref.get(splashWindowRef).pipe(
       Effect.map((splash) =>
-        Option.isSome(splash) && Option.isSome(window) && window.value === splash.value
+        Option.isSome(window) &&
+        ((Option.isSome(splash) && window.value === splash.value) ||
+          threadWindows.has(window.value))
           ? Option.none<Electron.BrowserWindow>()
           : window,
       ),
     );
+
+  const contextMenuContents = new WeakSet<Electron.WebContents>();
+  const installContextMenu = (
+    ownerWindow: Electron.BrowserWindow,
+    contents: Electron.WebContents,
+  ): void => {
+    if (contextMenuContents.has(contents)) return;
+    contextMenuContents.add(contents);
+    contents.on("context-menu", (event, params) => {
+      event.preventDefault();
+      if (contents.isDestroyed() || ownerWindow.isDestroyed()) return;
+      // Native editing roles act on the focused contents, which may still be
+      // the host renderer when the user right-clicks inside a browser guest.
+      contents.focus();
+
+      const menuTemplate: Electron.MenuItemConstructorOptions[] = [];
+
+      if (params.misspelledWord) {
+        for (const suggestion of params.dictionarySuggestions.slice(0, 5)) {
+          menuTemplate.push({
+            label: suggestion,
+            click: () => {
+              if (!contents.isDestroyed()) contents.replaceMisspelling(suggestion);
+            },
+          });
+        }
+        if (params.dictionarySuggestions.length === 0) {
+          menuTemplate.push({ label: "No suggestions", enabled: false });
+        }
+        menuTemplate.push({ type: "separator" });
+      }
+
+      if (Option.isSome(ElectronShell.parseSafeExternalUrl(params.linkURL))) {
+        menuTemplate.push(
+          {
+            label: "Copy Link",
+            click: () => {
+              void runPromise(electronShell.copyText(params.linkURL));
+            },
+          },
+          { type: "separator" },
+        );
+      }
+
+      if (params.mediaType === "image") {
+        menuTemplate.push({
+          label: "Copy Image",
+          click: () => {
+            void runPromise(
+              Effect.tryPromise(() => copyContextMenuImage(contents, params)).pipe(
+                Effect.catch(() => logWindowWarning("failed to copy context-menu image")),
+              ),
+            );
+          },
+        });
+        menuTemplate.push({ type: "separator" });
+      }
+
+      menuTemplate.push(
+        { role: "cut", enabled: params.editFlags.canCut },
+        { role: "copy", enabled: params.editFlags.canCopy },
+        { role: "paste", enabled: params.editFlags.canPaste },
+        { role: "selectAll", enabled: params.editFlags.canSelectAll },
+      );
+
+      void runPromise(
+        electronMenu.popupTemplate({
+          window: ownerWindow,
+          template: menuTemplate,
+          ...(params.frame ? { frame: params.frame } : {}),
+        }),
+      );
+    });
+    contents.on("did-create-window", (popup) => {
+      installContextMenu(popup, popup.webContents);
+    });
+  };
 
   const currentMainWindow = electronWindow.currentMainOrFirst.pipe(Effect.flatMap(withoutSplash));
   const focusedMainWindow = electronWindow.focusedMainOrFirst.pipe(Effect.flatMap(withoutSplash));
@@ -549,82 +647,6 @@ export const make = Effect.gen(function* () {
       }
     });
 
-    const contextMenuContents = new WeakSet<Electron.WebContents>();
-    const installContextMenu = (
-      ownerWindow: Electron.BrowserWindow,
-      contents: Electron.WebContents,
-    ): void => {
-      if (contextMenuContents.has(contents)) return;
-      contextMenuContents.add(contents);
-      contents.on("context-menu", (event, params) => {
-        event.preventDefault();
-        if (contents.isDestroyed() || ownerWindow.isDestroyed()) return;
-        // Native editing roles act on the focused contents, which may still be
-        // the host renderer when the user right-clicks inside a browser guest.
-        contents.focus();
-
-        const menuTemplate: Electron.MenuItemConstructorOptions[] = [];
-
-        if (params.misspelledWord) {
-          for (const suggestion of params.dictionarySuggestions.slice(0, 5)) {
-            menuTemplate.push({
-              label: suggestion,
-              click: () => {
-                if (!contents.isDestroyed()) contents.replaceMisspelling(suggestion);
-              },
-            });
-          }
-          if (params.dictionarySuggestions.length === 0) {
-            menuTemplate.push({ label: "No suggestions", enabled: false });
-          }
-          menuTemplate.push({ type: "separator" });
-        }
-
-        if (Option.isSome(ElectronShell.parseSafeExternalUrl(params.linkURL))) {
-          menuTemplate.push(
-            {
-              label: "Copy Link",
-              click: () => {
-                void runPromise(electronShell.copyText(params.linkURL));
-              },
-            },
-            { type: "separator" },
-          );
-        }
-
-        if (params.mediaType === "image") {
-          menuTemplate.push({
-            label: "Copy Image",
-            click: () => {
-              void runPromise(
-                Effect.tryPromise(() => copyContextMenuImage(contents, params)).pipe(
-                  Effect.catch(() => logWindowWarning("failed to copy context-menu image")),
-                ),
-              );
-            },
-          });
-          menuTemplate.push({ type: "separator" });
-        }
-
-        menuTemplate.push(
-          { role: "cut", enabled: params.editFlags.canCut },
-          { role: "copy", enabled: params.editFlags.canCopy },
-          { role: "paste", enabled: params.editFlags.canPaste },
-          { role: "selectAll", enabled: params.editFlags.canSelectAll },
-        );
-
-        void runPromise(
-          electronMenu.popupTemplate({
-            window: ownerWindow,
-            template: menuTemplate,
-            ...(params.frame ? { frame: params.frame } : {}),
-          }),
-        );
-      });
-      contents.on("did-create-window", (popup) => {
-        installContextMenu(popup, popup.webContents);
-      });
-    };
     installContextMenu(window, window.webContents);
     window.webContents.on("did-attach-webview", (_event, contents) => {
       installContextMenu(window, contents);
@@ -977,7 +999,117 @@ export const make = Effect.gen(function* () {
     yield* dispatch;
   });
 
+  const createThreadWindow = Effect.fn("desktop.window.createThreadWindow")(function* (
+    path: string,
+    size: { readonly width: number; readonly height: number },
+    placement: Pick<Electron.BrowserWindowConstructorOptions, "x" | "y" | "alwaysOnTop"> = {},
+  ) {
+    const applicationUrl = getDesktopUrl(environment.isDevelopment);
+    const shouldUseDarkColors = yield* electronTheme.shouldUseDarkColors;
+    const iconOption = getIconOption(yield* assets.iconPaths, environment.platform);
+    const window = yield* electronWindow.create({
+      ...size,
+      ...placement,
+      minWidth: 380,
+      minHeight: 480,
+      show: false,
+      autoHideMenuBar: true,
+      backgroundColor: getInitialWindowBackgroundColor(shouldUseDarkColors),
+      ...iconOption,
+      title: environment.displayName,
+      ...getWindowTitleBarOptions(shouldUseDarkColors, environment.platform),
+      webPreferences: {
+        preload: environment.preloadPath,
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+        // The in-app browser stays with the main window.
+        webviewTag: false,
+      },
+    });
+    threadWindows.add(window);
+    window.on("closed", () => {
+      threadWindows.delete(window);
+    });
+    installContextMenu(window, window.webContents);
+    window.webContents.setWindowOpenHandler(({ url }) => {
+      if (Option.isSome(ElectronShell.parseSafeExternalUrl(url))) {
+        void runPromise(electronShell.openExternal(url));
+      }
+      return { action: "deny" };
+    });
+    window.webContents.on("will-navigate", (event, url) => {
+      if (isSameOriginRendererNavigation({ applicationUrl, navigationUrl: url })) return;
+      event.preventDefault();
+      if (Option.isSome(ElectronShell.parseSafeExternalUrl(url))) {
+        void runPromise(electronShell.openExternal(url));
+      }
+    });
+    window.on("page-title-updated", (event) => {
+      event.preventDefault();
+      window.setTitle(environment.displayName);
+    });
+    window.once("ready-to-show", () => {
+      void runPromise(electronWindow.reveal(window));
+    });
+    // Desktop routes through hash history; the query marks the window as a pop-out and tells
+    // its keep-on-top toggle where it starts.
+    const query = placement.alwaysOnTop === true ? "window=popout&onTop=1" : "window=popout";
+    void window.loadURL(`${applicationUrl}?${query}#${path}`).catch(() => undefined);
+    return window;
+  });
+
+  const openThreadWindow = Effect.fn("desktop.window.openThreadWindow")(function* (path: string) {
+    yield* createThreadWindow(path, { width: 560, height: 780 });
+    yield* logWindowInfo("thread window opened");
+  });
+
+  let quickWindow: Electron.BrowserWindow | null = null;
+  const QUICK_WINDOW_SIZE = { width: 520, height: 640 };
+  const toggleQuickWindow = Effect.gen(function* () {
+    const existing = quickWindow;
+    if (existing !== null && !existing.isDestroyed()) {
+      if (existing.isVisible() && existing.isFocused()) {
+        existing.hide();
+        return;
+      }
+      yield* electronWindow.reveal(existing);
+      return;
+    }
+    // Centered on the display under the pointer, so it opens where the user is looking.
+    const { workArea } = Electron.screen.getDisplayNearestPoint(
+      Electron.screen.getCursorScreenPoint(),
+    );
+    const window = yield* createThreadWindow("/", QUICK_WINDOW_SIZE, {
+      x: Math.round(workArea.x + (workArea.width - QUICK_WINDOW_SIZE.width) / 2),
+      y: Math.round(workArea.y + (workArea.height - QUICK_WINDOW_SIZE.height) / 3),
+      alwaysOnTop: true,
+    });
+    window.setAlwaysOnTop(true, "floating");
+    quickWindow = window;
+    window.on("closed", () => {
+      if (quickWindow === window) quickWindow = null;
+    });
+    yield* logWindowInfo("quick window opened");
+  }).pipe(Effect.withSpan("desktop.window.toggleQuickWindow"));
+
+  const setThreadWindowAlwaysOnTop: DesktopWindow["Service"]["setThreadWindowAlwaysOnTop"] = ({
+    webContentsId,
+    enabled,
+  }) =>
+    Effect.sync(() => {
+      for (const window of threadWindows) {
+        if (window.isDestroyed() || window.webContents.id !== webContentsId) continue;
+        window.setAlwaysOnTop(enabled, "floating");
+        return true;
+      }
+      return false;
+    });
+
   return DesktopWindow.of({
+    openThreadWindow,
+    toggleQuickWindow,
+    setThreadWindowAlwaysOnTop,
     createMain,
     ensureMain,
     revealOrCreateMain,

@@ -123,6 +123,21 @@ the text is an unedited recalled prompt, with the caret on the first visual line
 the last visual line for `ArrowDown`, counting wrapped lines. Editing a recalled prompt turns it
 into a normal draft.
 
+## Ask on the side
+
+Select the question-mark bubble in the thread header to ask a quick question about the thread,
+such as "which files did the agent change?". The thread's model answers from the recent
+conversation in that popover. Nothing is added to the thread, and a turn that is running carries
+on. The model has no tools here, so it answers only from what the conversation shows. Answers are
+gone when you leave the thread.
+
+## Send a failed message again
+
+When the agent's latest turn fails, select **Send again** under the error to send the same message
+and attachments as a new turn, with the thread's current model and settings. Earlier turns stay as
+they were. A usage-limit error offers no resend, because it would fail again until the limit
+resets.
+
 ## Edit an earlier prompt
 
 On web and desktop, choose **Edit from here** beneath a sent message to rewind
@@ -191,6 +206,13 @@ Provider commands must start the message to run. Moonfold commands such as
 Send `/compact` in an existing conversation to reduce context usage when the
 provider supports it. Web and desktop also offer compaction from the context meter.
 
+## Plans
+
+Switch to plan mode (`/plan`) to have the agent propose a plan before it changes anything. Send
+feedback to refine the plan, or send an empty message (or select **Implement**) to start the work.
+To change the plan yourself first, open the plan's menu and choose **Edit plan**; implementing then
+sends your version. **Use the original plan** discards your edit. Edits stay on this device.
+
 ## Goals
 
 With Codex and Claude, send `/goal` followed by what "done" means, for example
@@ -201,6 +223,10 @@ row above the composer shows the goal and its progress.
 - `/goal` alone shows the current goal. `/goal clear` removes it.
 - Codex also supports `/goal pause` and `/goal resume`. Stopping a Codex goal
   pauses it.
+- Codex goals can have a token budget: `/goal --budget 200k all tests pass`
+  sets one with the goal, and `/goal budget 500k` or `/goal budget off` changes
+  it later. The goal row shows tokens used against the budget, and Codex stops
+  the goal when it runs out.
 - Stopping Claude ends the current turn, but the goal stays set. Claude checks it
   again at the end of your next message.
 

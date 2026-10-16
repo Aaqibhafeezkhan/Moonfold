@@ -56,6 +56,7 @@ import * as Equal from "effect/Equal";
 import * as Schema from "effect/Schema";
 import { APP_VERSION, HOSTED_APP_CHANNEL, HOSTED_APP_CHANNEL_LABEL } from "../../branding";
 import { CliCommandSettingsRow } from "./CliCommandSettingsRow";
+import { QuickWindowShortcutRow } from "./QuickWindowShortcutRow";
 import {
   canCheckForUpdate,
   getDesktopUpdateButtonTooltip,
@@ -3256,6 +3257,7 @@ export function GeneralSettingsPanel() {
             }
           />
         ) : null}
+        {isElectron ? <QuickWindowShortcutRow /> : null}
       </SettingsSection>
 
       <SettingsSection id="text-generation" title="Text generation">

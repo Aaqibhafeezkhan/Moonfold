@@ -1045,6 +1045,73 @@ export function createServerEnvironmentAtoms<R, E>(
         runStream(WS_METHODS.chatGptHandoffSubscribe, input),
       idleTtlMs: 0,
     }),
+    /** One MCP server sign-in: the URL to open, then how it ended. Never replayed on reconnect. */
+    mcpServerLoginState: createEnvironmentSubscriptionAtomFamily(runtime, {
+      label: "environment-data:provider:mcp-server-login",
+      subscribe: (input: EnvironmentRpcInput<typeof WS_METHODS.providerMcpServerLogin>) =>
+        runStream(WS_METHODS.providerMcpServerLogin, input),
+      idleTtlMs: 0,
+    }),
+    askThreadSideQuestion: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:threads:ask-side-question",
+      tag: WS_METHODS.threadsAskSideQuestion,
+    }),
+    moveThreadToWorktree: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:threads:move-to-worktree",
+      tag: WS_METHODS.threadsMoveToWorktree,
+    }),
+    returnThreadToProject: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:threads:return-to-project",
+      tag: WS_METHODS.threadsReturnToProject,
+    }),
+    listAgentInstructions: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:agent-instructions:list",
+      tag: WS_METHODS.agentInstructionsList,
+    }),
+    writeAgentInstructions: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:agent-instructions:write",
+      tag: WS_METHODS.agentInstructionsWrite,
+    }),
+    listProviderMcpServers: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:provider:mcp-servers:list",
+      tag: WS_METHODS.providerMcpServersList,
+    }),
+    reloadProviderMcpServers: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:provider:mcp-servers:reload",
+      tag: WS_METHODS.providerMcpServersReload,
+    }),
+    listProviderSkills: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:provider:skills:list",
+      tag: WS_METHODS.providerSkillsList,
+    }),
+    setProviderSkillEnabled: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:provider:skills:set-enabled",
+      tag: WS_METHODS.providerSkillSetEnabled,
+    }),
+    readProviderSkill: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:provider:skills:read",
+      tag: WS_METHODS.providerSkillRead,
+    }),
+    listProviderHooks: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:provider:hooks:list",
+      tag: WS_METHODS.providerHooksList,
+    }),
+    detectProviderAgentImports: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:provider:agent-import:detect",
+      tag: WS_METHODS.providerAgentImportDetect,
+    }),
+    runProviderAgentImport: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:provider:agent-import:run",
+      tag: WS_METHODS.providerAgentImportRun,
+      concurrency: {
+        mode: "singleFlight",
+        key: ({ environmentId, input }) => JSON.stringify([environmentId, input.instanceId]),
+      },
+    }),
+    readProviderAccountUsage: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:provider:account-usage:read",
+      tag: WS_METHODS.providerAccountUsageRead,
+    }),
     codexAuthCallbackState: createEnvironmentRpcSubscriptionAtomFamily(runtime, {
       label: "environment-data:codex:auth-callback",
       tag: WS_METHODS.codexAuthCallbackSubscribe,

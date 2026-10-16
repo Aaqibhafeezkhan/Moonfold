@@ -325,6 +325,40 @@ import {
 } from "./providerUsageLimits.ts";
 import { UsagePricing, UsageReadError, UsageSummary, UsageSummaryInput } from "./usage.ts";
 import {
+  ThreadMoveToWorktreeInput,
+  ThreadReturnToProjectInput,
+  ThreadReturnToProjectResult,
+} from "./threadWorkspace.ts";
+import { WorktreeMcpFailure, WorktreeMcpHandoffResult } from "./worktreeMcp.ts";
+import {
+  ThreadSideQuestionError,
+  ThreadSideQuestionInput,
+  ThreadSideQuestionResult,
+} from "./sideQuestion.ts";
+import {
+  AgentInstructionsError,
+  AgentInstructionsList,
+  AgentInstructionsListInput,
+  AgentInstructionsWriteInput,
+  AgentInstructionsWriteResult,
+} from "./agentInstructions.ts";
+import {
+  ProviderAccountUsage,
+  ProviderAgentImportDetectResult,
+  ProviderAgentImportInput,
+  ProviderAgentImportResult,
+  ProviderHookList,
+  ProviderMcpServerList,
+  ProviderMcpServerLoginEvent,
+  ProviderMcpServerLoginInput,
+  ProviderNativeConfigInput,
+  ProviderSkillList,
+  ProviderSkillReadInput,
+  ProviderSkillReadResult,
+  ProviderSkillSetEnabledInput,
+  ProviderSkillSetEnabledResult,
+} from "./providerNativeConfig.ts";
+import {
   StorageCleanupReport,
   ServerSettings,
   ServerSettingsError,
@@ -380,6 +414,11 @@ export const WS_METHODS = {
   projectsSearchEntries: "projects.searchEntries",
   projectsWriteFile: "projects.writeFile",
   projectsMutate: "projects.mutate",
+  agentInstructionsList: "agentInstructions.list",
+  agentInstructionsWrite: "agentInstructions.write",
+  threadsAskSideQuestion: "threads.askSideQuestion",
+  threadsMoveToWorktree: "threads.moveToWorktree",
+  threadsReturnToProject: "threads.returnToProject",
   projectsEnsureScratch: "projects.ensureScratch",
   projectsCreateNew: "projects.createNew",
 
@@ -411,6 +450,16 @@ export const WS_METHODS = {
   chatGptImportProfile: "provider.chatgpt.import-profile",
   chatGptHandoffSubscribe: "provider.chatgpt.handoff.subscribe",
   codexAuthCallbackSubscribe: "provider.codex.auth-callback.subscribe",
+  providerMcpServersList: "provider.mcpServers.list",
+  providerMcpServerLogin: "provider.mcpServers.login",
+  providerMcpServersReload: "provider.mcpServers.reload",
+  providerSkillsList: "provider.skills.list",
+  providerSkillSetEnabled: "provider.skills.setEnabled",
+  providerSkillRead: "provider.skills.read",
+  providerHooksList: "provider.hooks.list",
+  providerAgentImportDetect: "provider.agentImport.detect",
+  providerAgentImportRun: "provider.agentImport.run",
+  providerAccountUsageRead: "provider.accountUsage.read",
   providerAuthRespond: "provider.auth.respond",
   providerAuthCancel: "provider.auth.cancel",
   providerAuthLogout: "provider.auth.logout",
@@ -679,6 +728,66 @@ const WsChatGptHandoffSubscribeRpc = Rpc.make(WS_METHODS.chatGptHandoffSubscribe
   error: ProviderSetupRpcError,
   stream: true,
 });
+const WsProviderMcpServersListRpc = Rpc.make(WS_METHODS.providerMcpServersList, {
+  payload: ProviderNativeConfigInput,
+  success: ProviderMcpServerList,
+  error: ProviderSetupRpcError,
+});
+
+const WsProviderMcpServerLoginRpc = Rpc.make(WS_METHODS.providerMcpServerLogin, {
+  payload: ProviderMcpServerLoginInput,
+  success: ProviderMcpServerLoginEvent,
+  error: ProviderSetupRpcError,
+  stream: true,
+});
+
+const WsProviderMcpServersReloadRpc = Rpc.make(WS_METHODS.providerMcpServersReload, {
+  payload: ProviderNativeConfigInput,
+  error: ProviderSetupRpcError,
+});
+
+const WsProviderSkillsListRpc = Rpc.make(WS_METHODS.providerSkillsList, {
+  payload: ProviderNativeConfigInput,
+  success: ProviderSkillList,
+  error: ProviderSetupRpcError,
+});
+
+const WsProviderSkillSetEnabledRpc = Rpc.make(WS_METHODS.providerSkillSetEnabled, {
+  payload: ProviderSkillSetEnabledInput,
+  success: ProviderSkillSetEnabledResult,
+  error: ProviderSetupRpcError,
+});
+
+const WsProviderSkillReadRpc = Rpc.make(WS_METHODS.providerSkillRead, {
+  payload: ProviderSkillReadInput,
+  success: ProviderSkillReadResult,
+  error: ProviderSetupRpcError,
+});
+
+const WsProviderHooksListRpc = Rpc.make(WS_METHODS.providerHooksList, {
+  payload: ProviderNativeConfigInput,
+  success: ProviderHookList,
+  error: ProviderSetupRpcError,
+});
+
+const WsProviderAgentImportDetectRpc = Rpc.make(WS_METHODS.providerAgentImportDetect, {
+  payload: ProviderNativeConfigInput,
+  success: ProviderAgentImportDetectResult,
+  error: ProviderSetupRpcError,
+});
+
+const WsProviderAgentImportRunRpc = Rpc.make(WS_METHODS.providerAgentImportRun, {
+  payload: ProviderAgentImportInput,
+  success: ProviderAgentImportResult,
+  error: ProviderSetupRpcError,
+});
+
+const WsProviderAccountUsageReadRpc = Rpc.make(WS_METHODS.providerAccountUsageRead, {
+  payload: ProviderNativeConfigInput,
+  success: ProviderAccountUsage,
+  error: ProviderSetupRpcError,
+});
+
 const WsCodexAuthCallbackSubscribeRpc = Rpc.make(WS_METHODS.codexAuthCallbackSubscribe, {
   payload: CodexAuthCallbackInput,
   success: CodexAuthCallbackState,
@@ -1237,6 +1346,36 @@ const WsProjectsWriteFileRpc = Rpc.make(WS_METHODS.projectsWriteFile, {
   payload: ProjectWriteFileInput,
   success: ProjectWriteFileResult,
   error: Schema.Union([ProjectWriteFileError, EnvironmentAuthorizationError]),
+});
+
+const WsAgentInstructionsListRpc = Rpc.make(WS_METHODS.agentInstructionsList, {
+  payload: AgentInstructionsListInput,
+  success: AgentInstructionsList,
+  error: Schema.Union([AgentInstructionsError, EnvironmentAuthorizationError]),
+});
+
+const WsThreadsMoveToWorktreeRpc = Rpc.make(WS_METHODS.threadsMoveToWorktree, {
+  payload: ThreadMoveToWorktreeInput,
+  success: WorktreeMcpHandoffResult,
+  error: Schema.Union([WorktreeMcpFailure, EnvironmentAuthorizationError]),
+});
+
+const WsThreadsReturnToProjectRpc = Rpc.make(WS_METHODS.threadsReturnToProject, {
+  payload: ThreadReturnToProjectInput,
+  success: ThreadReturnToProjectResult,
+  error: Schema.Union([WorktreeMcpFailure, EnvironmentAuthorizationError]),
+});
+
+const WsThreadsAskSideQuestionRpc = Rpc.make(WS_METHODS.threadsAskSideQuestion, {
+  payload: ThreadSideQuestionInput,
+  success: ThreadSideQuestionResult,
+  error: Schema.Union([ThreadSideQuestionError, EnvironmentAuthorizationError]),
+});
+
+const WsAgentInstructionsWriteRpc = Rpc.make(WS_METHODS.agentInstructionsWrite, {
+  payload: AgentInstructionsWriteInput,
+  success: AgentInstructionsWriteResult,
+  error: Schema.Union([AgentInstructionsError, EnvironmentAuthorizationError]),
 });
 
 const WsProjectsMutateRpc = Rpc.make(WS_METHODS.projectsMutate, {
@@ -1875,12 +2014,28 @@ export class RpcScopeAuthorization extends RpcMiddleware.Service<RpcScopeAuthori
   { error: EnvironmentAuthorizationError },
 ) {}
 
-export const WsRpcGroup = RpcGroup.make(
+/**
+ * The WebSocket RPCs, in parts. The server implements each part separately: typing one
+ * handler layer for every method at once grows quadratically with the method count and
+ * exceeds TypeScript's instantiation budget. Clients use the merged `WsRpcGroup`. Add a new
+ * method to the last part, or to whichever part is smallest.
+ */
+export const WsRpcGroupPart1 = RpcGroup.make(
   WsServerProbeRpc,
   WsServerGetConfigRpc,
   WsServerRefreshProvidersRpc,
   WsServerUpdateProviderRpc,
   WsProviderConsumeResetCreditRpc,
+  WsProviderMcpServersListRpc,
+  WsProviderMcpServerLoginRpc,
+  WsProviderMcpServersReloadRpc,
+  WsProviderSkillsListRpc,
+  WsProviderSkillSetEnabledRpc,
+  WsProviderSkillReadRpc,
+  WsProviderHooksListRpc,
+  WsProviderAgentImportDetectRpc,
+  WsProviderAgentImportRunRpc,
+  WsProviderAccountUsageReadRpc,
   WsProviderAuthStartRpc,
   WsProviderAuthCompleteRpc,
   WsChatGptReconnectProfileRpc,
@@ -1918,6 +2073,9 @@ export const WsRpcGroup = RpcGroup.make(
   WsServerLogoutAcpRegistryRpc,
   WsServerGetTraceDiagnosticsRpc,
   WsServerGetProcessDiagnosticsRpc,
+).middleware(RpcScopeAuthorization);
+
+export const WsRpcGroupPart2 = RpcGroup.make(
   WsServerGetHostResourcesRpc,
   WsServerGetProcessResourceHistoryRpc,
   WsServerGetResourceTelemetryHistoryRpc,
@@ -1970,6 +2128,9 @@ export const WsRpcGroup = RpcGroup.make(
   WsPullRequestsReportStateRpc,
   WsPullRequestsSubscribeRefreshesRpc,
   WsPullRequestsReviewerCandidatesRpc,
+).middleware(RpcScopeAuthorization);
+
+export const WsRpcGroupPart3 = RpcGroup.make(
   WsPullRequestsRequestReviewersRpc,
   WsPullRequestsLabelCandidatesRpc,
   WsPullRequestsSetLabelsRpc,
@@ -1988,6 +2149,8 @@ export const WsRpcGroup = RpcGroup.make(
   WsProjectsCreateNewRpc,
   WsProjectsWriteFileRpc,
   WsProjectsMutateRpc,
+  WsAgentInstructionsListRpc,
+  WsAgentInstructionsWriteRpc,
   WsShellOpenInEditorRpc,
   WsFilesystemBrowseRpc,
   WsFilesystemGetMetadataRpc,
@@ -2020,6 +2183,12 @@ export const WsRpcGroup = RpcGroup.make(
   WsReviewGetDiffFileContentsRpc,
   WsTerminalOpenRpc,
   WsTerminalAttachRpc,
+).middleware(RpcScopeAuthorization);
+
+export const WsRpcGroupPart4 = RpcGroup.make(
+  WsThreadsAskSideQuestionRpc,
+  WsThreadsMoveToWorktreeRpc,
+  WsThreadsReturnToProjectRpc,
   WsTerminalObserveRpc,
   WsTerminalWriteRpc,
   WsTerminalResizeRpc,
@@ -2070,3 +2239,5 @@ export const WsRpcGroup = RpcGroup.make(
   WsOrchestrationV2SubscribeShellRpc,
   WsOrchestrationV2SubscribeThreadRpc,
 ).middleware(RpcScopeAuthorization);
+
+export const WsRpcGroup = WsRpcGroupPart1.merge(WsRpcGroupPart2, WsRpcGroupPart3, WsRpcGroupPart4);

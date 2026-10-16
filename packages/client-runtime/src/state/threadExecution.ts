@@ -22,6 +22,8 @@ import {
   derivePendingBackgroundWork,
 } from "@moonfold/shared/orchestrationV2PendingBackgroundWork";
 import {
+  getModelSelectionBooleanOptionValue,
+  getModelSelectionStringOptionValue,
   getProviderOptionCurrentLabel,
   getProviderOptionDescriptors,
 } from "@moonfold/shared/model";
@@ -415,12 +417,12 @@ export function presentProviderGoal(
   working: boolean,
 ): ProviderGoalPresentation {
   const usage: Array<string> = [];
-  if (goal.tokensUsed !== undefined && goal.tokensUsed > 0) {
-    usage.push(
-      goal.tokenBudget == null
-        ? `${formatGoalTokens(goal.tokensUsed)} tokens`
-        : `${formatGoalTokens(goal.tokensUsed)} / ${formatGoalTokens(goal.tokenBudget)} tokens`,
-    );
+  // A budget shows from the start so the user sees the limit they set.
+  const tokensUsed = goal.tokensUsed ?? 0;
+  if (goal.tokenBudget != null) {
+    usage.push(`${formatGoalTokens(tokensUsed)} / ${formatGoalTokens(goal.tokenBudget)} tokens`);
+  } else if (tokensUsed > 0) {
+    usage.push(`${formatGoalTokens(tokensUsed)} tokens`);
   }
   if (goal.timeUsedSeconds !== undefined && goal.timeUsedSeconds >= 60) {
     usage.push(formatDuration(goal.timeUsedSeconds * 1_000));
@@ -453,4 +455,74 @@ export function notificationChildThreadId(
       source satisfies never;
       return undefined;
   }
+}
+
+/** Token use of one model configuration in a thread. */
+export interface ThreadTokenUsageGroup {
+  readonly model: string;
+  /** The reasoning effort the turns ran at, as the provider names it. */
+  readonly effort: string | null;
+  /** A faster (and dearer) service tier, when one was chosen. */
+  readonly speed: string | null;
+  readonly turns: number;
+  readonly inputTokens: number;
+  readonly cachedInputTokens: number;
+  readonly outputTokens: number;
+  readonly reasoningTokens: number;
+  /** Some turns reported only part of their usage, so the totals are a lower bound. */
+  readonly partial: boolean;
+}
+
+const EFFORT_OPTION_IDS = ["reasoningEffort", "effort", "reasoning"] as const;
+const STANDARD_SERVICE_TIERS = new Set(["default", "auto", "standard"]);
+
+function modelSelectionSpeed(selection: ModelSelection): string | null {
+  const tier = getModelSelectionStringOptionValue(selection, "serviceTier");
+  if (tier !== undefined && !STANDARD_SERVICE_TIERS.has(tier)) return tier;
+  return getModelSelectionBooleanOptionValue(selection, "fastMode") === true ? "fast" : null;
+}
+
+/**
+ * The thread's own (main agent) token use, grouped by model, effort and speed, largest first.
+ * Each provider turn counts once, under the run it belongs to.
+ */
+export function summarizeThreadTokenUsage(
+  projection: Pick<OrchestrationV2ThreadProjection, "runs" | "attempts" | "providerTurns">,
+): ReadonlyArray<ThreadTokenUsageGroup> {
+  const runsById = new Map(projection.runs.map((run) => [run.id, run]));
+  const runIdByAttempt = new Map(projection.attempts.map((attempt) => [attempt.id, attempt.runId]));
+  const groups = new Map<string, ThreadTokenUsageGroup>();
+  for (const turn of projection.providerTurns) {
+    const usage = turn.turnTokenUsage;
+    if (usage === undefined || usage.usageStatus === "unavailable") continue;
+    // A turn the provider answered locally (a slash command) used no tokens and is not a turn
+    // of model work.
+    if ((usage.inputTokens ?? 0) + (usage.outputTokens ?? 0) === 0) continue;
+    const runId = turn.runAttemptId === null ? undefined : runIdByAttempt.get(turn.runAttemptId);
+    const run = runId === undefined ? undefined : runsById.get(runId);
+    if (run === undefined) continue;
+    const selection = run.modelSelection;
+    const effort =
+      EFFORT_OPTION_IDS.map((id) => getModelSelectionStringOptionValue(selection, id)).find(
+        (value) => value !== undefined,
+      ) ?? null;
+    const speed = modelSelectionSpeed(selection);
+    const key = JSON.stringify([selection.model, effort, speed]);
+    const current = groups.get(key);
+    groups.set(key, {
+      model: selection.model,
+      effort,
+      speed,
+      turns: (current?.turns ?? 0) + 1,
+      inputTokens: (current?.inputTokens ?? 0) + (usage.inputTokens ?? 0),
+      cachedInputTokens: (current?.cachedInputTokens ?? 0) + (usage.cachedInputTokens ?? 0),
+      outputTokens: (current?.outputTokens ?? 0) + (usage.outputTokens ?? 0),
+      reasoningTokens: (current?.reasoningTokens ?? 0) + (usage.reasoningTokens ?? 0),
+      partial: (current?.partial ?? false) || usage.usageStatus === "partial",
+    });
+  }
+  return [...groups.values()].sort(
+    (left, right) =>
+      right.inputTokens + right.outputTokens - (left.inputTokens + left.outputTokens),
+  );
 }

@@ -232,6 +232,7 @@ export const make = Effect.gen(function* () {
       otlpEndpointCheck: true,
       projectWorktreeCleanup: true,
       settledWorktreeCleanup: true,
+      worktreeKeepRecentCleanup: true,
       worktreesDirectory: true,
       threadAutoSettlementScope: true,
       threadRestartContinuation: true,

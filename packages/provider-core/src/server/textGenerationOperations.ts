@@ -19,6 +19,7 @@ import {
   buildCommitMessagePrompt,
   buildPrContentPrompt,
   buildReviewGuidePrompt,
+  buildSideQuestionPrompt,
   buildThreadTitlePrompt,
 } from "./textGenerationPrompts.ts";
 import {
@@ -189,11 +190,24 @@ export function fromRunner(name: string, run: Runner): ProviderTextGeneration {
     });
   });
 
+  const answerSideQuestion: ProviderTextGeneration["answerSideQuestion"] = Effect.fn(
+    `${name}.answerSideQuestion`,
+  )(function* (input) {
+    const generated = yield* run({
+      operation: "answerSideQuestion",
+      cwd: input.cwd,
+      modelSelection: input.modelSelection,
+      ...buildSideQuestionPrompt(input),
+    });
+    return { answer: generated.answer.trim() };
+  });
+
   return {
     generateCommitMessage,
     generatePrContent,
     generateBranchName,
     generateThreadTitle,
     generateReviewGuide,
+    answerSideQuestion,
   } satisfies ProviderTextGeneration;
 }

@@ -1695,4 +1695,39 @@ describe("DesktopWindow", () => {
       }).pipe(Effect.provide(layer));
     }),
   );
+
+  it.effect("never treats a popped-out thread window as the main window", () =>
+    Effect.gen(function* () {
+      const popout = makeFakeBrowserWindow();
+      const main = makeFakeBrowserWindow();
+      const setAlwaysOnTop = vi.fn();
+      Object.assign(popout.window, { setAlwaysOnTop });
+      Object.assign(popout.window.webContents, { id: 7 });
+      const scenario = yield* makeSplashScenario([popout.window, main.window]);
+
+      yield* Effect.gen(function* () {
+        const desktopWindow = yield* DesktopWindow.DesktopWindow;
+        yield* desktopWindow.openThreadWindow("/env-1/thread-1");
+        assert.deepEqual(popout.loadURL.mock.calls[0], [
+          "moonfold-dev://app/?window=popout#/env-1/thread-1",
+        ]);
+
+        // With only the pop-out open, the backend becoming ready still opens a real main window.
+        yield* desktopWindow.handleBackendReady(new URL("http://127.0.0.1:3773"));
+        assert.equal(yield* Ref.get(scenario.createCalls), 2);
+        const registeredMain = yield* Ref.get(scenario.mainWindow);
+        assert.isTrue(Option.isSome(registeredMain));
+        assert.equal(Option.getOrThrow(registeredMain), main.window);
+
+        // Keep-on-top applies to the pop-out that asked, and to nothing else.
+        assert.isTrue(
+          yield* desktopWindow.setThreadWindowAlwaysOnTop({ webContentsId: 7, enabled: true }),
+        );
+        assert.deepEqual(setAlwaysOnTop.mock.calls, [[true, "floating"]]);
+        assert.isFalse(
+          yield* desktopWindow.setThreadWindowAlwaysOnTop({ webContentsId: 99, enabled: true }),
+        );
+      }).pipe(Effect.provide(scenario.layer));
+    }),
+  );
 });

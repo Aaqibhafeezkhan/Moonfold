@@ -118,6 +118,13 @@ device keeps its own choice.
 While this is on, the active list is ordered by when each thread last came back to you, so you
 cannot drag or move threads within it. Your saved order returns when you turn it off.
 
+## Open a thread in its own window
+
+In the desktop app, right-click a thread in the sidebar, or select the thread title, and choose
+**Open in new window**. The thread opens in a separate window with the sidebar closed, so you can
+keep it beside your editor. Select the pin button in that window's header to keep it above other
+windows. Notifications and links still go to the main window.
+
 ## Settle finished work
 
 Choose **Settle thread** from its menu to move finished work out of the active list

@@ -60,6 +60,7 @@ import { ProviderAccentColorPicker } from "./ProviderAccentColorPicker";
 import { RedactedSensitiveText } from "./RedactedSensitiveText";
 import { SettingResetButton, SettingsRow, SettingsSection } from "./settingsLayout";
 import { AcpSessionManagementSection } from "./AcpSessionManagementSection";
+import { CodexNativeConfigSections } from "./CodexNativeConfigSections";
 import { FoldedSettingsSection } from "./FoldedSettingsSection";
 import { readCodexSetupMode } from "./CodexSetupSection.logic";
 import {
@@ -1313,6 +1314,17 @@ export function ProviderInstanceCard({
           environmentId={environmentId}
           instanceId={instanceId}
           provider={liveProvider}
+          projects={acpProjects}
+          readOnly={readOnly}
+        />
+      ) : null}
+      {environmentId !== undefined &&
+      liveProvider?.driver === "codex" &&
+      liveProvider.enabled &&
+      liveProvider.installed ? (
+        <CodexNativeConfigSections
+          environmentId={environmentId}
+          instanceId={instanceId}
           projects={acpProjects}
           readOnly={readOnly}
         />

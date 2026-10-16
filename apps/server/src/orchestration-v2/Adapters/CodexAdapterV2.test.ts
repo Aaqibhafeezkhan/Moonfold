@@ -8691,6 +8691,85 @@ describe("CodexAdapterV2 post-settle continuation", () => {
       assert.isNull(CodexAdapterV2.parseCodexGoalCommand("set a /goal"));
     });
 
+    it("parses goal token budgets", () => {
+      assert.deepEqual(CodexAdapterV2.parseCodexGoalCommand("/goal --budget 200k Ship it"), {
+        type: "set",
+        objective: "Ship it",
+        tokenBudget: 200_000,
+      });
+      assert.deepEqual(CodexAdapterV2.parseCodexGoalCommand("/goal Ship it --budget 1.5M"), {
+        type: "set",
+        objective: "Ship it",
+        tokenBudget: 1_500_000,
+      });
+      assert.deepEqual(CodexAdapterV2.parseCodexGoalCommand("/goal budget 50000"), {
+        type: "budget",
+        tokenBudget: 50_000,
+      });
+      assert.deepEqual(CodexAdapterV2.parseCodexGoalCommand("/goal budget off"), {
+        type: "budget",
+        tokenBudget: null,
+      });
+      // Anything that is not a token count stays part of the objective.
+      assert.deepEqual(CodexAdapterV2.parseCodexGoalCommand("/goal budget the release"), {
+        type: "set",
+        objective: "budget the release",
+      });
+      assert.deepEqual(CodexAdapterV2.parseCodexGoalCommand("/goal Ship it --budget lots"), {
+        type: "set",
+        objective: "Ship it --budget lots",
+      });
+      assert.deepEqual(CodexAdapterV2.parseCodexGoalCommand("/goal --budget 0 Ship it"), {
+        type: "set",
+        objective: "--budget 0 Ship it",
+      });
+    });
+
+    it.effect("changes only the token budget with /goal budget", () =>
+      Effect.gen(function* () {
+        const transcript = makeCodexReplayTranscript({
+          scenario: "goal-budget",
+          entries: [
+            ...sessionStart,
+            ...request(
+              3,
+              "thread/goal/get",
+              { threadId: nativeThreadId },
+              { goal: codexGoal("active", 10) },
+            ),
+            ...request(
+              4,
+              "thread/goal/set",
+              { threadId: nativeThreadId, tokenBudget: 200_000 },
+              { goal: { ...codexGoal("active", 10), tokenBudget: 200_000 } },
+            ),
+          ],
+        });
+        const harness = yield* makeCodexReplayHarness(transcript);
+        yield* harness.runtime.startTurn(yield* goalTurnInput(harness, "/goal budget 200k"));
+        yield* harness.firstTerminal;
+
+        assert.include(
+          harness.events.flatMap((event) =>
+            event.type === "message.updated" && event.message.role === "assistant"
+              ? [event.message.text]
+              : [],
+          ),
+          "Goal budget set to 200,000 tokens.",
+        );
+        const goals = harness.events.flatMap((event) =>
+          event.type === "provider_thread.updated" ? [event.providerThread.goal ?? null] : [],
+        );
+        assert.equal(goals.at(-1)?.tokenBudget, 200_000);
+        assert.equal(goals.at(-1)?.status, "active");
+      }).pipe(
+        Effect.scoped,
+        Effect.provide(
+          Layer.mergeAll(IdAllocator.layer, McpProviderSessions.layer, NodeServices.layer),
+        ),
+      ),
+    );
+
     it.effect("keeps a /goal run open across the turns Codex continues on its own", () =>
       Effect.gen(function* () {
         const transcript = makeCodexReplayTranscript({
@@ -9486,6 +9565,230 @@ describe("CodexAdapterV2 post-settle continuation", () => {
         assert.deepEqual(
           harness.terminalEvents().map((event) => event.status),
           ["interrupted"],
+        );
+      }).pipe(
+        Effect.scoped,
+        Effect.provide(
+          Layer.mergeAll(IdAllocator.layer, McpProviderSessions.layer, NodeServices.layer),
+        ),
+      ),
+    );
+  });
+  it.effect("shows each hook run in the turn, from running to its outcome", () =>
+    Effect.scoped(
+      Effect.gen(function* () {
+        const nativeThreadId = "hook-thread";
+        const nativeTurnId = "hook-turn";
+        const hookRun = (status: string, entries: ReadonlyArray<unknown>) => ({
+          id: "run-1",
+          displayOrder: 0,
+          entries,
+          eventName: "preToolUse",
+          executionMode: "sync",
+          handlerType: "command",
+          scope: "turn",
+          sourcePath: "/home/dev/.codex/hooks.json",
+          startedAt: 1782622441,
+          status,
+          statusMessage: null,
+        });
+        const hookNotification = (method: string, run: unknown, turnId: string | null) => ({
+          type: "emit_inbound" as const,
+          label: method,
+          frame: { method, params: { threadId: nativeThreadId, turnId, run } },
+        });
+        const transcript = makeCodexReplayTranscript({
+          scenario: "hook-runs",
+          entries: [
+            ...codexReplayPreamble({ nativeThreadId, nativeTurnId, prompt: "Edit the file." }),
+            // Session-level runs have no turn to show in.
+            hookNotification("hook/started", hookRun("running", []), null),
+            hookNotification("hook/started", hookRun("running", []), nativeTurnId),
+            hookNotification(
+              "hook/completed",
+              hookRun("blocked", [{ kind: "stop", text: "  protected path  " }]),
+              nativeTurnId,
+            ),
+            {
+              type: "emit_inbound",
+              label: "complete",
+              frame: {
+                method: "turn/completed",
+                params: {
+                  threadId: nativeThreadId,
+                  turn: makeCodexReplayTurn({ id: nativeTurnId, status: "completed" }),
+                },
+              },
+            },
+          ],
+        });
+        const harness = yield* makeCodexReplayHarness(transcript);
+        yield* harness.runtime.startTurn(
+          makeCodexTestTurnInput({
+            threadId: harness.threadId,
+            providerThread: harness.providerThread,
+            now: yield* DateTime.now,
+            attemptId: RunAttemptId.make("hook-attempt"),
+            text: "Edit the file.",
+          }),
+        );
+        yield* harness.firstTerminal;
+
+        const notices = harness.events.flatMap((event) =>
+          event.type === "turn_item.updated" && event.turnItem.type === "system_notice"
+            ? [event.turnItem]
+            : [],
+        );
+        assert.deepEqual(
+          notices.map((notice) => [notice.title, notice.status, notice.message]),
+          [
+            ["Hook: preToolUse", "running", "Running the preToolUse hook."],
+            [
+              "Hook: preToolUse",
+              "completed",
+              "The preToolUse hook blocked the action.\nprotected path",
+            ],
+          ],
+        );
+        assert.equal(notices[0]?.id, notices[1]?.id);
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(IdAllocator.layer, McpProviderSessions.layer, NodeServices.layer),
+        ),
+      ),
+    ),
+  );
+
+  describe("native review", () => {
+    const nativeThreadId = "review-thread";
+    const nativeTurnId = "review-turn";
+    const notification = (
+      label: string,
+      method: string,
+      params: unknown,
+    ): CodexReplay.CodexAppServerReplayEntry => ({
+      type: "emit_inbound",
+      label,
+      frame: { method, params },
+    });
+    const sessionStart = codexReplayPreamble({
+      nativeThreadId,
+      nativeTurnId: "unused",
+      prompt: "unused",
+    }).slice(0, 5);
+
+    it("parses /review targets", () => {
+      assert.deepEqual(CodexAdapterV2.parseCodexReviewCommand("/review"), {
+        type: "uncommittedChanges",
+      });
+      assert.deepEqual(CodexAdapterV2.parseCodexReviewCommand(" /review branch main "), {
+        type: "baseBranch",
+        branch: "main",
+      });
+      assert.deepEqual(CodexAdapterV2.parseCodexReviewCommand("/review base origin/dev"), {
+        type: "baseBranch",
+        branch: "origin/dev",
+      });
+      assert.deepEqual(CodexAdapterV2.parseCodexReviewCommand("/review commit 1a2b3c4d"), {
+        type: "commit",
+        sha: "1a2b3c4d",
+        title: null,
+      });
+      assert.deepEqual(CodexAdapterV2.parseCodexReviewCommand("/review focus on\nerror paths"), {
+        type: "custom",
+        instructions: "focus on\nerror paths",
+      });
+      assert.deepEqual(CodexAdapterV2.parseCodexReviewCommand("/review commit not-a-sha"), {
+        type: "custom",
+        instructions: "commit not-a-sha",
+      });
+      assert.isNull(CodexAdapterV2.parseCodexReviewCommand("/reviewer"));
+      assert.isNull(CodexAdapterV2.parseCodexReviewCommand("please /review this"));
+    });
+
+    it.effect("runs /review as a native review turn with start and finish notices", () =>
+      Effect.gen(function* () {
+        const transcript = makeCodexReplayTranscript({
+          scenario: "review-uncommitted",
+          entries: [
+            ...sessionStart,
+            {
+              type: "expect_outbound",
+              label: "review/start",
+              frame: {
+                id: 3,
+                method: "review/start",
+                params: {
+                  threadId: nativeThreadId,
+                  target: { type: "uncommittedChanges" },
+                  delivery: "inline",
+                },
+              },
+            },
+            {
+              type: "emit_inbound",
+              label: "review/start",
+              frame: {
+                id: 3,
+                result: {
+                  turn: makeCodexReplayTurn({ id: nativeTurnId, status: "inProgress" }),
+                  reviewThreadId: nativeThreadId,
+                },
+              },
+            },
+            notification("entered", "item/completed", {
+              threadId: nativeThreadId,
+              turnId: nativeTurnId,
+              item: { type: "enteredReviewMode", id: "review-entered", review: "current changes" },
+            }),
+            notification("exited", "item/completed", {
+              threadId: nativeThreadId,
+              turnId: nativeTurnId,
+              item: { type: "exitedReviewMode", id: "review-exited", review: "Looks good." },
+            }),
+            notification("findings", "item/completed", {
+              threadId: nativeThreadId,
+              turnId: nativeTurnId,
+              item: { type: "agentMessage", id: "review-findings", text: "Looks good." },
+            }),
+            notification("done", "turn/completed", {
+              threadId: nativeThreadId,
+              turn: makeCodexReplayTurn({ id: nativeTurnId, status: "completed" }),
+            }),
+          ],
+        });
+        const harness = yield* makeCodexReplayHarness(transcript);
+        const now = yield* DateTime.now;
+        yield* harness.runtime.startTurn(
+          makeCodexTestTurnInput({
+            threadId: harness.threadId,
+            providerThread: harness.providerThread,
+            now,
+            attemptId: RunAttemptId.make("review-attempt"),
+            text: "/review",
+          }),
+        );
+        yield* harness.firstTerminal;
+
+        assert.deepEqual(
+          harness.terminalEvents().map((event) => event.status),
+          ["completed"],
+        );
+        assert.deepEqual(
+          harness.events.flatMap((event) =>
+            event.type === "turn_item.updated" && event.turnItem.type === "system_notice"
+              ? [event.turnItem.message]
+              : [],
+          ),
+          ["Code review started: current changes", "Code review finished"],
+        );
+        assert.isTrue(
+          harness.events.some(
+            (event) =>
+              event.type === "turn_item.updated" &&
+              event.turnItem.type === "assistant_message" &&
+              event.turnItem.text === "Looks good.",
+          ),
         );
       }).pipe(
         Effect.scoped,

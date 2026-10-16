@@ -76,7 +76,8 @@ const worktreeCleanupEnabled = (rules: WorktreeCleanupRules) =>
   rules.worktreeSettledAfterDays !== null ||
   rules.worktreeOnMerge ||
   rules.worktreeOnDelete ||
-  rules.worktreeUnchanged;
+  rules.worktreeUnchanged ||
+  rules.worktreeKeepRecent !== null;
 
 function anyWorktreePolicy(
   settings: ServerSettings,
@@ -444,6 +445,21 @@ const make = Effect.gen(function* () {
       ...[...groups.values()].map((group) => group[0]!),
       ...deletedThreads.filter((thread) => !groups.has(path.resolve(thread.worktreePath!))),
     ];
+    // Position of each live worktree among its project's worktrees, most recently active first,
+    // for the keep-recent rule. Shared worktrees count once, by their most recent thread.
+    const recencyRank = new Map<string, number>();
+    for (const projectWorktrees of Map.groupBy(
+      [...groups.entries()].map(([worktreePath, threads]) => ({
+        worktreePath,
+        projectId: threads[0]!.projectId,
+        activity: Math.max(...threads.map(storageCleanupActivityAt)),
+      })),
+      (entry) => entry.projectId,
+    ).values()) {
+      projectWorktrees
+        .toSorted((left, right) => right.activity - left.activity)
+        .forEach((entry, index) => recencyRank.set(entry.worktreePath, index));
+    }
     for (const thread of candidates) {
       const settings = resolveWorktreeCleanup(serverSettings, thread.projectId);
       if (!worktreeCleanupEnabled(settings)) continue;
@@ -512,12 +528,18 @@ const make = Effect.gen(function* () {
           settledFor !== null &&
           settings.worktreeSettledAfterDays !== null &&
           settledFor >= settings.worktreeSettledAfterDays * DAY_MS;
-        let eligible = deleted || old || settled;
+        const beyondKeepCount =
+          !deleted &&
+          settings.worktreeKeepRecent !== null &&
+          (recencyRank.get(worktreePath) ?? 0) >= settings.worktreeKeepRecent;
+        let eligible = deleted || old || settled || beyondKeepCount;
         let removalReason = deleted
           ? "thread was deleted"
           : old
             ? `inactive for ${Math.floor((now - storageCleanupActivityAt(thread)) / DAY_MS)} days`
-            : `settled for ${settledDays} days`;
+            : settled
+              ? `settled for ${settledDays} days`
+              : `older than the ${settings.worktreeKeepRecent} most recently active worktrees`;
         if (!eligible && (settings.worktreeUnchanged || settings.worktreeOnMerge)) {
           const repositoryCwd = path.resolve(project.workspaceRoot);
           const remote = yield* git.resolvePrimaryRemoteName(repositoryCwd);
@@ -563,15 +585,17 @@ const make = Effect.gen(function* () {
         }
         if (!eligible)
           return keep(
-            !deleted && settings.worktreeAfterDays !== null
-              ? `inactive for ${Math.floor((now - storageCleanupActivityAt(thread)) / DAY_MS)} of ${settings.worktreeAfterDays} days`
-              : settings.worktreeSettledAfterDays !== null
-                ? settledFor === null
-                  ? "not settled"
-                  : `settled for ${settledDays} of ${settings.worktreeSettledAfterDays} days`
-                : settings.worktreeOnMerge
-                  ? "not merged"
-                  : "has commits beyond the default branch",
+            settings.worktreeKeepRecent !== null
+              ? `one of the ${settings.worktreeKeepRecent} most recently active worktrees`
+              : !deleted && settings.worktreeAfterDays !== null
+                ? `inactive for ${Math.floor((now - storageCleanupActivityAt(thread)) / DAY_MS)} of ${settings.worktreeAfterDays} days`
+                : settings.worktreeSettledAfterDays !== null
+                  ? settledFor === null
+                    ? "not settled"
+                    : `settled for ${settledDays} of ${settings.worktreeSettledAfterDays} days`
+                  : settings.worktreeOnMerge
+                    ? "not merged"
+                    : "has commits beyond the default branch",
           );
         // Threads, queued deletion work and provider sessions as they are now, so a
         // queued turn, resumed session or new thread sharing this path cancels

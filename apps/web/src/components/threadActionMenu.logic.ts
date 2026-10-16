@@ -27,6 +27,9 @@ export type ThreadActionMenuId =
   | "copy-path"
   | "copy-branch"
   | "copy-thread-id"
+  | "open-in-window"
+  | "move-to-worktree"
+  | "return-to-project"
   | "archive"
   | "delete";
 
@@ -88,6 +91,13 @@ export interface ThreadActionMenuState {
   readonly isSnoozed: boolean;
   readonly canSnoozeNow: boolean;
   readonly isRegeneratingTitle: boolean;
+  /** The desktop app can open this thread in a window of its own. */
+  readonly canOpenInWindow: boolean;
+  /**
+   * Where the thread works: the project folder or a worktree of its own. Null when it can move
+   * neither way (no git branch, or a server without the move).
+   */
+  readonly workspace: "project" | "worktree" | null;
   /** Archive rejects a thread with an attached provider, so disable it here rather than let the action fail. */
   readonly isRunning: boolean;
   readonly supports: {
@@ -101,6 +111,20 @@ export interface ThreadActionMenuState {
   readonly snoozePresets: ReadonlyArray<SnoozePreset>;
 }
 
+/**
+ * Which way a thread can move: out of the project folder into a worktree, or back. A thread
+ * without a branch is not in a git checkout, and a connection without source-control write
+ * access cannot move files at all.
+ */
+export function threadWorkspaceKind(
+  thread: { readonly worktreePath: string | null; readonly branch: string | null },
+  canWriteSourceControl: boolean,
+): ThreadActionMenuState["workspace"] {
+  if (!canWriteSourceControl) return null;
+  if (thread.worktreePath !== null) return "worktree";
+  return thread.branch !== null ? "project" : null;
+}
+
 /** Local navigation, read markers, and copying remain available to read-only clients. */
 export function threadActionRequiresOperate(action: ThreadActionMenuId): boolean {
   return ![
@@ -111,6 +135,7 @@ export function threadActionRequiresOperate(action: ThreadActionMenuId): boolean
     "copy-path",
     "copy-branch",
     "copy-thread-id",
+    "open-in-window",
   ].includes(action);
 }
 
@@ -229,6 +254,30 @@ export function buildThreadActionMenuItems(
         { id: "copy-thread-id", label: "Thread ID", icon: "hash" },
       ],
     },
+    ...(state.canOpenInWindow
+      ? [{ id: "open-in-window" as const, label: "Open in new window", icon: "app-window" }]
+      : []),
+    // Moving files under an agent mid-turn would pull its checkout out from under it.
+    ...(state.workspace === "project"
+      ? [
+          {
+            id: "move-to-worktree" as const,
+            label: "Move to new worktree…",
+            icon: "git-branch",
+            disabled: state.isRunning,
+          },
+        ]
+      : []),
+    ...(state.workspace === "worktree"
+      ? [
+          {
+            id: "return-to-project" as const,
+            label: "Bring back to project folder…",
+            icon: "folder",
+            disabled: state.isRunning,
+          },
+        ]
+      : []),
     { id: "project-settings", label: "Project settings", icon: "settings" },
     // Archive removes the thread from the sidebar while keeping its
     // conversation under Settings > Archived threads — distinct from Settle

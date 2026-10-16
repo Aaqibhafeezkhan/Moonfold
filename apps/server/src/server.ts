@@ -7,6 +7,7 @@ import * as StorageCleanup from "./storageCleanup.ts";
 import * as PullRequestSyncReactor from "./orchestration-v2/PullRequestSyncReactor.ts";
 import * as PullRequestWatchReactor from "./orchestration-v2/PullRequestWatchReactor.ts";
 import * as DelegatedTaskQuestionReactor from "./orchestration-v2/DelegatedTaskQuestionReactor.ts";
+import * as ProviderThreadArchiveSync from "./orchestration-v2/ProviderThreadArchiveSync.ts";
 // @effect-diagnostics nodeBuiltinImport:off
 import * as NodeHttp from "node:http";
 
@@ -32,6 +33,7 @@ import * as ServerHttp from "./http.ts";
 import { guardHttpResponseWriteErrors } from "./httpResponseErrorGuard.ts";
 import { fixPath } from "./os-jank.ts";
 import * as Ws from "./ws.ts";
+import * as WorktreeMcpService from "./mcp/WorktreeMcpService.ts";
 import * as AgentScopeLive from "./process/agentScope.ts";
 import * as ExternalLauncher from "./process/externalLauncher.ts";
 import * as NodePtyAdapter from "./terminal/NodePtyAdapter.ts";
@@ -578,9 +580,18 @@ const layerRuntimeCoreDependenciesBase = Layer.mergeAll(
       yield* service.start();
     }),
   ).pipe(Layer.provide(DelegatedTaskQuestionReactor.layer), Layer.provide(ProjectionStoreV2.layer)),
+  Layer.effectDiscard(
+    Effect.gen(function* () {
+      const service = yield* ProviderThreadArchiveSync.ProviderThreadArchiveSync;
+      yield* service.start();
+    }),
+  ).pipe(Layer.provide(ProviderThreadArchiveSync.layer), Layer.provide(ProjectionStoreV2.layer)),
   // Subscribes to `account.rate-limits.updated` so usage bars track live
   // telemetry instead of waiting for the next status probe.
   ProviderUsageLimitsIngestion.layer,
+  // The WebSocket RPCs and the MCP worktree tools share this instance (layers are memoized), so
+  // a thread's checkout only ever changes through one guarded path.
+  WorktreeMcpService.layer,
   layerProviderInstallationRefresh,
   ReplayMarkers.layer,
   // Catches overrides left behind by a project deleted before this cleanup

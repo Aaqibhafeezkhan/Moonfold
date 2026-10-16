@@ -20,6 +20,8 @@ import ChatMarkdown from "../ChatMarkdown";
 import { EllipsisIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
+import { usePlanEdit } from "~/planEdits";
 import { Menu, MenuItem, MenuPopup, MenuTrigger } from "../ui/menu";
 import { cn } from "~/lib/utils";
 import { Badge } from "../ui/badge";
@@ -39,13 +41,15 @@ import { useAtomCommand } from "~/state/use-atom-command";
 import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
 
 export const ProposedPlanCard = memo(function ProposedPlanCard({
-  planMarkdown,
+  planId,
+  planMarkdown: proposedMarkdown,
   environmentId,
   threadRef,
   cwd,
   workspaceRoot,
   findActive = false,
 }: {
+  planId: string;
   planMarkdown: string;
   environmentId: EnvironmentId;
   threadRef?: ScopedThreadRef | undefined;
@@ -54,6 +58,10 @@ export const ProposedPlanCard = memo(function ProposedPlanCard({
   findActive?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
+  // Your edit replaces the agent's plan here and when you implement it.
+  const [planEdit, setPlanEdit] = usePlanEdit(threadRef, planId);
+  const planMarkdown = planEdit ?? proposedMarkdown;
+  const [editDraft, setEditDraft] = useState<string | null>(null);
   const canWriteFiles = useEnvironmentScope(environmentId, AuthFilesystemWriteScope);
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [savePath, setSavePath] = useState("");
@@ -165,6 +173,7 @@ export const ProposedPlanCard = memo(function ProposedPlanCard({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <Badge variant="secondary">Plan</Badge>
+          {planEdit !== null ? <Badge variant="outline">Edited</Badge> : null}
           {/* Same heading level as the message author headings in the timeline,
               so a plan's own headings nest beneath it in the outline. */}
           <h3 data-thread-find-text="true" className="truncate text-sm font-medium text-foreground">
@@ -178,6 +187,12 @@ export const ProposedPlanCard = memo(function ProposedPlanCard({
             <EllipsisIcon aria-hidden="true" className="size-4" />
           </MenuTrigger>
           <MenuPopup align="end">
+            {threadRef !== undefined ? (
+              <MenuItem onClick={() => setEditDraft(planMarkdown)}>Edit plan</MenuItem>
+            ) : null}
+            {planEdit !== null ? (
+              <MenuItem onClick={() => setPlanEdit(null)}>Use the original plan</MenuItem>
+            ) : null}
             <MenuItem onClick={handleCopyPlan}>
               {isCopied ? "Copied!" : "Copy to clipboard"}
             </MenuItem>
@@ -234,6 +249,41 @@ export const ProposedPlanCard = memo(function ProposedPlanCard({
           </div>
         ) : null}
       </div>
+
+      <Dialog open={editDraft !== null} onOpenChange={(open) => !open && setEditDraft(null)}>
+        <DialogPopup className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Edit plan</DialogTitle>
+            <DialogDescription>
+              Implementing the plan sends your version to the agent.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogPanel>
+            <Textarea
+              aria-label="Plan"
+              value={editDraft ?? ""}
+              rows={18}
+              spellCheck={false}
+              onChange={(event) => setEditDraft(event.currentTarget.value)}
+            />
+          </DialogPanel>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDraft(null)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={(editDraft ?? "").trim().length === 0}
+              onClick={() => {
+                const next = editDraft ?? "";
+                setPlanEdit(next === proposedMarkdown ? null : next);
+                setEditDraft(null);
+              }}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogPopup>
+      </Dialog>
 
       <Dialog
         open={isSaveDialogOpen}

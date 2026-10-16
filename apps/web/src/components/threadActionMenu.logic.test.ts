@@ -16,6 +16,8 @@ const baseState: ThreadActionMenuState = {
   isSnoozed: false,
   canSnoozeNow: true,
   isRegeneratingTitle: false,
+  canOpenInWindow: false,
+  workspace: null,
   isRunning: false,
   supports: {
     settlement: true,
@@ -38,6 +40,38 @@ function allIds(state: ThreadActionMenuState): string[] {
     items.flatMap((item) => [item.id, ...(item.children ? flatten(item.children) : [])]);
   return flatten(buildThreadActionMenuItems(state));
 }
+
+describe("open in new window", () => {
+  it("is offered only where the desktop app can open one, and needs no write access", () => {
+    expect(ids(baseState)).not.toContain("open-in-window");
+    expect(ids({ ...baseState, canOpenInWindow: true })).toContain("open-in-window");
+    const readOnly = buildThreadActionMenuItems({
+      ...baseState,
+      canOperate: false,
+      canOpenInWindow: true,
+    }).find((item) => item.id === "open-in-window");
+    expect(readOnly?.disabled).not.toBe(true);
+  });
+});
+
+describe("moving between the project folder and a worktree", () => {
+  it("offers the way out of the current workspace, and the way back", () => {
+    expect(ids(baseState)).not.toContain("move-to-worktree");
+    expect(ids(baseState)).not.toContain("return-to-project");
+    expect(ids({ ...baseState, workspace: "project" })).toContain("move-to-worktree");
+    expect(ids({ ...baseState, workspace: "project" })).not.toContain("return-to-project");
+    expect(ids({ ...baseState, workspace: "worktree" })).toContain("return-to-project");
+    expect(ids({ ...baseState, workspace: "worktree" })).not.toContain("move-to-worktree");
+  });
+
+  it("waits for the agent to finish and needs write access", () => {
+    const find = (state: ThreadActionMenuState) =>
+      buildThreadActionMenuItems(state).find((item) => item.id === "move-to-worktree");
+    expect(find({ ...baseState, workspace: "project" })?.disabled).toBe(false);
+    expect(find({ ...baseState, workspace: "project", isRunning: true })?.disabled).toBe(true);
+    expect(find({ ...baseState, workspace: "project", canOperate: false })?.disabled).toBe(true);
+  });
+});
 
 describe("buildThreadActionMenuItems", () => {
   it.each([false, true])(

@@ -527,6 +527,7 @@ export function applyServerSettingsPatch(
                     worktreeOnMerge: next.storageCleanup.worktreeOnMerge,
                     worktreeOnDelete: next.storageCleanup.worktreeOnDelete,
                     worktreeUnchanged: next.storageCleanup.worktreeUnchanged,
+                    worktreeKeepRecent: next.storageCleanup.worktreeKeepRecent,
                     ...(current.worktreeCleanup?.mode === "custom"
                       ? current.worktreeCleanup.rules
                       : {}),

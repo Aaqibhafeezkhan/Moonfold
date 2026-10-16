@@ -108,6 +108,7 @@ import {
   deriveThreadRuntime,
   presentPendingBackgroundWork,
   presentProviderGoal,
+  summarizeThreadTokenUsage,
 } from "@moonfold/client-runtime/state/thread-execution";
 import { threadSupportsProviderHandoff } from "@moonfold/client-runtime/state/thread-workflows";
 import { resolvePendingHandoff } from "@moonfold/client-runtime/handoff";
@@ -232,6 +233,7 @@ import {
   buildPlanImplementationPrompt,
   resolvePlanFollowUpSubmission,
 } from "../proposedPlan";
+import { readPlanMarkdownForImplementation } from "../planEdits";
 import {
   DEFAULT_INTERACTION_MODE,
   DEFAULT_THREAD_TERMINAL_ID,
@@ -422,7 +424,10 @@ import {
 } from "../state/server";
 import { terminalEnvironment } from "../state/terminal";
 import { threadEnvironment } from "../state/threads";
-import { workspacePreparationRetryRunIds } from "@moonfold/client-runtime/state/turn-item-presentation";
+import {
+  retryableFailedRun,
+  workspacePreparationRetryRunIds,
+} from "@moonfold/client-runtime/state/turn-item-presentation";
 import { resolveProviderSkillsForCwd } from "@moonfold/client-runtime/providerSkills";
 import { vcsEnvironment } from "../state/vcs";
 import { sourceControlEnvironment } from "../state/sourceControl";
@@ -3720,6 +3725,20 @@ export default function ChatView(props: ChatViewProps) {
       ),
     [activeThreadLiveTokenUsage, serverVisibleTurnItems, serverProjection],
   );
+  const serverRuns = serverProjection?.runs;
+  const serverAttempts = serverProjection?.attempts;
+  const serverProviderTurns = serverProjection?.providerTurns;
+  const threadTokenUsage = useMemo(
+    () =>
+      serverRuns && serverAttempts && serverProviderTurns
+        ? summarizeThreadTokenUsage({
+            runs: serverRuns,
+            attempts: serverAttempts,
+            providerTurns: serverProviderTurns,
+          })
+        : [],
+    [serverAttempts, serverProviderTurns, serverRuns],
+  );
   const pendingBackgroundTasks = useMemo(() => {
     if (serverProjection === null || serverProjection === undefined) {
       return [];
@@ -4147,6 +4166,55 @@ export default function ChatView(props: ChatViewProps) {
     }).finally(() => retryingWorkspacePreparationRunIds.delete(runId));
   };
   const onRetryWorkspacePreparationStable = useStableCallback(onRetryWorkspacePreparation);
+  // The latest run failed: its message can be sent again as a new turn.
+  const failedRunRetry = useMemo(
+    () => retryableFailedRun(serverProjection?.runs ?? [], serverProjection?.turnItems ?? []),
+    [serverProjection?.runs, serverProjection?.turnItems],
+  );
+  const failedRunRetryId = failedRunRetry?.id ?? null;
+  const retryableFailedRunIds = useMemo(
+    () => new Set(failedRunRetryId === null ? [] : [failedRunRetryId]),
+    [failedRunRetryId],
+  );
+  const onRetryFailedRun = async (runId: RunId) => {
+    if (
+      !isServerThread ||
+      activeThreadId === null ||
+      failedRunRetry?.id !== runId ||
+      sendInFlightRef.current ||
+      !readEnvironmentScope(environmentId, AuthOrchestrationOperateScope)
+    )
+      return;
+    const message = serverProjection?.messages.find(
+      (candidate) => candidate.id === failedRunRetry.userMessageId,
+    );
+    if (message === undefined) return;
+    const result = await startThreadTurn({
+      environmentId,
+      input: {
+        threadId: activeThreadId,
+        message: {
+          messageId: newMessageId(),
+          role: "user",
+          text: message.text,
+          attachments: message.attachments,
+        },
+        runtimeMode,
+        interactionMode,
+      },
+    });
+    if (result._tag === "Failure" && !isAtomCommandInterrupted(result)) {
+      const error = squashAtomCommandFailure(result);
+      toastManager.add(
+        stackedThreadToast({
+          type: "error",
+          title: "Could not retry",
+          description: error instanceof Error ? error.message : "The message was not sent again.",
+        }),
+      );
+    }
+  };
+  const onRetryFailedRunStable = useStableCallback((runId: RunId) => void onRetryFailedRun(runId));
   const onCancelWorktreeSetup = () => {
     if (!worktreeSetup || worktreeSetup.phase !== "running") return;
     void cancelWorktreeSetup({
@@ -8985,7 +9053,10 @@ export default function ChatView(props: ChatViewProps) {
     ) {
       const followUp = resolvePlanFollowUpSubmission({
         draftText: promptForSend,
-        planMarkdown: activeProposedPlan.planMarkdown,
+        planMarkdown: readPlanMarkdownForImplementation(
+          scopeThreadRef(activeThread.environmentId, activeThread.id),
+          activeProposedPlan,
+        ),
       });
       const outgoingFollowUpText = formatOutgoingPrompt({
         provider: ctxSelectedProvider,
@@ -10412,7 +10483,10 @@ export default function ChatView(props: ChatViewProps) {
 
     const createdAt = new Date().toISOString();
     const nextThreadId = newThreadId();
-    const planMarkdown = activeProposedPlan.planMarkdown;
+    const planMarkdown = readPlanMarkdownForImplementation(
+      scopeThreadRef(activeThread.environmentId, activeThread.id),
+      activeProposedPlan,
+    );
     const implementationPrompt = buildPlanImplementationPrompt(planMarkdown);
     const outgoingImplementationPrompt = formatOutgoingPrompt({
       provider: ctxSelectedProvider,
@@ -10998,6 +11072,7 @@ export default function ChatView(props: ChatViewProps) {
     environmentId: activeThread.environmentId,
     threadId: activeThread.id,
     ...(draftId ? { draftId } : {}),
+    threadTokenUsage,
     activeProjectName: activeProject?.title,
     activeProjectScripts: activeProject ? activeProjectScripts : undefined,
     preferredScriptId: activeProject
@@ -11282,6 +11357,8 @@ export default function ChatView(props: ChatViewProps) {
                   : {
                       retryableWorkspacePreparationRunIds,
                       onRetryWorkspacePreparation: onRetryWorkspacePreparationStable,
+                      retryableFailedRunIds,
+                      onRetryFailedRun: onRetryFailedRunStable,
                     })}
                 {...(draftId
                   ? { onWorktreeSetupWorkLocally: onWorktreeSetupWorkLocallyStable }

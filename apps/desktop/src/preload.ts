@@ -201,6 +201,14 @@ contextBridge.exposeInMainWorld("desktopBridge", {
   cancelProviderAuthCallback: (url: string) =>
     ipcRenderer.invoke(IpcChannels.CANCEL_PROVIDER_AUTH_CALLBACK_CHANNEL, url),
   openExternal: (url: string) => ipcRenderer.invoke(IpcChannels.OPEN_EXTERNAL_CHANNEL, url),
+  openThreadWindow: (path: string) =>
+    ipcRenderer.invoke(IpcChannels.OPEN_THREAD_WINDOW_CHANNEL, path),
+  setWindowAlwaysOnTop: (enabled: boolean) =>
+    ipcRenderer.invoke(IpcChannels.SET_WINDOW_ALWAYS_ON_TOP_CHANNEL, enabled),
+  getQuickWindowStatus: () =>
+    ipcRenderer.invoke(IpcChannels.GET_QUICK_WINDOW_STATUS_CHANNEL, undefined),
+  setQuickWindowShortcutSuppressed: (suppressed: boolean) =>
+    ipcRenderer.invoke(IpcChannels.SET_QUICK_WINDOW_SHORTCUT_SUPPRESSED_CHANNEL, suppressed),
   checkSystemPermission: (pane: string) =>
     ipcRenderer.invoke(IpcChannels.CHECK_SYSTEM_PERMISSION_CHANNEL, pane),
   openSystemSettings: (pane: string) =>

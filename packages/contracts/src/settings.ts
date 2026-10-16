@@ -511,6 +511,10 @@ export const ClientSettingsSchema = Schema.Struct({
   snapShotFlash: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
   snapShotAnimations: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
   wordWrap: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
+  /** Desktop: the global hotkey that opens the quick window. Off (null) until the user sets one. */
+  quickWindowShortcut: Schema.NullOr(SnapShotKeyChord).pipe(
+    Schema.withDecodingDefault(Effect.succeed(null)),
+  ),
 });
 export type ClientSettings = typeof ClientSettingsSchema.Type;
 
@@ -943,6 +947,10 @@ const StorageRetentionDays = Schema.NullOr(
 const SettledWorktreeRetentionDays = Schema.NullOr(
   Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 3650 })),
 );
+/** Keep only this many of a project's most recently active worktrees; null keeps all. */
+const WorktreeKeepRecentCount = Schema.NullOr(
+  Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 1000 })),
+);
 
 export const WorktreeKeepWhen = Schema.Literals([
   "any-local-files",
@@ -962,6 +970,9 @@ export const WorktreeCleanupRules = Schema.Struct({
   worktreeOnMerge: Schema.Boolean,
   worktreeOnDelete: Schema.Boolean,
   worktreeUnchanged: Schema.Boolean,
+  worktreeKeepRecent: WorktreeKeepRecentCount.pipe(
+    Schema.withDecodingDefault(Effect.succeed(null)),
+  ),
 });
 export type WorktreeCleanupRules = typeof WorktreeCleanupRules.Type;
 
@@ -1107,6 +1118,9 @@ export const StorageCleanupSettings = Schema.Struct({
   worktreeOnMerge: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
   worktreeOnDelete: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
   worktreeUnchanged: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
+  worktreeKeepRecent: WorktreeKeepRecentCount.pipe(
+    Schema.withDecodingDefault(Effect.succeed(null)),
+  ),
   browserArtifactsAfterDays: StorageRetentionDays.pipe(
     Schema.withDecodingDefault(Effect.succeed(null)),
   ),
@@ -1538,6 +1552,7 @@ export const ServerSettingsPatch = Schema.Struct({
             worktreeOnMerge: Schema.optionalKey(Schema.Boolean),
             worktreeOnDelete: Schema.optionalKey(Schema.Boolean),
             worktreeUnchanged: Schema.optionalKey(Schema.Boolean),
+            worktreeKeepRecent: Schema.optionalKey(WorktreeKeepRecentCount),
           }),
         }),
       ]),
@@ -1551,6 +1566,7 @@ export const ServerSettingsPatch = Schema.Struct({
       worktreeOnMerge: Schema.optionalKey(Schema.Boolean),
       worktreeOnDelete: Schema.optionalKey(Schema.Boolean),
       worktreeUnchanged: Schema.optionalKey(Schema.Boolean),
+      worktreeKeepRecent: Schema.optionalKey(WorktreeKeepRecentCount),
       browserArtifactsAfterDays: Schema.optionalKey(StorageRetentionDays),
       logsAfterDays: Schema.optionalKey(StorageRetentionDays),
     }),
@@ -1775,5 +1791,6 @@ export const ClientSettingsPatch = Schema.Struct({
   snapShotFlash: Schema.optionalKey(Schema.Boolean),
   snapShotAnimations: Schema.optionalKey(Schema.Boolean),
   wordWrap: Schema.optionalKey(Schema.Boolean),
+  quickWindowShortcut: Schema.optionalKey(Schema.NullOr(SnapShotKeyChord)),
 });
 export type ClientSettingsPatch = typeof ClientSettingsPatch.Type;

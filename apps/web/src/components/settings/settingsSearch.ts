@@ -19,6 +19,7 @@ export type SettingsPath =
   | "/settings/diagnostics"
   | "/settings/appearance"
   | "/settings/keybindings"
+  | "/settings/personalization"
   | "/settings/snap-shot"
   | "/settings/providers"
   | "/settings/integrations"
@@ -98,6 +99,7 @@ export const SETTINGS_SECTION_LABELS: Readonly<Record<SettingsPath, string>> = {
   "/settings/general": "General",
   "/settings/appearance": "Appearance",
   "/settings/keybindings": "Keybindings",
+  "/settings/personalization": "Personalization",
   "/settings/snap-shot": "SnapShots",
   "/settings/providers": "Providers",
   "/settings/integrations": "Integrations",
@@ -187,7 +189,7 @@ export const SETTINGS_SEARCH_ITEMS = [
     to: "/settings/storage",
     scope: "project-defaults",
     searchTerms: [
-      "disk storage delete deleted archived threads old inactive merged unchanged worktrees retention days project inherit off custom",
+      "disk storage delete deleted archived threads old inactive merged unchanged worktrees retention days project inherit off custom keep recent count limit",
     ],
   },
   {
@@ -541,6 +543,13 @@ export const SETTINGS_SEARCH_ITEMS = [
     title: "Quit shortcut",
     to: "/settings/general",
     searchTerms: ["confirmation desktop app exit direct hold double click press twice"],
+    desktopOnly: true,
+  },
+  {
+    id: "quick-window-shortcut",
+    title: "Quick window shortcut",
+    to: "/settings/general",
+    searchTerms: ["global hotkey popup floating new thread anywhere desktop"],
     desktopOnly: true,
   },
   {
@@ -1015,6 +1024,14 @@ export const SETTINGS_SEARCH_ITEMS = [
     searchTerms: ["pull request trusted environments shared credentials permissions read actions"],
   },
   {
+    id: "personalization",
+    title: "Agent instructions",
+    to: "/settings/personalization",
+    searchTerms: [
+      "AGENTS.md CLAUDE.md custom instructions personalization rules memory prompt project user",
+    ],
+  },
+  {
     id: "archive",
     title: "Archived threads",
     to: "/settings/archived",
@@ -1035,6 +1052,8 @@ const SETTINGS_CATEGORY_SCOPES: Readonly<Record<SettingsPath, SettingsSearchScop
   // Keybindings fan out to the selection; Providers shows the representative
   // environment at any selection. Neither needs a particular scope to render.
   "/settings/keybindings": null,
+  // Picks its own environment and project; the files live on the environment's machine.
+  "/settings/personalization": null,
   "/settings/providers": null,
   "/settings/integrations": null,
   "/settings/source-control": "environment-defaults",

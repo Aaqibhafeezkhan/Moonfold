@@ -1,6 +1,10 @@
 import { assert, it } from "@effect/vitest";
 
-import { applyPreferredCodexDefaultModel, mapCodexModelCapabilities } from "./CodexProvider.ts";
+import {
+  applyPreferredCodexDefaultModel,
+  codexAllowedRuntimeModes,
+  mapCodexModelCapabilities,
+} from "./CodexProvider.ts";
 
 it("maps current Codex model capability fields", () => {
   const capabilities = mapCodexModelCapabilities({
@@ -170,4 +174,25 @@ it("ignores custom models that shadow a preferred slug", () => {
   ]);
 
   assert.deepStrictEqual(models.find((model) => model.isDefault)?.slug, "gpt-5.4");
+});
+
+it("offers only the permission modes whose Codex profile is allowed", () => {
+  // As codex-cli 0.161.0 reports the built-in profiles.
+  const builtIns = [":read-only", ":workspace", ":danger-full-access"];
+  assert.deepEqual(codexAllowedRuntimeModes(builtIns.map((id) => ({ id, allowed: true }))), [
+    "approval-required",
+    "auto-accept-edits",
+    "auto",
+    "full-access",
+  ]);
+  // An organization that forbids full access keeps the sandboxed modes.
+  assert.deepEqual(
+    codexAllowedRuntimeModes(builtIns.map((id) => ({ id, allowed: id !== ":danger-full-access" }))),
+    ["approval-required", "auto-accept-edits", "auto"],
+  );
+  // A profile Codex does not mention stays allowed.
+  assert.deepEqual(codexAllowedRuntimeModes([{ id: ":workspace", allowed: false }]), [
+    "approval-required",
+    "full-access",
+  ]);
 });

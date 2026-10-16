@@ -98,6 +98,9 @@ function layerDesktopWindow(
     zoomMain: () => Effect.void,
     runMainContentsCommand: () => Effect.void,
     syncAppearance: Effect.void,
+    openThreadWindow: () => Effect.void,
+    setThreadWindowAlwaysOnTop: () => Effect.succeed(false),
+    toggleQuickWindow: Effect.void,
   });
 }
 

@@ -5,6 +5,7 @@ import {
   CircleXIcon,
   EllipsisIcon,
   FileJsonIcon,
+  KeyboardIcon,
   MinusIcon,
   PlusIcon,
   SearchIcon,
@@ -30,7 +31,7 @@ import {
   type ServerRemoveKeybindingInput,
   type ServerUpsertKeybindingInput,
 } from "@moonfold/contracts";
-import { mergeWithDefaultKeybindings } from "@moonfold/shared/keybindings";
+import { mergeWithDefaultKeybindings, parseKeybindingShortcut } from "@moonfold/shared/keybindings";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
@@ -110,39 +111,93 @@ function KeybindingPill({ value }: { value: string }) {
   );
 }
 
-/** Filter box in the page toolbar; Mod+F focuses it from anywhere on the page. */
+function keystrokeLabel(value: string): string {
+  const shortcut = parseKeybindingShortcut(value);
+  return shortcut === null ? value : formatShortcutLabel(shortcut);
+}
+
+/**
+ * Filter box in the page toolbar; Mod+F focuses it from anywhere on the page. With the
+ * keyboard toggle on, the next key press becomes the search instead of typed text.
+ */
 function KeybindingsSearchInput({
   query,
   onChange,
+  keystroke,
+  onKeystrokeChange,
   inputRef,
 }: {
   query: string;
   onChange: (next: string) => void;
+  keystroke: { readonly recording: boolean; readonly value: string | null };
+  onKeystrokeChange: (next: { readonly recording: boolean; readonly value: string | null }) => void;
   inputRef: RefObject<HTMLInputElement | null>;
 }) {
+  const byKeystroke = keystroke.recording || keystroke.value !== null;
   return (
-    <InputGroup className="min-w-0 basis-full **:[input]:h-9 sm:basis-0 sm:flex-1 sm:**:[input]:h-8">
-      <InputGroupAddon>
-        <SearchIcon aria-hidden className="size-3.5" />
-      </InputGroupAddon>
-      <InputGroupInput
-        ref={inputRef}
-        type="search"
-        value={query}
-        onChange={(event) => onChange(event.currentTarget.value)}
-        onKeyDown={(event) => {
-          // The settings route treats an unhandled Escape as "go back";
-          // inside the search box it clears, then leaves the field.
-          if (event.key !== "Escape") return;
-          event.preventDefault();
-          if (query.length > 0) onChange("");
-          else event.currentTarget.blur();
-        }}
-        placeholder="Search keybindings"
-        aria-label="Search keybindings"
-        size="sm"
-      />
-    </InputGroup>
+    <div className="flex min-w-0 basis-full items-center gap-1.5 sm:basis-0 sm:flex-1">
+      <InputGroup className="min-w-0 flex-1 **:[input]:h-9 sm:**:[input]:h-8">
+        <InputGroupAddon>
+          <SearchIcon aria-hidden className="size-3.5" />
+        </InputGroupAddon>
+        <InputGroupInput
+          ref={inputRef}
+          type="search"
+          readOnly={byKeystroke}
+          value={
+            byKeystroke ? (keystroke.value === null ? "" : keystrokeLabel(keystroke.value)) : query
+          }
+          onChange={(event) => onChange(event.currentTarget.value)}
+          onKeyDown={(event) => {
+            if (keystroke.recording) {
+              // Escape always leaves recording, so the field never traps the keyboard.
+              if (event.key === "Escape") {
+                event.preventDefault();
+                onKeystrokeChange({ recording: false, value: keystroke.value });
+                return;
+              }
+              const next = keybindingFromKeyboardEvent(event.nativeEvent, navigator.platform);
+              if (!next) return;
+              event.preventDefault();
+              onKeystrokeChange({ recording: true, value: next });
+              return;
+            }
+            // The settings route treats an unhandled Escape as "go back";
+            // inside the search box it clears, then leaves the field.
+            if (event.key !== "Escape") return;
+            event.preventDefault();
+            if (keystroke.value !== null) onKeystrokeChange({ recording: false, value: null });
+            else if (query.length > 0) onChange("");
+            else event.currentTarget.blur();
+          }}
+          placeholder={keystroke.recording ? "Press a shortcut" : "Search keybindings"}
+          aria-label={
+            keystroke.recording ? "Press the shortcut to search for" : "Search keybindings"
+          }
+          size="sm"
+        />
+      </InputGroup>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Toggle
+              variant="outline"
+              aria-label="Search by pressing a shortcut"
+              pressed={byKeystroke}
+              onPressedChange={(pressed) => {
+                onKeystrokeChange({ recording: pressed, value: null });
+                if (pressed) inputRef.current?.focus();
+              }}
+            />
+          }
+        >
+          <KeyboardIcon aria-hidden className="size-4" />
+        </TooltipTrigger>
+        <TooltipPopup side="top">
+          {byKeystroke ? "Search by name" : "Search by pressing a shortcut"}
+        </TooltipPopup>
+      </Tooltip>
+    </div>
   );
 }
 
@@ -1310,10 +1365,17 @@ export function KeybindingsSettingsPanel() {
     availableEditors,
   );
   const [query, setQuery] = useState("");
+  const [keystroke, setKeystroke] = useState<{
+    readonly recording: boolean;
+    readonly value: string | null;
+  }>({ recording: false, value: null });
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [savingCommand, setSavingCommand] = useState<KeybindingCommand | null>(null);
   const [isAddingBinding, setIsAddingBinding] = useState(false);
-  const rows = useMemo(() => buildKeybindingRows(keybindings, query), [keybindings, query]);
+  const rows = useMemo(
+    () => buildKeybindingRows(keybindings, query, keystroke.value),
+    [keybindings, query, keystroke.value],
+  );
   const groups = useMemo(() => groupKeybindingRows(rows), [rows]);
   // Settings search jumps to a command, so only its first row anchors.
   const anchorIds = useMemo(() => {
@@ -1470,7 +1532,13 @@ export function KeybindingsSettingsPanel() {
         headerAction={!isElectron ? <BrowserKeybindingNotice /> : null}
       >
         <div className="flex flex-wrap items-center gap-2 px-3 py-3 sm:px-4">
-          <KeybindingsSearchInput query={query} onChange={setQuery} inputRef={searchInputRef} />
+          <KeybindingsSearchInput
+            query={query}
+            onChange={setQuery}
+            keystroke={keystroke}
+            onKeystrokeChange={setKeystroke}
+            inputRef={searchInputRef}
+          />
           <Button
             type="button"
             variant="outline"
