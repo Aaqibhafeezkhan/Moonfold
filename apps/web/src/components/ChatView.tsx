@@ -423,7 +423,10 @@ import {
 } from "../state/server";
 import { terminalEnvironment } from "../state/terminal";
 import { threadEnvironment } from "../state/threads";
-import { workspacePreparationRetryRunIds } from "@moonfold/client-runtime/state/turn-item-presentation";
+import {
+  retryableFailedRun,
+  workspacePreparationRetryRunIds,
+} from "@moonfold/client-runtime/state/turn-item-presentation";
 import { resolveProviderSkillsForCwd } from "@moonfold/client-runtime/providerSkills";
 import { vcsEnvironment } from "../state/vcs";
 import { sourceControlEnvironment } from "../state/sourceControl";
@@ -4148,6 +4151,55 @@ export default function ChatView(props: ChatViewProps) {
     }).finally(() => retryingWorkspacePreparationRunIds.delete(runId));
   };
   const onRetryWorkspacePreparationStable = useStableCallback(onRetryWorkspacePreparation);
+  // The latest run failed: its message can be sent again as a new turn.
+  const failedRunRetry = useMemo(
+    () => retryableFailedRun(serverProjection?.runs ?? [], serverProjection?.turnItems ?? []),
+    [serverProjection?.runs, serverProjection?.turnItems],
+  );
+  const failedRunRetryId = failedRunRetry?.id ?? null;
+  const retryableFailedRunIds = useMemo(
+    () => new Set(failedRunRetryId === null ? [] : [failedRunRetryId]),
+    [failedRunRetryId],
+  );
+  const onRetryFailedRun = async (runId: RunId) => {
+    if (
+      !isServerThread ||
+      activeThreadId === null ||
+      failedRunRetry?.id !== runId ||
+      sendInFlightRef.current ||
+      !readEnvironmentScope(environmentId, AuthOrchestrationOperateScope)
+    )
+      return;
+    const message = serverProjection?.messages.find(
+      (candidate) => candidate.id === failedRunRetry.userMessageId,
+    );
+    if (message === undefined) return;
+    const result = await startThreadTurn({
+      environmentId,
+      input: {
+        threadId: activeThreadId,
+        message: {
+          messageId: newMessageId(),
+          role: "user",
+          text: message.text,
+          attachments: message.attachments,
+        },
+        runtimeMode,
+        interactionMode,
+      },
+    });
+    if (result._tag === "Failure" && !isAtomCommandInterrupted(result)) {
+      const error = squashAtomCommandFailure(result);
+      toastManager.add(
+        stackedThreadToast({
+          type: "error",
+          title: "Could not retry",
+          description: error instanceof Error ? error.message : "The message was not sent again.",
+        }),
+      );
+    }
+  };
+  const onRetryFailedRunStable = useStableCallback((runId: RunId) => void onRetryFailedRun(runId));
   const onCancelWorktreeSetup = () => {
     if (!worktreeSetup || worktreeSetup.phase !== "running") return;
     void cancelWorktreeSetup({
@@ -11289,6 +11341,8 @@ export default function ChatView(props: ChatViewProps) {
                   : {
                       retryableWorkspacePreparationRunIds,
                       onRetryWorkspacePreparation: onRetryWorkspacePreparationStable,
+                      retryableFailedRunIds,
+                      onRetryFailedRun: onRetryFailedRunStable,
                     })}
                 {...(draftId
                   ? { onWorktreeSetupWorkLocally: onWorktreeSetupWorkLocallyStable }

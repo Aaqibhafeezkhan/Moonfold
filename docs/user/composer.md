@@ -123,6 +123,13 @@ the text is an unedited recalled prompt, with the caret on the first visual line
 the last visual line for `ArrowDown`, counting wrapped lines. Editing a recalled prompt turns it
 into a normal draft.
 
+## Send a failed message again
+
+When the agent's latest turn fails, select **Send again** under the error to send the same message
+and attachments as a new turn, with the thread's current model and settings. Earlier turns stay as
+they were. A usage-limit error offers no resend, because it would fail again until the limit
+resets.
+
 ## Edit an earlier prompt
 
 On web and desktop, choose **Edit from here** beneath a sent message to rewind
