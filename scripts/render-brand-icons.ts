@@ -5,15 +5,15 @@
 //
 //   node scripts/render-brand-icons.ts           write files
 //   node scripts/render-brand-icons.ts --check   fail when a tracked file is out of date
-import * as FS from "node:fs";
-import * as Path from "node:path";
+import * as NodeFS from "node:fs";
+import * as NodePath from "node:path";
 
 import sharp from "sharp";
 
 import { BRAND_ASSET_PATHS, DEVELOPMENT_PUBLIC_ICON_OVERRIDES } from "./lib/brand-assets.ts";
 import { encodePngIco, WINDOWS_ICON_SIZES } from "./lib/icon-export.ts";
 
-const repoRoot = Path.resolve(import.meta.dirname, "..");
+const repoRoot = NodePath.resolve(import.meta.dirname, "..");
 const check = process.argv.includes("--check");
 
 // The folded moon: a disc whose cap beyond the crease (x = CREASE * R) is folded over.
@@ -248,7 +248,7 @@ const pending = new Map<string, Buffer>();
 function writeWithRetry(file: string, contents: Buffer): void {
   for (let attempt = 1; ; attempt += 1) {
     try {
-      FS.writeFileSync(file, contents);
+      NodeFS.writeFileSync(file, contents);
       return;
     } catch (error) {
       if (attempt >= 5) throw error;
@@ -290,6 +290,17 @@ async function renderChannel(channel: ChannelOutputs): Promise<void> {
   emit(`${channel.iconComposerProject}/icon.json`, iconComposerProject(channel.background.to));
 }
 
+function sameJson(left: Buffer, right: Buffer): boolean {
+  try {
+    return (
+      JSON.stringify(JSON.parse(left.toString("utf8"))) ===
+      JSON.stringify(JSON.parse(right.toString("utf8")))
+    );
+  } catch {
+    return false;
+  }
+}
+
 async function main(): Promise<void> {
   emit("assets/brand/moonfold-mark.svg", svg(colourMark(470, 512, 512)));
   emit("assets/brand/moonfold-mark-mono.svg", svg(monoMark(470, 512, 512, "#000000")));
@@ -310,14 +321,16 @@ async function main(): Promise<void> {
 
   const stale: Array<string> = [];
   for (const [relativePath, contents] of pending) {
-    const absolute = Path.join(repoRoot, relativePath);
-    const current = FS.existsSync(absolute) ? FS.readFileSync(absolute) : null;
+    const absolute = NodePath.join(repoRoot, relativePath);
+    const current = NodeFS.existsSync(absolute) ? NodeFS.readFileSync(absolute) : null;
     if (current !== null && current.equals(contents)) continue;
+    // The repository formatter reflows JSON, so compare JSON files by value.
+    if (current !== null && relativePath.endsWith(".json") && sameJson(current, contents)) continue;
     if (check) {
       stale.push(relativePath);
       continue;
     }
-    FS.mkdirSync(Path.dirname(absolute), { recursive: true });
+    NodeFS.mkdirSync(NodePath.dirname(absolute), { recursive: true });
     writeWithRetry(absolute, contents);
     console.log(`wrote ${relativePath}`);
   }

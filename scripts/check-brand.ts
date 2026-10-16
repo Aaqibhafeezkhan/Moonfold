@@ -4,11 +4,11 @@
 // such as `uint32` or `int32` are not hits.
 //
 //   node scripts/check-brand.ts
-import * as ChildProcess from "node:child_process";
-import * as FS from "node:fs";
-import * as Path from "node:path";
+import * as NodeChildProcess from "node:child_process";
+import * as NodeFS from "node:fs";
+import * as NodePath from "node:path";
 
-const repoRoot = Path.resolve(import.meta.dirname, "..");
+const repoRoot = NodePath.resolve(import.meta.dirname, "..");
 
 // Files whose job is to name the upstream project or describe the fork.
 const ALLOWED_FILES: ReadonlyArray<RegExp> = [
@@ -25,7 +25,7 @@ const ALLOWED_FILES: ReadonlyArray<RegExp> = [
   /^LAUNCH-PLAN\.md$/,
   /^PROGRESS\.md$/,
   /^README\.md$/,
-  /^docs\/(ARCHITECTURE|BRAND|CODEX-APP-REA|DECISIONS|FEATURE-MATRIX|NETWORK-AUDIT|PROTOCOL|REA|REA-SELF-AUDIT|UX-STUDY|UX-STUDY-TEMPLATE)\.md$/,
+  /^docs\/(ARCHITECTURE|BRAND|CODEX-APP-REA|DECISIONS|FEATURE-MATRIX|NETWORK-AUDIT|PROTOCOL|REA|REA-SELF-AUDIT|REA-PHASE[0-9]+|UX-STUDY|UX-STUDY-TEMPLATE)\.md$/,
   /^docs\/DEV\.md$/,
   /^docs\/operations\/release\.md$/,
   /^scripts\/brand-codemod\.ts$/,
@@ -77,7 +77,7 @@ export function findBrandHits(file: string, content: string): Array<BrandHit> {
 }
 
 function main(): void {
-  const files = ChildProcess.execFileSync("git", ["ls-files", "-z"], {
+  const files = NodeChildProcess.execFileSync("git", ["ls-files", "-z"], {
     cwd: repoRoot,
     encoding: "utf8",
     maxBuffer: 256 * 1024 * 1024,
@@ -89,9 +89,9 @@ function main(): void {
 
   const hits: Array<BrandHit> = [];
   for (const file of files) {
-    const absolute = Path.join(repoRoot, file);
-    if (!FS.existsSync(absolute)) continue;
-    const bytes = FS.readFileSync(absolute);
+    const absolute = NodePath.join(repoRoot, file);
+    if (!NodeFS.existsSync(absolute)) continue;
+    const bytes = NodeFS.readFileSync(absolute);
     if (bytes.includes(0)) continue;
     hits.push(...findBrandHits(file, bytes.toString("utf8")));
     // File names count too.

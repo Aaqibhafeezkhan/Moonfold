@@ -38,12 +38,12 @@ const TARGET = new PrimaryConnectionTarget({
 const PUBLISH_RESULT: SourceControlPublishRepositoryResult = {
   repository: {
     provider: SourceControlProviderKind.make("github"),
-    nameWithOwner: "moonfold-dev/moonfold",
-    url: "https://github.com/moonfold-dev/moonfold",
-    sshUrl: "git@github.com:moonfold-dev/moonfold.git",
+    nameWithOwner: "moonfold/moonfold",
+    url: "https://github.com/moonfold/moonfold",
+    sshUrl: "git@github.com:moonfold/moonfold.git",
   },
   remoteName: "origin",
-  remoteUrl: "git@github.com:moonfold-dev/moonfold.git",
+  remoteUrl: "git@github.com:moonfold/moonfold.git",
   branch: "main",
   upstreamBranch: "origin/main",
   status: "pushed",
@@ -142,7 +142,7 @@ describe("source control environment atoms", () => {
             input: {
               cwd: "/repo",
               provider: SourceControlProviderKind.make("github"),
-              repository: "moonfold-dev/moonfold",
+              repository: "moonfold/moonfold",
               visibility: "private",
             },
           }),
@@ -158,7 +158,7 @@ describe("source control environment atoms", () => {
             input: {
               cwd: "/repo",
               provider: SourceControlProviderKind.make("github"),
-              repository: "moonfold-dev/moonfold",
+              repository: "moonfold/moonfold",
               visibility: "private",
             },
           }),

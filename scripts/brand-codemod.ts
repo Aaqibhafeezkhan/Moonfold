@@ -7,11 +7,11 @@
 //
 //   node scripts/brand-codemod.ts            apply
 //   node scripts/brand-codemod.ts --dry-run  report only
-import * as ChildProcess from "node:child_process";
-import * as FS from "node:fs";
-import * as Path from "node:path";
+import * as NodeChildProcess from "node:child_process";
+import * as NodeFS from "node:fs";
+import * as NodePath from "node:path";
 
-const repoRoot = Path.resolve(import.meta.dirname, "..");
+const repoRoot = NodePath.resolve(import.meta.dirname, "..");
 const dryRun = process.argv.includes("--dry-run");
 
 // Files that describe the fork itself, attribution, generated schemas and vendored references.
@@ -28,7 +28,7 @@ const EXCLUDED_PATHS: ReadonlyArray<RegExp> = [
   /^BUILD-PLAN\.md$/,
   /^LAUNCH-PLAN\.md$/,
   /^PROGRESS\.md$/,
-  /^docs\/(ARCHITECTURE|BRAND|CODEX-APP-REA|DECISIONS|DEV|FEATURE-MATRIX|NETWORK-AUDIT|PROTOCOL|REA|REA-SELF-AUDIT|UX-STUDY|UX-STUDY-TEMPLATE)\.md$/,
+  /^docs\/(ARCHITECTURE|BRAND|CODEX-APP-REA|DECISIONS|DEV|FEATURE-MATRIX|NETWORK-AUDIT|PROTOCOL|REA|REA-SELF-AUDIT|REA-PHASE[0-9]+|UX-STUDY|UX-STUDY-TEMPLATE)\.md$/,
   /^scripts\/brand-codemod\.ts$/,
   /^scripts\/check-brand\.ts$/,
   /^README\.md$/,
@@ -95,7 +95,9 @@ const RULES: ReadonlyArray<readonly [RegExp, string]> = [
   [/com\.t3tools/g, "dev.moonfold"],
   [/@t3tools\//g, "@moonfold/"],
   [/pingdotgg\/t3code/g, "moonfold-dev/moonfold"],
-  [/t3tools\/t3code/g, "moonfold-dev/moonfold"],
+  // A separate upstream org from pingdotgg; its mixed-case spellings (T3Tools/T3Code) map to
+  // Moonfold/Moonfold, so the lowercase form must be moonfold/moonfold to stay case-equal.
+  [/t3tools\/t3code/g, "moonfold/moonfold"],
   [/pingdotgg/g, "moonfold-dev"],
   [/PingDotGG/g, "Moonfold-Dev"],
   [/Pingdotgg/g, "Moonfold-dev"],
@@ -179,7 +181,7 @@ export function rebrandText(input: string, keepUpstreamLinks = true): string {
 }
 
 function trackedFiles(): Array<string> {
-  return ChildProcess.execFileSync("git", ["ls-files", "-z"], {
+  return NodeChildProcess.execFileSync("git", ["ls-files", "-z"], {
     cwd: repoRoot,
     encoding: "utf8",
     maxBuffer: 256 * 1024 * 1024,
@@ -193,14 +195,14 @@ function isExcluded(file: string): boolean {
 }
 
 function isBinary(file: string, bytes: Buffer): boolean {
-  return BINARY_EXTENSIONS.has(Path.extname(file).toLowerCase()) || bytes.includes(0);
+  return BINARY_EXTENSIONS.has(NodePath.extname(file).toLowerCase()) || bytes.includes(0);
 }
 
 // Antivirus scanners on Windows briefly lock files that were just written.
 function writeWithRetry(file: string, text: string): void {
   for (let attempt = 1; ; attempt += 1) {
     try {
-      FS.writeFileSync(file, text);
+      NodeFS.writeFileSync(file, text);
       return;
     } catch (error) {
       if (attempt >= 5) throw error;
@@ -214,9 +216,9 @@ function main(): void {
   const renames: Array<readonly [string, string]> = [];
   for (const file of trackedFiles()) {
     if (isExcluded(file)) continue;
-    const absolute = Path.join(repoRoot, file);
-    if (!FS.existsSync(absolute) || FS.lstatSync(absolute).isSymbolicLink()) continue;
-    const bytes = FS.readFileSync(absolute);
+    const absolute = NodePath.join(repoRoot, file);
+    if (!NodeFS.existsSync(absolute) || NodeFS.lstatSync(absolute).isSymbolicLink()) continue;
+    const bytes = NodeFS.readFileSync(absolute);
     if (!isBinary(file, bytes)) {
       const before = bytes.toString("utf8");
       const after = rebrandFile(file, before);
@@ -230,8 +232,8 @@ function main(): void {
   }
   for (const [from, to] of renames) {
     if (dryRun) continue;
-    FS.mkdirSync(Path.dirname(Path.join(repoRoot, to)), { recursive: true });
-    ChildProcess.execFileSync("git", ["mv", "-f", from, to], { cwd: repoRoot });
+    NodeFS.mkdirSync(NodePath.dirname(NodePath.join(repoRoot, to)), { recursive: true });
+    NodeChildProcess.execFileSync("git", ["mv", "-f", from, to], { cwd: repoRoot });
   }
   console.log(
     `${dryRun ? "[dry run] " : ""}rewrote ${changedFiles} files, renamed ${renames.length} paths`,

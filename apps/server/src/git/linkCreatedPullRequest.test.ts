@@ -156,7 +156,7 @@ describe("linkCreatedPullRequest", () => {
         result: prResult({
           status: "created",
           number: 42,
-          url: "https://github.com/moonfold-dev/moonfold/pull/42",
+          url: "https://github.com/moonfold/moonfold/pull/42",
         }),
         commandId,
       }).pipe(Effect.provide(layerDependenciesFor(dispatch)));
@@ -167,9 +167,9 @@ describe("linkCreatedPullRequest", () => {
           commandId: "server:pr-created-link:test",
           threadId: THREAD_ID,
           host: "github.com",
-          repository: "moonfold-dev/moonfold",
+          repository: "moonfold/moonfold",
           number: 42,
-          url: "https://github.com/moonfold-dev/moonfold/pull/42",
+          url: "https://github.com/moonfold/moonfold/pull/42",
           source: "created",
         },
       ]);

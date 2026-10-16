@@ -78,11 +78,11 @@ describe("load balancing shared project machines", () => {
   });
 });
 const repositoryIdentity = {
-  canonicalKey: "github.com/moonfold-dev/moonfold",
+  canonicalKey: "github.com/moonfold/moonfold",
   locator: {
     source: "git-remote" as const,
     remoteName: "upstream",
-    remoteUrl: "https://github.com/moonfold-dev/moonfold.git",
+    remoteUrl: "https://github.com/moonfold/moonfold.git",
   },
   provider: "github",
   owner: "moonfold",
@@ -303,7 +303,7 @@ describe("buildProjectGroups", () => {
 
     const groups = buildProjectGroups({ projects, settings: settings("repository") });
     expect(groups.map((group) => group.key)).toEqual([
-      "github.com/moonfold-dev/moonfold",
+      "github.com/moonfold/moonfold",
       "github.com/julius/moonfold-fork",
     ]);
     expect(groups[1]?.members.map((member) => member.project.id)).toEqual(["fork", "fork-2"]);

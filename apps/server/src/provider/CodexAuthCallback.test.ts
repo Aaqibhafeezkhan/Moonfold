@@ -98,7 +98,7 @@ it.effect("the local server refuses nonlocal return destinations", () =>
     const request = yield* Effect.promise(input);
     const result = yield* subscribeCodexAuthCallback({
       ...request,
-      returnUrl: "http://localhost:5733/welcome",
+      returnUrl: "https://app.example.org/welcome",
     }).pipe(Stream.runDrain, Effect.result);
     expect(result._tag).toBe("Failure");
   }),

@@ -97,8 +97,8 @@ function NightlySkyArt({ compact = false }: { compact?: boolean }) {
     >
       <defs>
         <linearGradient id={skyId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#2C1B57" />
-          <stop offset="1" stopColor="#100A26" />
+          <stop offset="0" style={{ stopColor: "var(--stage-night-top)" }} />
+          <stop offset="1" style={{ stopColor: "var(--stage-night-bottom)" }} />
         </linearGradient>
         <pattern id={starsId} width="300" height="96" patternUnits="userSpaceOnUse">
           {NIGHTLY_STARS.map((star) => (
@@ -107,7 +107,7 @@ function NightlySkyArt({ compact = false }: { compact?: boolean }) {
               cx={star.cx}
               cy={star.cy}
               r={star.r}
-              fill="#FFE2A3"
+              style={{ fill: "var(--stage-night-sparkle)" }}
               opacity={star.opacity}
             />
           ))}
@@ -135,11 +135,16 @@ function DevBlueprintArt({ compact = false }: { compact?: boolean }) {
     >
       <defs>
         <linearGradient id={baseId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#123A40" />
-          <stop offset="1" stopColor="#071A1D" />
+          <stop offset="0" style={{ stopColor: "var(--stage-art-top)" }} />
+          <stop offset="1" style={{ stopColor: "var(--stage-art-bottom)" }} />
         </linearGradient>
         <pattern id={gridId} width="16" height="16" patternUnits="userSpaceOnUse">
-          <path d="M 16 0 L 0 0 0 16" stroke="#5FB3BD" strokeOpacity="0.18" strokeWidth="0.5" />
+          <path
+            d="M 16 0 L 0 0 0 16"
+            style={{ stroke: "var(--stage-art-grid-line)" }}
+            strokeOpacity="0.25"
+            strokeWidth="0.5"
+          />
         </pattern>
       </defs>
       <rect width="8192" height="96" fill={`url(#${baseId})`} />

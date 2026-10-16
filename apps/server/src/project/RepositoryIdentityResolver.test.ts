@@ -99,7 +99,7 @@ it.layer(NodeServices.layer)("RepositoryIdentityResolverLive", (it) => {
       yield* TestClock.adjust(Duration.minutes(10));
       const second = yield* resolver.resolve("/repo/packages/web");
 
-      expect(first?.canonicalKey).toBe("github.com/moonfold-dev/moonfold");
+      expect(first?.canonicalKey).toBe("github.com/moonfold/moonfold");
       expect(second).toEqual(first);
       expect(refinements).toBe(1);
       expect(calls).toEqual([
@@ -194,9 +194,9 @@ it.layer(NodeServices.layer)("RepositoryIdentityResolverLive", (it) => {
       const resolvedCwd = NodeFS.realpathSync.native(cwd);
 
       expect(identity).not.toBeNull();
-      expect(identity?.canonicalKey).toBe("github.com/moonfold-dev/moonfold");
+      expect(identity?.canonicalKey).toBe("github.com/moonfold/moonfold");
       expect(normalizeResolvedPath(resolvedIdentityRoot)).toBe(normalizeResolvedPath(resolvedCwd));
-      expect(identity?.displayName).toBe("moonfold-dev/moonfold");
+      expect(identity?.displayName).toBe("moonfold/moonfold");
       expect(identity?.provider).toBe("github");
       expect(identity?.owner).toBe("moonfold");
       expect(identity?.name).toBe("moonfold");
@@ -223,7 +223,7 @@ it.layer(NodeServices.layer)("RepositoryIdentityResolverLive", (it) => {
       const resolvedRepoRoot = NodeFS.realpathSync.native(repoRoot);
 
       expect(identity).not.toBeNull();
-      expect(identity?.canonicalKey).toBe("github.com/moonfold-dev/moonfold");
+      expect(identity?.canonicalKey).toBe("github.com/moonfold/moonfold");
       expect(normalizeResolvedPath(resolvedIdentityRoot)).toBe(
         normalizeResolvedPath(resolvedRepoRoot),
       );
@@ -283,8 +283,8 @@ it.layer(NodeServices.layer)("RepositoryIdentityResolverLive", (it) => {
 
         expect(identity).not.toBeNull();
         expect(identity?.locator.remoteName).toBe("upstream");
-        expect(identity?.canonicalKey).toBe("github.com/moonfold-dev/moonfold");
-        expect(identity?.displayName).toBe("moonfold-dev/moonfold");
+        expect(identity?.canonicalKey).toBe("github.com/moonfold/moonfold");
+        expect(identity?.displayName).toBe("moonfold/moonfold");
         expect(yield* resolver.resolve(cwd)).toEqual(identity);
       }).pipe(Effect.provide(RepositoryIdentityResolver.layer)),
   );
@@ -303,8 +303,8 @@ it.layer(NodeServices.layer)("RepositoryIdentityResolverLive", (it) => {
       const resolver = yield* RepositoryIdentityResolver.RepositoryIdentityResolver;
       const identity = yield* resolver.resolve(cwd);
 
-      expect(identity?.canonicalKey).toBe("github.com/moonfold-dev/moonfold");
-      expect(identity?.displayName).toBe("moonfold-dev/moonfold");
+      expect(identity?.canonicalKey).toBe("github.com/moonfold/moonfold");
+      expect(identity?.displayName).toBe("moonfold/moonfold");
       expect(identity?.origin).toEqual({
         canonicalKey: "github.com/julius/moonfold-fork",
         displayName: "julius/moonfold-fork",
@@ -359,7 +359,7 @@ it.layer(NodeServices.layer)("RepositoryIdentityResolverLive", (it) => {
 
         const refreshedIdentity = yield* resolver.resolve(cwd);
         expect(refreshedIdentity).not.toBeNull();
-        expect(refreshedIdentity?.canonicalKey).toBe("github.com/moonfold-dev/moonfold");
+        expect(refreshedIdentity?.canonicalKey).toBe("github.com/moonfold/moonfold");
         expect(refreshedIdentity?.name).toBe("moonfold");
       }).pipe(
         Effect.provide(
@@ -387,20 +387,20 @@ it.layer(NodeServices.layer)("RepositoryIdentityResolverLive", (it) => {
       const resolver = yield* RepositoryIdentityResolver.RepositoryIdentityResolver;
       const initialIdentity = yield* resolver.resolve(cwd);
       expect(initialIdentity).not.toBeNull();
-      expect(initialIdentity?.canonicalKey).toBe("github.com/moonfold-dev/moonfold");
+      expect(initialIdentity?.canonicalKey).toBe("github.com/moonfold/moonfold");
 
       yield* git(cwd, ["remote", "set-url", "origin", "git@github.com:Moonfold/moonfold-next.git"]);
 
       const cachedIdentity = yield* resolver.resolve(cwd);
       expect(cachedIdentity).not.toBeNull();
-      expect(cachedIdentity?.canonicalKey).toBe("github.com/moonfold-dev/moonfold");
+      expect(cachedIdentity?.canonicalKey).toBe("github.com/moonfold/moonfold");
 
       yield* TestClock.adjust(Duration.millis(180));
 
       const refreshedIdentity = yield* resolver.resolve(cwd);
       expect(refreshedIdentity).not.toBeNull();
-      expect(refreshedIdentity?.canonicalKey).toBe("github.com/moonfold-dev/moonfold-next");
-      expect(refreshedIdentity?.displayName).toBe("moonfold-dev/moonfold-next");
+      expect(refreshedIdentity?.canonicalKey).toBe("github.com/moonfold/moonfold-next");
+      expect(refreshedIdentity?.displayName).toBe("moonfold/moonfold-next");
       expect(refreshedIdentity?.name).toBe("moonfold-next");
     }).pipe(
       Effect.provide(
