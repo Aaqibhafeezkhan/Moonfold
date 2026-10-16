@@ -1,0 +1,15 @@
+Moonfold
+Copyright (c) 2026 Moonfold contributors
+
+This product is a fork of T3 Code (https://github.com/pingdotgg/t3code),
+Copyright (c) 2026 T3 Tools Inc., licensed under the MIT License. The original
+copyright and permission notice are kept in LICENSE.
+
+Moonfold is an independent project. It is not affiliated with or endorsed by
+OpenAI, Anthropic, Google, Anysphere (Cursor), xAI, the OpenCode project, or
+T3 Tools Inc. Provider and product names are used only to describe
+compatibility.
+
+Third-party software bundled with Moonfold is listed, with its license text,
+in the generated notices shipped with each build (Settings > General >
+Open source licenses) and produced by `node scripts/sync-third-party-license-notices.ts`.

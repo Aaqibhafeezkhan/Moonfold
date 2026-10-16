@@ -89,3 +89,45 @@ Moonfold should read in Phase 3. Details: docs/CODEX-APP-REA.md.
 
 The owner asked for Phase 0 to proceed without questions. docs/UX-STUDY.md is therefore built from
 REA and public docs and says so; owner notes, when added, override it. This does not block Phase 1.
+
+## D-12 Phase 1 scope cuts (2026-10-16)
+
+- `apps/mobile` removed: the beta excludes mobile, the app ships through T3's store and EAS
+  accounts with T3-forked native packages, and iOS cannot be built on this machine. Recoverable
+  from git history (`29657ea33^`).
+- `apps/marketing` removed: it is T3's website. A docs site comes in Phase 8.
+- `infra/relay` kept, renamed, not deployed. Moonfold Connect stays dormant because builds inject
+  no relay URL. Self-hosting it needs owner cloud accounts (Cloudflare, Clerk, APNs/FCM).
+- T3 release, preview, AUR, Vercel, Discord and contribution-bot workflows removed; CI moved from
+  Blacksmith runners to GitHub-hosted runners. The release pipeline is rebuilt in Phase 7.
+
+## D-13 Rebrand by committed codemod
+
+`scripts/brand-codemod.ts` maps T3 identifiers to Moonfold ones (packages `@moonfold/*`, env
+`MOONFOLD_*`, home `~/.moonfold`, app id `dev.moonfold.app`, scheme `moonfold://`, MCP server key
+`moonfold`, project file `moonfold.json`). It is idempotent so it can be re-run after upstream
+merges. It never rewrites T3 domains (left for `scripts/check-brand.ts` to flag) or the upstream
+attribution link. Data directories differ from T3's, so Moonfold never touches a T3 install.
+
+Fallout fixed by hand: the vendored Ghostty write-pty WebAssembly import was renamed to
+`moonfold_write_pty` by re-encoding its import section; T3's two MCP tool-name spellings
+(`t3-code` / `t3_code`) collapse to one, so Pi registers each tool once; temporary worktree
+branches match only `moonfold/<hex>` and `moonfold-<hex>` (no legacy forms).
+
+## D-14 No hosted web app
+
+Moonfold has no equivalent of T3's hosted `app.t3.codes`. The hosted app URL is optional and
+empty by default. Prompt links fall back to `moonfold://` deep links, hosted pairing links are not
+offered, and OAuth return URLs are accepted only for local clients (loopback web or the desktop
+scheme). A build can still configure `VITE_HOSTED_APP_URL` if one is deployed later.
+
+## D-15 Telemetry opt-in with no embedded key
+
+PostHog telemetry is off by default and needs `MOONFOLD_TELEMETRY_ENABLED=true` plus the user's own
+`MOONFOLD_POSTHOG_KEY` and `MOONFOLD_POSTHOG_HOST`. T3's project key was removed.
+
+## D-16 Icons rendered from one model
+
+`scripts/render-brand-icons.ts` renders every icon (three channels, macOS safe area, ICO, favicons,
+DMG backgrounds, Icon Composer layers) from the folded-moon geometry, and `--check` runs in CI.
+Apple's Icon Composer export is not used because it requires macOS.

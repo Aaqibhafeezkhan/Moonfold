@@ -32,7 +32,7 @@ flowchart LR
   A -- stdio/JSON-RPC --> CX[codex app-server]
   A --> CL[Claude Code]
   A --> OT[Cursor, Grok, OpenCode, Antigravity, Pi, Muse, ACP]
-  S -. optional .-> RL[T3 Connect relay + Clerk auth]
+  S -. optional .-> RL[Moonfold Connect relay + Clerk auth, not deployed]
   S -. default ON .-> PH[PostHog telemetry]
   D -. electron-updater .-> UP[update feed]
 ```

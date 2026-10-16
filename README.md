@@ -1,141 +1,101 @@
-# T3 Code
+<p align="center">
+  <img src="assets/brand/moonfold-app-icon.svg" width="96" height="96" alt="Moonfold">
+</p>
 
-T3 Code is an "agent harness control surface". It enables control of the agents on your machine with a best-in-class mobile app ([iOS](https://apps.apple.com/us/app/t3-code-remote-claude-more/id6787819824), [Android](https://play.google.com/store/apps/details?id=com.t3tools.t3code)), [web app](https://app.t3.codes) and [Electron-based desktop app](https://t3.codes).
+# Moonfold
 
-Works with your subscriptions on Claude Code, Codex, Cursor, Grok Build, OpenCode, and Google Antigravity. If they're set up on your computer, T3 Code can control them.
+Moonfold is an open-source workspace for the coding agents you already use. It runs Codex,
+Claude Code, Cursor, Grok Build, OpenCode, Antigravity and other agent CLIs on your own machine,
+with your own logins, and gives them one desktop and web interface: projects, parallel threads,
+git worktrees, diff review, pull requests, scheduled tasks, and remote access from another device.
 
-## "Wait, what are you selling me?"
+The goal that sets Moonfold apart is **provider handoff**: when one agent hits its usage limit
+mid-task, the same task continues in another agent with the plan, the diff and the open problems
+carried over. That work is in progress; see [Status](#status).
 
-Nothing. We built T3 Code because we wanted the best possible development experience with agents. We were inspired by existing solutions like the Codex desktop app, Conductor, Claude Desktop and Cursor Glass, but none met our bar.
+Moonfold is a fork of [T3 Code](https://github.com/pingdotgg/t3code) and keeps its MIT license.
+See [NOTICE](./NOTICE) for attribution.
 
-We wanted something performant, remote-ready, and truly open. If we ever go the wrong direction, we want you to have everything you need to fork and build the editor that you want.
+## Status
 
-## Installation
+Moonfold is pre-release. There are no published installers yet; build it from source.
 
-> [!WARNING]
-> T3 Code currently supports Codex, Claude, Cursor, Grok Build, OpenCode, and Antigravity. Install and authenticate at least one provider before use:
->
-> - Codex: install [Codex CLI](https://developers.openai.com/codex/cli) and run `codex login`
-> - Claude: install [Claude Code](https://claude.com/product/claude-code) and run `claude auth login`
-> - Cursor: install [Cursor CLI](https://cursor.com/cli) and run `agent login`
-> - Grok Build: install [Grok Build CLI](https://x.ai/cli) and run `grok login`
-> - OpenCode: install [OpenCode](https://opencode.ai) and run `opencode auth login`
-> - Antigravity: enable it in Settings, then use **Install Antigravity** and **Sign in with Google**. No CLI is required.
+| Area                                                  | State                           |
+| ----------------------------------------------------- | ------------------------------- |
+| Multi-provider threads, worktrees, diff and PR flow   | Works (inherited from Moonfold) |
+| Rebrand, local-first defaults, no hosted services     | Done                            |
+| Codex-app parity features (goals, review, hooks, ...) | In progress                     |
+| Provider handoff on usage limits                      | In progress                     |
+| Signed installers for macOS, Windows and Linux        | Planned                         |
 
-### Command line
+## Requirements
 
-```bash
-curl -fsSL https://t3.codes/install.sh | sh
-```
+Install and sign in to at least one provider CLI with your own account:
 
-On Windows, in PowerShell:
+- Codex: install the [Codex CLI](https://developers.openai.com/codex/cli) and run `codex login`
+- Claude Code: install [Claude Code](https://claude.com/product/claude-code) and run `claude auth login`
+- Cursor: install the [Cursor CLI](https://cursor.com/cli) and run `agent login`
+- Grok Build: install the [Grok Build CLI](https://x.ai/cli) and run `grok login`
+- OpenCode: install [OpenCode](https://opencode.ai) and run `opencode auth login`
+- Antigravity: enable it in Settings, then use **Install Antigravity** and **Sign in with Google**
 
-```powershell
-irm https://t3.codes/install.ps1 | iex
-```
+Moonfold never proxies, pools or shares provider logins. Each agent runs as your own local CLI.
 
-Then run `t3` to start the server and open the local web app. `t3 service install` keeps it running in the background, `t3 update` moves to a newer release, and `t3 --help` has the full reference.
+## Build from source
 
-To try it once without installing, run `npx t3@latest` instead.
-
-### Desktop app
-
-Install the latest version of the desktop app from [GitHub Releases](https://github.com/pingdotgg/t3code/releases), or from your favorite package registry:
-
-#### Windows (`winget`)
-
-```bash
-winget install T3Tools.T3Code
-```
-
-#### Windows (`scoop`)
-
-```bash
-scoop install extras/t3code
-```
-
-#### macOS (Homebrew)
-
-```bash
-brew install --cask t3-code
-```
-
-#### Debian, Ubuntu (`.deb`)
-
-Download the `.deb` from [GitHub Releases](https://github.com/pingdotgg/t3code/releases), then:
-
-```bash
-sudo apt install ./T3-Code-*.deb
-```
-
-#### Arch Linux (AUR)
-
-Stable:
-
-```bash
-yay -S t3code-bin
-```
-
-Nightly:
-
-```bash
-yay -S t3code-nightly-bin
-```
-
-The AUR packaging is maintained in this repository under [`packaging/aur`](./packaging/aur).
-
-## Some notes
-
-We are very very early in this project. Expect bugs.
-
-We are (mostly) not accepting contributions yet. Small fixes may be considered. Big features will not be.
-
-## Documentation
-
-Full docs live in [docs/](./docs). There's no docs site yet.
-
-- [Install and first run](./docs/user/install.md)
-- [Permission modes](./docs/user/permission-modes.md)
-- [Keyboard shortcuts](./docs/user/keybindings.md)
-- [Project settings](./docs/user/project-settings.md)
-- [Appearance preferences](./docs/user/appearance.md)
-- [Remote access from a phone or another machine](./docs/user/remote-access.md)
-- [Connect Claude Code, Codex, ChatGPT and other agents over MCP](./docs/user/outside-agents.md)
-- [Keeping app and server in sync](./docs/user/updating.md)
-- [Source control integrations](./docs/user/source-control.md)
-- Multiple accounts: [Codex](./docs/user/providers-codex.md) · [Claude](./docs/user/providers-claude.md)
-- [Run T3 Code as a background service](./docs/user/background-service.md)
-
-Building from source? Start at [docs/internals/overview.md](./docs/internals/overview.md).
-
-## If you REALLY want to contribute still.... read this first
-
-### Install `vp`
-
-T3 Code uses Vite+ so you'll need to install the global `vp` command-line tool.
-
-#### macOS / Linux
+You need Node.js 24 and the Vite+ `vp` command.
 
 ```bash
 curl -fsSL https://vite.plus | bash
 ```
 
-#### Windows
+On Windows, in PowerShell:
 
-```bash
+```powershell
 irm https://vite.plus/ps1 | iex
 ```
 
-Checkout their getting started guide for more information: https://viteplus.dev/guide/
-
-### Install dependencies
+Then:
 
 ```bash
+git clone https://github.com/Mr-Dark-debug/Moonfold
+cd Moonfold
 vp i
+vp run dev
 ```
 
-Read [CONTRIBUTING.md](./CONTRIBUTING.md) before reporting a bug or opening a PR.
+Open the pairing URL that the dev runner prints. `vp run dev:desktop` starts the Electron app.
+More detail, including Windows notes, is in [docs/DEV.md](./docs/DEV.md).
 
-Have a feature request? Start an [Ideas discussion](https://github.com/pingdotgg/t3code/discussions/categories/ideas).
+## Privacy
 
-Need support? Join the [Discord](https://discord.gg/jn4EGJjrvv).
+Moonfold is local-first. It collects no usage data by default and talks only to the services your
+agents and integrations need. See [docs/legal/privacy.md](./docs/legal/privacy.md) and
+[docs/user/telemetry.md](./docs/user/telemetry.md).
+
+## Documentation
+
+- [Install and first run](./docs/user/install.md)
+- [Permission modes](./docs/user/permission-modes.md)
+- [Keyboard shortcuts](./docs/user/keybindings.md)
+- [Project settings](./docs/user/project-settings.md)
+- [Remote access from another machine](./docs/user/remote-access.md)
+- [Connect outside agents over MCP](./docs/user/outside-agents.md)
+- [Source control integrations](./docs/user/source-control.md)
+- [Codex](./docs/user/providers-codex.md) and [Claude](./docs/user/providers-claude.md) accounts
+
+Architecture: [docs/internals/overview.md](./docs/internals/overview.md).
+
+## Contributing
+
+Contributions are welcome. Read [CONTRIBUTING.md](./CONTRIBUTING.md) first. Feature ideas go to
+[Discussions](https://github.com/Mr-Dark-debug/Moonfold/discussions/categories/ideas). Report
+security problems privately as described in [SECURITY.md](./.github/SECURITY.md).
+
+## License and trademarks
+
+MIT. See [LICENSE](./LICENSE) and [NOTICE](./NOTICE).
+
+Moonfold is an independent project. It is not affiliated with or endorsed by OpenAI, Anthropic,
+Google, Cursor (Anysphere), xAI, OpenCode, or T3 Tools. Product names are used only to describe
+compatibility.

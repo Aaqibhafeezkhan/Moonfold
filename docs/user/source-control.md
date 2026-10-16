@@ -1,6 +1,6 @@
 # Source control
 
-T3 Code integrates with GitHub, GitLab, Forgejo, Gitea, Bitbucket, Azure DevOps, and GitCafe to clone
+Moonfold integrates with GitHub, GitLab, Forgejo, Gitea, Bitbucket, Azure DevOps, and GitCafe to clone
 and publish repositories, create pull requests, and review changes.
 
 ## Review turn changes
@@ -12,13 +12,13 @@ against your base branch. Restore still returns the complete saved workspace.
 
 ## Connect an account
 
-Install Git and configure authentication on the machine running your T3 Code server. For a remote
+Install Git and configure authentication on the machine running your Moonfold server. For a remote
 environment, do this on the remote machine. After signing in, open **Settings → Source Control**
 and choose **Rescan**.
 
 ### GitHub
 
-T3 Code talks to GitHub's API directly and only needs a token. Any of these works, in this
+Moonfold talks to GitHub's API directly and only needs a token. Any of these works, in this
 order of precedence:
 
 1. A token saved in **Settings → Source Control → GitHub**. It is kept in the server's secret
@@ -31,17 +31,17 @@ If `gh` is signed in to several accounts or hosts, expand **GitHub** in the same
 the account each host uses or turn a host off. A saved token or `GH_TOKEN` takes precedence
 over that choice; a host turned off stays off either way.
 
-For GitHub Enterprise, sign in with `gh auth login --hostname YOUR_HOST`. T3 Code treats a
+For GitHub Enterprise, sign in with `gh auth login --hostname YOUR_HOST`. Moonfold treats a
 custom server name as GitHub once it has a credential for that host.
 
 ### Forgejo and Gitea
 
 Install [Forgejo CLI (`fj`)](https://codeberg.org/forgejo-contrib/forgejo-cli) or
-[Gitea CLI (`tea`)](https://gitea.com/gitea/tea) 0.16 or later on your T3 Code server.
+[Gitea CLI (`tea`)](https://gitea.com/gitea/tea) 0.16 or later on your Moonfold server.
 Sign in with `fj --host https://your-server auth add-token` or `tea login add`.
 Repeat for each server you use, including Codeberg.
 
-T3 Code prefers a matching `fj` login and falls back to `tea` when `fj` is unavailable
+Moonfold prefers a matching `fj` login and falls back to `tea` when `fj` is unavailable
 or has no login for that server. Once an account is selected, failed actions stay on that
 account. Settings shows the detected CLI. Forgejo and Gitea share one integration entry.
 Servers hosted under a URL subpath, such as `https://example.com/forgejo`, use `tea` because
@@ -77,14 +77,14 @@ Credentials are saved on the environment's server, so select a remote environmen
 it. Saved tokens can't be viewed again; enter a new one to replace it, or choose **Remove** to clear
 everything saved for Bitbucket.
 
-If no credentials are saved, T3 Code falls back to these variables in the server's environment.
+If no credentials are saved, Moonfold falls back to these variables in the server's environment.
 Restart the server after changing them:
 
 ```bash
-export T3CODE_BITBUCKET_ACCESS_TOKEN="your-access-token"
+export MOONFOLD_BITBUCKET_ACCESS_TOKEN="your-access-token"
 # or
-export T3CODE_BITBUCKET_EMAIL="you@example.com"
-export T3CODE_BITBUCKET_API_TOKEN="your-token"
+export MOONFOLD_BITBUCKET_EMAIL="you@example.com"
+export MOONFOLD_BITBUCKET_API_TOKEN="your-token"
 ```
 
 ### Azure DevOps
@@ -117,8 +117,8 @@ Merging a stack lands it through GitCafe, and updating a branch restacks the lay
 ## Start, clone, or publish a project
 
 To start from nothing, choose **New project** in the command palette (`Cmd/Ctrl+K`), or
-**New project** under **Add Project** on any client, and type a name. T3 Code makes a Git
-repository in `~/.t3/projects` (the `projects` folder of your T3 data directory) with a README,
+**New project** under **Add Project** on any client, and type a name. Moonfold makes a Git
+repository in `~/.moonfold/projects` (the `projects` folder of your Moonfold data directory) with a README,
 an icon, and a first commit, then opens a new thread in it. Until the project has a thread, new
 threads work in its folder, even when your default is a new worktree. The folder is named after the project,
 like `pinball-stats` for "Pinball Stats". Turn on **Create private repository on GitHub** to also
@@ -137,7 +137,7 @@ make your first commit before pushing.
 
 ## Create a pull request
 
-Use a thread's Git actions to commit, push, and create a pull request. T3 Code can generate commit
+Use a thread's Git actions to commit, push, and create a pull request. Moonfold can generate commit
 messages, review titles, and descriptions from your changes.
 
 An existing fork PR can appear beside the branch even if you pushed without setting an upstream.
@@ -153,14 +153,10 @@ Open **Pull requests** to review changes and comments, request reviewers, check 
 or merge. You can edit review titles and descriptions and your own comments where the host allows it.
 GitLab calls these merge requests.
 
-On mobile, **Pull requests** lists reviews across your connected environments. Open a review
+Open a review
 to read its description, activity, commits, and changed files. Line comments stay as drafts
 until you submit the review. **Work on PR** opens a chat with the review attached; sending
 the first message prepares a worktree from the review's branch.
-
-Previously loaded lists, review details, guides, and diff pages remain readable on mobile
-without a connection, including after restarting the app. Saved content refreshes when the
-environment reconnects; submitting changes requires a connection.
 
 Enable **Remove agent credits when merging** in Settings → Source Control to remove recognized
 agent co-author and generated-by lines from GitHub merge and squash commit messages. Human
@@ -175,7 +171,7 @@ Press **Escape** before releasing to cancel. Failed closes stay in the list so y
 GitHub, GitLab, and Azure DevOps support auto-merge while checks are outstanding. GitHub also
 supports approving waiting fork workflows and opening a revert pull request for a merged change.
 
-GitHub sharing is off by default. In Settings → Connections → GitHub sharing (Environments on mobile), choose
+GitHub sharing is off by default. In Settings → Connections → GitHub sharing, choose
 **Read PRs** or **Read and act** for each environment you trust to share GitHub access.
 Enable both the original environment and the environment answering its requests on this client.
 **Read and act** can use broader GitHub permissions than the original environment's credential;
@@ -185,7 +181,7 @@ environment clears its permission.
 GitHub review details, linked PR status, and permitted review actions can then use another
 connected environment signed in to the same GitHub account. Each needs a project on that host.
 A connected local environment is preferred for actions and can answer slow or failed reads.
-Browsers and mobile clients need a paired environment to use its GitHub credentials.
+Browsers need a paired environment to use its GitHub credentials.
 Credentials stay on their machines. Previously verified credentials remain usable for routing
 for ten minutes during a GitHub outage; new credentials must be verified first. An action with
 an uncertain result is never automatically retried elsewhere. Listings, diffs, and checkout or
@@ -197,9 +193,7 @@ declined pull request.
 ### Review guides
 
 Review guides are in beta. Turn on **Review guides** in Settings → Source Control to add the
-**Guide** tab to pull requests on that server. On mobile, move between stops with **Next**
-and the back button; a stale guide offers a rewrite and hides excerpts that no longer match
-the current change.
+**Guide** tab to pull requests on that server.
 
 The **Guide** tab gives you a tour of a pull request without reading it line by line: stops
 through the change in reading order. Each stop points at the lines worth reading, and a stop marked
@@ -211,8 +205,7 @@ covers that layer only, and may point out what a lower layer introduced or what 
 Choose **Write guide** to have the review guide model from Settings → Source Control read the
 change in a temporary checkout; without one set, the source control writer model is used. Nothing
 in the checkout is changed, and a large pull request takes a few minutes; you can go elsewhere in
-the app. On web, you are told when the guide is ready; on mobile, return to the guide to check
-its progress. Claude and Codex can write guides. The guide is
+the app. On web and desktop, you are told when the guide is ready. Claude and Codex can write guides. The guide is
 kept for everyone using this server. To write it again, for example after a push or after changing
 the model or instructions, choose **Rewrite guide** from the pull request's **⋯** menu.
 
@@ -234,12 +227,12 @@ Tick a file off in the **Code** tab once you have read it and it collapses; the 
 running count. A tick belongs to the pull request rather than to a commit, so scoping the tab to a
 single commit keeps them. A file pushed to after you cleared it comes back marked **Changed**.
 
-On GitHub these are GitHub's own viewed marks, so a review carries between T3 Code and github.com
-in either direction. Forgejo, GitLab, Bitbucket, and Azure DevOps expose no record T3 Code can read, so the
+On GitHub these are GitHub's own viewed marks, so a review carries between Moonfold and github.com
+in either direction. Forgejo, GitLab, Bitbucket, and Azure DevOps expose no record Moonfold can read, so the
 server you are connected to keeps them instead: they follow you across the apps connected to that
-server, but the host's own site will not show them, and the count reads **viewed in T3 Code**.
+server, but the host's own site will not show them, and the count reads **viewed in Moonfold**.
 
-On mobile, open a changed file and mark it viewed from its header. Viewed files collapse,
+Viewed files collapse,
 and their marks follow the same rules as on web and desktop.
 
 ## Troubleshooting
@@ -265,7 +258,7 @@ on the Pull Requests page, **Link to thread** lets you search for an active thre
 also lists the threads that link to it, including archived threads, so you can return to their context.
 
 Thread badges show a stack's layer count or the current review number with a count of additional
-links. Clicking a badge with more than one review opens the **Linked pull requests** panel. On mobile, the Git overview lists linked reviews and their stacks; tap a review to open it.
+links. Clicking a badge with more than one review opens the **Linked pull requests** panel.
 Linking and unlinking are available in the web and desktop clients.
 
 The **Linked pull requests** panel lists every review and groups stacks. Unlink a review from its

@@ -1,6 +1,6 @@
-# T3 Connect
+# Moonfold Connect
 
-T3 Connect uses Clerk for cloud identity. The relay manages environment links,
+Moonfold Connect uses Clerk for cloud identity. The relay manages environment links,
 credentials for reaching environments, and managed tunnel allocations. After
 bootstrap, clients send application traffic through the environment's tunnel
 hostname; the relay Worker does not proxy their HTTP or WebSocket sessions.
@@ -20,7 +20,7 @@ environment stays away. When the tunnel reconnects, the environment asks the
 relay to deliver right away. Requests are deleted once the environment
 answers, after 24 hours, or when no user has the environment linked. The relay
 still never checks the token; delivery goes through the same environment route.
-Every forward carries `x-t3-relay-delivery-id`, so a request that reached the
+Every forward carries `x-moonfold-relay-delivery-id`, so a request that reached the
 environment before a timeout and is delivered again later runs once
 ([inbox object](../../infra/relay/src/hooks/HookInboxObject.ts)).
 
@@ -140,12 +140,12 @@ release, installs the pinned one in the background, then starts a second
 connector on it for the same tunnel. The old connector stops only after the new
 one registers, so the swap never takes the host off the relay. If the new one
 fails to spawn, the old one keeps serving and the install retries later. A host
-with no relay client installs one first. A `cloudflared` on `PATH` or an explicit `T3CODE_CLOUDFLARED_PATH` is the
+with no relay client installs one first. A `cloudflared` on `PATH` or an explicit `MOONFOLD_CLOUDFLARED_PATH` is the
 user's choice and is never replaced, since linking asks before downloading.
 
 Once the pinned release registers a connection, managed releases older than the
 pin are deleted except the newest of them. That one, and any newer release, can
-belong to another server sharing the same T3 home, such as a rollback after a
+belong to another server sharing the same Moonfold home, such as a rollback after a
 failed update, which could not run again without it.
 
 The version comes from running `cloudflared version`, not from the folder name.

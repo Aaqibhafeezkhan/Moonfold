@@ -61,7 +61,7 @@ Details and caveats in docs/DEV.md. Run `. "$HOME/.config/vite-plus/env"` first 
 
 - Install: `vp i`
 - Dev (server + web): `vp run dev`; desktop: `vp run dev:desktop`
-- Build server + web: `vp run --filter t3 --filter @t3tools/web build`; desktop: `vp run build:desktop`
+- Build server + web: `vp run --filter moonfold --filter @moonfold/web build`; desktop: `vp run build:desktop`
 - Lint: `vp lint --report-unused-disable-directives`; format check: `vp fmt --check`
 - Typecheck: `vp run -r --concurrency-limit 2 typecheck`
 - Tests: `vp test run <files>` (targeted); full suite `vp run -r test` only when asked (CI owns it)
