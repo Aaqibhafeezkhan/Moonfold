@@ -8,8 +8,8 @@ import type {
   OrchestrationV2Subagent,
   OrchestrationV2SubagentWorkflow,
   OrchestrationV2TurnItem,
-} from "@t3tools/contracts";
-import { isOrchestrationV2WorkActive } from "@t3tools/contracts";
+} from "@moonfold/contracts";
+import { isOrchestrationV2WorkActive } from "@moonfold/contracts";
 
 export type RuntimeSubagentStatus =
   | "pending"
