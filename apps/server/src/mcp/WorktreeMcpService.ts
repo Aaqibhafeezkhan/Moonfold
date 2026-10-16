@@ -685,7 +685,13 @@ const make = Effect.gen(function* () {
       input.threadId,
       requireIdle(target).pipe(
         Effect.andThen(
-          performHandoff(target, { branch: input.branch }, { carryChanges: input.carryChanges }),
+          // The thread's work (and any carried changes) sits on the local checkout, so the new
+          // branch starts there, never from origin's tip.
+          performHandoff(
+            target,
+            { branch: input.branch, startFromOrigin: false },
+            { carryChanges: input.carryChanges },
+          ),
         ),
       ),
     );

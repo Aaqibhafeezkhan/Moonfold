@@ -85,7 +85,8 @@ const fixture = Effect.gen(function* () {
               Option.some({ id: projectId, workspaceRoot: project, scripts: [] } as never),
             ),
         }),
-        ServerSettings.layerTest({ newWorktreesStartFromOrigin: false }),
+        // On by default: a move must still start from the local checkout (this repo has no origin).
+        ServerSettings.layerTest({ newWorktreesStartFromOrigin: true }),
         Layer.mock(GitWorkflowService.GitWorkflowService)({
           localStatus: ({ cwd }) =>
             currentRef(cwd).pipe(
