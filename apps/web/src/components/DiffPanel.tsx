@@ -746,14 +746,13 @@ export default function DiffPanel({
         provider.driver === "codex" &&
         provider.slashCommands.some((command) => command.name === "review"),
     ) ?? false;
+  // Without a base branch the branch view shows the working tree, which plain /review covers.
   const reviewCommand =
     !threadOffersReview || selectedRunId !== null
       ? null
-      : selectedGitScope === "unstaged"
-        ? "/review"
-        : selectedGitSource?.baseRef
-          ? `/review branch ${selectedGitSource.baseRef}`
-          : null;
+      : selectedGitScope === "branch" && selectedGitSource?.baseRef
+        ? `/review branch ${selectedGitSource.baseRef}`
+        : "/review";
 
   const headerRow = (
     <>
