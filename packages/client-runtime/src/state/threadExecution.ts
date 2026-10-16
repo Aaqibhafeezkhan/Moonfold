@@ -518,7 +518,7 @@ export function summarizeThreadTokenUsage(
       partial: (current?.partial ?? false) || usage.usageStatus === "partial",
     });
   }
-  return [...groups.values()].toSorted(
+  return [...groups.values()].sort(
     (left, right) =>
       right.inputTokens + right.outputTokens - (left.inputTokens + left.outputTokens),
   );
