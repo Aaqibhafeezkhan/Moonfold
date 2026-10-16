@@ -546,6 +546,13 @@ export const SETTINGS_SEARCH_ITEMS = [
     desktopOnly: true,
   },
   {
+    id: "quick-window-shortcut",
+    title: "Quick window shortcut",
+    to: "/settings/general",
+    searchTerms: ["global hotkey popup floating new thread anywhere desktop"],
+    desktopOnly: true,
+  },
+  {
     id: "text-generation-model",
     title: "Text generation model",
     to: "/settings/general",

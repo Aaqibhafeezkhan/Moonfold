@@ -1221,6 +1221,10 @@ export interface DesktopBridge {
   openThreadWindow?: (path: string) => Promise<void>;
   /** Keeps this pop-out window above others. Resolves false outside a pop-out window. */
   setWindowAlwaysOnTop?: (enabled: boolean) => Promise<boolean>;
+  /** Whether the quick window's global hotkey is held. Optional: older builds lack it. */
+  getQuickWindowStatus?: () => Promise<DesktopQuickWindowStatus>;
+  /** Releases the quick window hotkey while a new one is recorded. */
+  setQuickWindowShortcutSuppressed?: (suppressed: boolean) => Promise<void>;
   /**
    * Open a System Settings pane by identifier. Optional: older desktop builds
    * lack it, and callers no-op when it is missing.
@@ -1367,6 +1371,13 @@ export interface DesktopPreviewBridge {
 }
 
 export type ConfirmDialogVariant = "default" | "destructive";
+
+export interface DesktopQuickWindowStatus {
+  /** The hotkey Moonfold holds, or null when it is off or could not be taken. */
+  readonly accelerator: string | null;
+  /** Why the chosen hotkey is not active. */
+  readonly message: string | null;
+}
 
 export interface ConfirmDialogOptions {
   readonly variant?: ConfirmDialogVariant;

@@ -24,7 +24,7 @@ import { isTrailingDoubleClick } from "../Sidebar.logic";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { toastManager } from "../ui/toast";
 import { Toggle } from "../ui/toggle";
-import { isThreadPopoutWindow } from "~/threadPopout";
+import { isThreadPopoutWindow, threadPopoutStartsOnTop } from "~/threadPopout";
 import { SideQuestionPopover } from "./SideQuestionPopover";
 import { useThreadActionMenu } from "~/hooks/useThreadActionMenu";
 import { readLocalApi } from "~/localApi";
@@ -452,7 +452,7 @@ export const ChatHeader = memo(function ChatHeader({
 
 /** In a popped-out thread window: keeps the window above other apps' windows. */
 function KeepWindowOnTopToggle() {
-  const [onTop, setOnTop] = useState(false);
+  const [onTop, setOnTop] = useState(threadPopoutStartsOnTop);
   const setAlwaysOnTop = window.desktopBridge?.setWindowAlwaysOnTop;
   if (setAlwaysOnTop === undefined) return null;
   const label = onTop ? "Stop keeping this window on top" : "Keep this window on top";

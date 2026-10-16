@@ -92,6 +92,7 @@ const layerDesktopWindow = (selectedAction: Deferred.Deferred<string>) =>
     syncAppearance: Effect.void,
     openThreadWindow: () => Effect.void,
     setThreadWindowAlwaysOnTop: () => Effect.succeed(false),
+    toggleQuickWindow: Effect.void,
   } satisfies DesktopWindow.DesktopWindow["Service"]);
 
 const layerElectronMenu = (

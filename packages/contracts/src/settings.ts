@@ -511,6 +511,10 @@ export const ClientSettingsSchema = Schema.Struct({
   snapShotFlash: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
   snapShotAnimations: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
   wordWrap: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
+  /** Desktop: the global hotkey that opens the quick window. Off (null) until the user sets one. */
+  quickWindowShortcut: Schema.NullOr(SnapShotKeyChord).pipe(
+    Schema.withDecodingDefault(Effect.succeed(null)),
+  ),
 });
 export type ClientSettings = typeof ClientSettingsSchema.Type;
 
@@ -1787,5 +1791,6 @@ export const ClientSettingsPatch = Schema.Struct({
   snapShotFlash: Schema.optionalKey(Schema.Boolean),
   snapShotAnimations: Schema.optionalKey(Schema.Boolean),
   wordWrap: Schema.optionalKey(Schema.Boolean),
+  quickWindowShortcut: Schema.optionalKey(Schema.NullOr(SnapShotKeyChord)),
 });
 export type ClientSettingsPatch = typeof ClientSettingsPatch.Type;

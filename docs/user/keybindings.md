@@ -186,3 +186,14 @@ keyboard repeat; if repeat is disabled, use two presses or the application menu.
 Change **Settings → General → Confirmations → Quit shortcut** to **Direct** for a
 single press or **Double press** for two presses only. Choosing **Quit** from the
 application menu always quits immediately.
+
+## Quick window
+
+The desktop app can open a small window from anywhere with a global shortcut. Set it in
+**Settings → General → Quick window shortcut**: choose **Set shortcut** and press a key with at
+least one of `Ctrl`, `Alt`, or `Cmd`. It is off until you set one.
+
+The shortcut opens a new thread in your most recently used project, in a window that stays on
+top of other apps (use the pin in its header to change that). Press the shortcut again to hide
+the window while it is in front, and once more to bring it back. If another app already holds
+the shortcut, the setting says so and you can pick a different one. **Turn off** releases it.

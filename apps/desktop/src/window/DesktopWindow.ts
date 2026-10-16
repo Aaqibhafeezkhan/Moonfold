@@ -128,6 +128,12 @@ export class DesktopWindow extends Context.Service<
      * window loads the same app marked as a pop-out, so it starts with the sidebar closed.
      */
     readonly openThreadWindow: (path: string) => Effect.Effect<void, DesktopWindowError>;
+    /**
+     * The global hotkey's small window for starting a thread from anywhere: opens it on the
+     * display under the pointer, brings it back when it is hidden or behind, and hides it when
+     * it is already in front.
+     */
+    readonly toggleQuickWindow: Effect.Effect<void, DesktopWindowError>;
     /** Keeps a pop-out window above other windows. False when the sender is not a pop-out. */
     readonly setThreadWindowAlwaysOnTop: (input: {
       readonly webContentsId: number;
@@ -993,13 +999,17 @@ export const make = Effect.gen(function* () {
     yield* dispatch;
   });
 
-  const openThreadWindow = Effect.fn("desktop.window.openThreadWindow")(function* (path: string) {
+  const createThreadWindow = Effect.fn("desktop.window.createThreadWindow")(function* (
+    path: string,
+    size: { readonly width: number; readonly height: number },
+    placement: Pick<Electron.BrowserWindowConstructorOptions, "x" | "y" | "alwaysOnTop"> = {},
+  ) {
     const applicationUrl = getDesktopUrl(environment.isDevelopment);
     const shouldUseDarkColors = yield* electronTheme.shouldUseDarkColors;
     const iconOption = getIconOption(yield* assets.iconPaths, environment.platform);
     const window = yield* electronWindow.create({
-      width: 560,
-      height: 780,
+      ...size,
+      ...placement,
       minWidth: 380,
       minHeight: 480,
       show: false,
@@ -1042,10 +1052,46 @@ export const make = Effect.gen(function* () {
     window.once("ready-to-show", () => {
       void runPromise(electronWindow.reveal(window));
     });
-    // Desktop routes through hash history; the query marks the window as a pop-out.
-    void window.loadURL(`${applicationUrl}?window=popout#${path}`).catch(() => undefined);
+    // Desktop routes through hash history; the query marks the window as a pop-out and tells
+    // its keep-on-top toggle where it starts.
+    const query = placement.alwaysOnTop === true ? "window=popout&onTop=1" : "window=popout";
+    void window.loadURL(`${applicationUrl}?${query}#${path}`).catch(() => undefined);
+    return window;
+  });
+
+  const openThreadWindow = Effect.fn("desktop.window.openThreadWindow")(function* (path: string) {
+    yield* createThreadWindow(path, { width: 560, height: 780 });
     yield* logWindowInfo("thread window opened");
   });
+
+  let quickWindow: Electron.BrowserWindow | null = null;
+  const QUICK_WINDOW_SIZE = { width: 520, height: 640 };
+  const toggleQuickWindow = Effect.gen(function* () {
+    const existing = quickWindow;
+    if (existing !== null && !existing.isDestroyed()) {
+      if (existing.isVisible() && existing.isFocused()) {
+        existing.hide();
+        return;
+      }
+      yield* electronWindow.reveal(existing);
+      return;
+    }
+    // Centered on the display under the pointer, so it opens where the user is looking.
+    const { workArea } = Electron.screen.getDisplayNearestPoint(
+      Electron.screen.getCursorScreenPoint(),
+    );
+    const window = yield* createThreadWindow("/", QUICK_WINDOW_SIZE, {
+      x: Math.round(workArea.x + (workArea.width - QUICK_WINDOW_SIZE.width) / 2),
+      y: Math.round(workArea.y + (workArea.height - QUICK_WINDOW_SIZE.height) / 3),
+      alwaysOnTop: true,
+    });
+    window.setAlwaysOnTop(true, "floating");
+    quickWindow = window;
+    window.on("closed", () => {
+      if (quickWindow === window) quickWindow = null;
+    });
+    yield* logWindowInfo("quick window opened");
+  }).pipe(Effect.withSpan("desktop.window.toggleQuickWindow"));
 
   const setThreadWindowAlwaysOnTop: DesktopWindow["Service"]["setThreadWindowAlwaysOnTop"] = ({
     webContentsId,
@@ -1062,6 +1108,7 @@ export const make = Effect.gen(function* () {
 
   return DesktopWindow.of({
     openThreadWindow,
+    toggleQuickWindow,
     setThreadWindowAlwaysOnTop,
     createMain,
     ensureMain,

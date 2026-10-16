@@ -7,6 +7,9 @@ export const CONTEXT_MENU_CHANNEL = "desktop:context-menu";
 export const OPEN_EXTERNAL_CHANNEL = "desktop:open-external";
 export const OPEN_THREAD_WINDOW_CHANNEL = "desktop:open-thread-window";
 export const SET_WINDOW_ALWAYS_ON_TOP_CHANNEL = "desktop:set-window-always-on-top";
+export const GET_QUICK_WINDOW_STATUS_CHANNEL = "desktop:get-quick-window-status";
+export const SET_QUICK_WINDOW_SHORTCUT_SUPPRESSED_CHANNEL =
+  "desktop:set-quick-window-shortcut-suppressed";
 export const OPEN_SYSTEM_SETTINGS_CHANNEL = "desktop:open-system-settings";
 export const PROBE_REMOTE_EDITORS_CHANNEL = "desktop:probe-remote-editors";
 export const MENU_ACTION_CHANNEL = "desktop:menu-action";

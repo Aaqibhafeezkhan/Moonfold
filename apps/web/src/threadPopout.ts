@@ -10,6 +10,10 @@ export const isThreadPopoutWindow =
   typeof window !== "undefined" &&
   new URLSearchParams(window.location.search).get("window") === "popout";
 
+/** A pop-out the desktop app opened above other windows, such as the quick window. */
+export const threadPopoutStartsOnTop =
+  isThreadPopoutWindow && new URLSearchParams(window.location.search).get("onTop") === "1";
+
 /** Whether this window can pop a thread out: desktop builds with the bridge, from the main window. */
 export function canPopOutThreads(): boolean {
   return (

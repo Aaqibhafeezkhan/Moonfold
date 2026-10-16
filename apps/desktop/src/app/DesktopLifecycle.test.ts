@@ -100,6 +100,7 @@ function layerDesktopWindow(
     syncAppearance: Effect.void,
     openThreadWindow: () => Effect.void,
     setThreadWindowAlwaysOnTop: () => Effect.succeed(false),
+    toggleQuickWindow: Effect.void,
   });
 }
 

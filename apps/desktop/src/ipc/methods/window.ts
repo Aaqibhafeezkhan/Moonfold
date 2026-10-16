@@ -35,6 +35,7 @@ import * as ElectronMenu from "../../electron/ElectronMenu.ts";
 import * as ElectronShell from "../../electron/ElectronShell.ts";
 import * as ElectronTheme from "../../electron/ElectronTheme.ts";
 import * as ElectronWindow from "../../electron/ElectronWindow.ts";
+import * as DesktopQuickWindow from "../../window/DesktopQuickWindow.ts";
 import * as DesktopWindow from "../../window/DesktopWindow.ts";
 import * as Electron from "electron";
 import * as MacPermissions from "../../permissions/MacPermissions.ts";
@@ -347,6 +348,26 @@ export const setWindowAlwaysOnTop = DesktopIpc.makeIpcMethod({
       webContentsId: event.sender.id,
       enabled,
     });
+  }),
+});
+
+export const getQuickWindowStatus = DesktopIpc.makeIpcMethod({
+  channel: IpcChannels.GET_QUICK_WINDOW_STATUS_CHANNEL,
+  payload: Schema.Void,
+  result: DesktopQuickWindow.DesktopQuickWindowStatus,
+  handler: Effect.fn("desktop.ipc.window.getQuickWindowStatus")(function* () {
+    const quickWindow = yield* DesktopQuickWindow.DesktopQuickWindow;
+    return yield* quickWindow.status;
+  }),
+});
+
+export const setQuickWindowShortcutSuppressed = DesktopIpc.makeIpcMethod({
+  channel: IpcChannels.SET_QUICK_WINDOW_SHORTCUT_SUPPRESSED_CHANNEL,
+  payload: Schema.Boolean,
+  result: Schema.Void,
+  handler: Effect.fn("desktop.ipc.window.setQuickWindowShortcutSuppressed")(function* (suppressed) {
+    const quickWindow = yield* DesktopQuickWindow.DesktopQuickWindow;
+    yield* quickWindow.setSuppressed(suppressed);
   }),
 });
 
