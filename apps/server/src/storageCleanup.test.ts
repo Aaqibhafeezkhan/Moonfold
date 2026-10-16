@@ -17,7 +17,7 @@ import {
   StorageCleanupReport,
   type WorktreeKeepWhen,
   type StorageCleanupSettings,
-} from "@t3tools/contracts";
+} from "@moonfold/contracts";
 import * as ServerConfig from "./config.ts";
 import * as StorageCleanup from "./storageCleanup.ts";
 import * as GitVcsDriver from "./vcs/GitVcsDriver.ts";
@@ -43,7 +43,7 @@ import {
   type OrchestrationV2DomainEvent,
   type OrchestrationV2ProviderSession,
   type OrchestrationV2ThreadShell,
-} from "@t3tools/contracts";
+} from "@moonfold/contracts";
 import * as DateTime from "effect/DateTime";
 import {
   storageCleanupActivityAt,
@@ -260,7 +260,7 @@ const cleanupFixture = (
     const worktree = `${config.worktreesDir}/feature`;
     yield* command(repo, ["worktree", "add", "-b", "feature", worktree]);
     // worktreeOnDelete lets domain events request sweeps once a test calls activate.
-    let settings: import("@t3tools/contracts").ServerSettings = {
+    let settings: import("@moonfold/contracts").ServerSettings = {
       ...DEFAULT_SERVER_SETTINGS,
       storageCleanup,
     };

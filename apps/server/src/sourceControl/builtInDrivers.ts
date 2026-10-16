@@ -2,29 +2,29 @@
  * The source control drivers this build ships with. Both registries, repository operations and
  * pull requests, iterate this list; a host with no driver here shows up as unsupported.
  *
- * Adding a host means writing its `@t3tools/source-control-<host>` package, adding its driver
+ * Adding a host means writing its `@moonfold/source-control-<host>` package, adding its driver
  * here, and providing its services' layers in `layer` below.
  *
  * @module sourceControl/builtInDrivers
  */
-import * as AzureDevOpsCli from "@t3tools/source-control-azure-devops/server/AzureDevOpsCli";
-import * as AzureDevOpsPullRequestCli from "@t3tools/source-control-azure-devops/server/AzureDevOpsPullRequestCli";
-import * as AzureDevOpsDriver from "@t3tools/source-control-azure-devops/server/driver";
-import * as BitbucketApi from "@t3tools/source-control-bitbucket/server/BitbucketApi";
-import * as BitbucketPullRequestApi from "@t3tools/source-control-bitbucket/server/BitbucketPullRequestApi";
-import * as BitbucketDriver from "@t3tools/source-control-bitbucket/server/driver";
-import * as ForgejoCli from "@t3tools/source-control-forgejo/server/ForgejoCli";
-import * as ForgejoDriver from "@t3tools/source-control-forgejo/server/driver";
-import * as GitCafeApi from "@t3tools/source-control-gitcafe/server/GitCafeApi";
-import * as GitCafeCredentials from "@t3tools/source-control-gitcafe/server/GitCafeCredentials";
-import * as GitCafeDriver from "@t3tools/source-control-gitcafe/server/driver";
-import * as GitHubApi from "@t3tools/source-control-github/server/GitHubApi";
-import * as GitHubPullRequestApi from "@t3tools/source-control-github/server/GitHubPullRequestApi";
-import * as GitHubDriver from "@t3tools/source-control-github/server/driver";
-import * as GitLabCli from "@t3tools/source-control-gitlab/server/GitLabCli";
-import * as GitLabPullRequestCli from "@t3tools/source-control-gitlab/server/GitLabPullRequestCli";
-import * as GitLabDriver from "@t3tools/source-control-gitlab/server/driver";
-import type { SourceControlDriver } from "@t3tools/source-control-core/server/driver";
+import * as AzureDevOpsCli from "@moonfold/source-control-azure-devops/server/AzureDevOpsCli";
+import * as AzureDevOpsPullRequestCli from "@moonfold/source-control-azure-devops/server/AzureDevOpsPullRequestCli";
+import * as AzureDevOpsDriver from "@moonfold/source-control-azure-devops/server/driver";
+import * as BitbucketApi from "@moonfold/source-control-bitbucket/server/BitbucketApi";
+import * as BitbucketPullRequestApi from "@moonfold/source-control-bitbucket/server/BitbucketPullRequestApi";
+import * as BitbucketDriver from "@moonfold/source-control-bitbucket/server/driver";
+import * as ForgejoCli from "@moonfold/source-control-forgejo/server/ForgejoCli";
+import * as ForgejoDriver from "@moonfold/source-control-forgejo/server/driver";
+import * as GitCafeApi from "@moonfold/source-control-gitcafe/server/GitCafeApi";
+import * as GitCafeCredentials from "@moonfold/source-control-gitcafe/server/GitCafeCredentials";
+import * as GitCafeDriver from "@moonfold/source-control-gitcafe/server/driver";
+import * as GitHubApi from "@moonfold/source-control-github/server/GitHubApi";
+import * as GitHubPullRequestApi from "@moonfold/source-control-github/server/GitHubPullRequestApi";
+import * as GitHubDriver from "@moonfold/source-control-github/server/driver";
+import * as GitLabCli from "@moonfold/source-control-gitlab/server/GitLabCli";
+import * as GitLabPullRequestCli from "@moonfold/source-control-gitlab/server/GitLabPullRequestCli";
+import * as GitLabDriver from "@moonfold/source-control-gitlab/server/driver";
+import type { SourceControlDriver } from "@moonfold/source-control-core/server/driver";
 import * as Layer from "effect/Layer";
 
 import * as ServerSourceControlHost from "./ServerSourceControlHost.ts";
