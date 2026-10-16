@@ -150,3 +150,51 @@ per instance. Account usage sits there too rather than on the Usage page, which 
 transcripts across providers. The server side is a provider-neutral `nativeConfig` capability, so
 another provider can implement it later. Each call spawns a short-lived `codex app-server`; a
 section loads only when opened.
+
+## D-19 WebSocket RPCs are declared in four groups
+
+TypeScript gives each statement a fixed instantiation budget, and the cost of an RPC group's
+handler types grows with the square of its size. At about 300 RPCs the server's handler map
+silently degraded to `any`, so missing services stopped being reported. The contract now declares
+the RPCs in `WsRpcGroupPart1..4` (merged for clients); the server builds the handlers once and
+gives each part only its own. New RPCs go into the last part. `apps/server/src/binCli.types.test.ts`
+fails to compile if the CLI's requirements widen to `any` again.
+
+## D-20 Side questions use text generation, not a turn
+
+"Ask on the side" sends the thread's recent conversation and the question to the thread's own
+model through the provider's text-generation path (no tools, no thread history written). It never
+interrupts or queues behind a running turn and costs one short request. Providers without text
+generation (ACP) report it as unsupported.
+
+## D-21 Permission modes follow Codex's own requirements
+
+Codex lists its allowed permission profiles (`permissionProfile/list`). Moonfold maps the built-in
+`:read-only`, `:workspace` and `:danger-full-access` profiles to its runtime modes and offers only
+the allowed ones, so an organization's Codex requirements cannot be bypassed from the picker.
+
+## D-22 Moving a thread between the project folder and worktrees
+
+A user move reuses the agent's worktree handoff service, so the WebSocket RPCs and the MCP tool
+share one per-thread guard. A move waits until no run is active. Uncommitted work travels through
+git's shared stash; a failed apply resets the target and restores the source, which is why the
+target must be clean. A new worktree always branches from the checkout's own HEAD, never origin,
+because that is the base the carried work was written against. Bringing work back merges the
+worktree branch into the project folder's branch and aborts on conflict, so the folder must be
+clean first and a failure changes nothing. The worktree stays on disk; retention removes it later.
+Agents get only the existing one-way handoff tool: merging into the user's checkout stays a user
+action.
+
+## D-23 Per-thread usage lives in the thread details panel
+
+Codex and Claude report main-agent usage per turn. Moonfold groups it by the run's model, effort
+and speed and shows it under Usage in the thread details panel. The composer's context meter was
+considered but is a legacy indicator that is off by default.
+
+## D-24 The quick window is a pop-out of the new-thread screen
+
+The global hotkey (a client setting, off until recorded) opens an always-on-top pop-out window at
+the app's index route, which already starts a draft in the most recent project. No separate
+renderer or route is needed, it works with every provider, and the window behaves like any
+pop-out (sidebar collapsed, keep-on-top toggle). The hotkey is released while a new one is being
+recorded, and a hotkey held by another app is reported in Settings.
