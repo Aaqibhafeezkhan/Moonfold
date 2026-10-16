@@ -78,6 +78,7 @@ describe("ThreadDetailsPanel", () => {
       onAddProjectScript: vi.fn() as ThreadDetailsPanelProps["onAddProjectScript"],
       onUpdateProjectScript: vi.fn() as ThreadDetailsPanelProps["onUpdateProjectScript"],
       onDeleteProjectScript: vi.fn() as ThreadDetailsPanelProps["onDeleteProjectScript"],
+      threadTokenUsage: [],
     };
 
     renderToStaticMarkup(<ThreadDetailsPanel {...props} />);

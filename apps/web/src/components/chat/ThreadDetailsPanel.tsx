@@ -1,3 +1,4 @@
+import type { ThreadTokenUsageGroup } from "@moonfold/client-runtime/state/thread-execution";
 import type {
   EditorId,
   EnvironmentId,
@@ -21,6 +22,7 @@ import { OpenInPicker } from "./OpenInPicker";
 import { ThreadDetailsSection } from "./ThreadDetailsSection";
 import { ThreadAutomationsPanel } from "./ThreadAutomationsPanel";
 import { ThreadRelationshipsPanel } from "./ThreadRelationshipsControl";
+import { ThreadUsageSection } from "./ThreadUsageSection";
 
 const GitActionsControl = memo(BaseGitActionsControl);
 
@@ -62,6 +64,8 @@ export interface ThreadDetailsPanelProps extends Pick<
     input: NewProjectScriptInput,
   ) => Promise<ProjectScriptActionResult>;
   onDeleteProjectScript: (scriptId: string) => Promise<ProjectScriptActionResult>;
+  /** The thread's token use by model, effort and speed. */
+  threadTokenUsage: ReadonlyArray<ThreadTokenUsageGroup>;
 }
 
 export function ThreadDetailsPanel(props: ThreadDetailsPanelProps) {
@@ -174,6 +178,10 @@ export function ThreadDetailsPanel(props: ThreadDetailsPanelProps) {
 
           {density === "full" && !props.draftId ? (
             <ThreadAutomationsPanel environmentId={props.environmentId} threadId={props.threadId} />
+          ) : null}
+
+          {density === "full" && !props.draftId ? (
+            <ThreadUsageSection usage={props.threadTokenUsage} />
           ) : null}
 
           {density === "full" && !props.draftId ? (

@@ -11072,6 +11072,7 @@ export default function ChatView(props: ChatViewProps) {
     environmentId: activeThread.environmentId,
     threadId: activeThread.id,
     ...(draftId ? { draftId } : {}),
+    threadTokenUsage,
     activeProjectName: activeProject?.title,
     activeProjectScripts: activeProject ? activeProjectScripts : undefined,
     preferredScriptId: activeProject
@@ -11655,7 +11656,6 @@ export default function ChatView(props: ChatViewProps) {
                               activeThreadModelSelection={activeThread?.modelSelection}
                               activeProjectId={activeProject?.id ?? null}
                               activeContextWindow={activeContextWindow}
-                              threadTokenUsage={threadTokenUsage}
                               activeTasksProgress={activeComposerTasksProgress}
                               activeTaskSteps={activeComposerTaskSteps}
                               compactThreadUnavailable={compactThreadUnavailable}

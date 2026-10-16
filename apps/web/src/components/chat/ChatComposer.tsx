@@ -1145,7 +1145,6 @@ import {
   type ComposerDispatchMode,
 } from "@moonfold/client-runtime/state/composer-dispatch";
 import type { ContextWindowSnapshot } from "../../lib/contextWindow";
-import type { ThreadTokenUsageGroup } from "@moonfold/client-runtime/state/thread-execution";
 import {
   getProviderSlashCommandsForSlashMenu,
   getProviderSkillsForSlashMenu,
@@ -1384,7 +1383,6 @@ const ComposerFooterPrimaryActions = memo(function ComposerFooterPrimaryActions(
   compact: boolean;
   canOperateThread: boolean;
   activeContextWindow: ContextWindowSnapshot | null;
-  threadTokenUsage: ReadonlyArray<ThreadTokenUsageGroup>;
   reserveContextWindowMeter: boolean;
   activeThreadModelDisplayName: string | null;
   isPreparingWorktree: boolean;
@@ -1426,7 +1424,6 @@ const ComposerFooterPrimaryActions = memo(function ComposerFooterPrimaryActions(
       {props.activeContextWindow ? (
         <ContextWindowMeter
           usage={props.activeContextWindow}
-          threadUsage={props.threadTokenUsage}
           modelDisplayName={props.activeThreadModelDisplayName}
           onCompact={props.onCompactContext}
           compactDisabled={props.compactDisabled}
@@ -1641,8 +1638,6 @@ export interface ChatComposerProps {
 
   // Context window
   activeContextWindow: ContextWindowSnapshot | null;
-  /** The thread's token use by model, effort and speed, for the context meter. */
-  threadTokenUsage: ReadonlyArray<ThreadTokenUsageGroup>;
   compactThreadUnavailable: boolean;
   compactDisabled: boolean;
   compactDisabledReason: string | null;
@@ -1793,7 +1788,6 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     reportedModelSelection,
     activeProjectId,
     activeContextWindow,
-    threadTokenUsage,
     compactThreadUnavailable,
     compactDisabled,
     compactDisabledReason,
@@ -7606,7 +7600,6 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                     activeContextWindow={
                       settings.contextWindowMeterEnabled ? activeContextWindow : null
                     }
-                    threadTokenUsage={threadTokenUsage}
                     reserveContextWindowMeter={reserveContextWindowMeter}
                     activeThreadModelDisplayName={activeThreadModelDisplayName}
                     pendingAction={pendingPrimaryAction}

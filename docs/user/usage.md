@@ -13,8 +13,8 @@ cost, split by token type and by speed. These estimates are not your subscriptio
 split, such as a provider-reported cost for a model without public rates, shows as **Other**.
 Select a model under **Breakdown** to see its trend, cache hit rate, and cost per million tokens.
 
-For one thread, hover the context meter beside the send button. Under **This thread** it lists
-the thread's own token use (not its subagents') for each model, effort and speed it ran with,
+For one thread, open the thread details panel from the thread header. **Usage** lists the
+thread's own token use (not its subagents') for each model, effort and speed it ran with,
 including how much input came from cache. Codex and Claude report this per turn; a total marked
 `≥` is missing part of a turn's report.
 

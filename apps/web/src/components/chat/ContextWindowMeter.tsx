@@ -1,11 +1,9 @@
 import { Button } from "../ui/button";
 import { type ContextWindowSnapshot, formatContextWindowTokens } from "~/lib/contextWindow";
 import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
-import type { ThreadTokenUsageGroup } from "@moonfold/client-runtime/state/thread-execution";
 import {
   formatContextWindowCompactionMessage,
   formatContextWindowCost,
-  presentThreadUsageGroup,
 } from "./ContextWindowMeter.logic";
 import { Minimize2Icon } from "lucide-react";
 import { composerFloatingLayerProps } from "./composerEventScope";
@@ -22,15 +20,12 @@ function formatPercentage(value: number | null): string | null {
 
 export function ContextWindowMeter(props: {
   usage: ContextWindowSnapshot;
-  /** The thread's token use by model, effort and speed. */
-  threadUsage?: ReadonlyArray<ThreadTokenUsageGroup>;
   modelDisplayName?: string | null;
   onCompact?: (() => void) | undefined;
   compactDisabled?: boolean | undefined;
   compactDisabledReason?: string | null | undefined;
 }) {
   const { usage, modelDisplayName, onCompact, compactDisabled, compactDisabledReason } = props;
-  const threadUsage = props.threadUsage ?? [];
   const usedPercentage = formatPercentage(usage.usedPercentage);
   const normalizedPercentage = Math.max(0, Math.min(100, usage.usedPercentage ?? 0));
   const radius = 9.75;
@@ -147,25 +142,6 @@ export function ContextWindowMeter(props: {
               <span className="font-medium tabular-nums text-secondary-label">
                 {formatContextWindowCost(usage.cost)}
               </span>
-            </div>
-          ) : null}
-          {threadUsage.length > 0 ? (
-            <div className="mt-1 flex flex-col gap-1.5 border-border/60 border-t pt-2">
-              <div className="font-medium text-muted-foreground text-xs">This thread</div>
-              {threadUsage.map((group) => {
-                const row = presentThreadUsageGroup(group);
-                return (
-                  <div key={row.label} className="flex flex-col text-2xs leading-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="min-w-0 truncate text-secondary-label">{row.label}</span>
-                      <span className="font-medium tabular-nums text-secondary-label">
-                        {row.total}
-                      </span>
-                    </div>
-                    <span className="text-muted-foreground tabular-nums">{row.detail}</span>
-                  </div>
-                );
-              })}
             </div>
           ) : null}
           {usage.compactsAutomatically ? (
