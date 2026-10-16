@@ -1,5 +1,5 @@
 {
-  "name": "@t3tools/client-runtime",
+  "name": "@moonfold/client-runtime",
   "private": true,
   "type": "module",
   "exports": {
@@ -115,9 +115,9 @@
       "types": "./src/voice-input/index.ts",
       "default": "./src/voice-input/index.ts"
     },
-    "./t3ToolSummary": {
-      "types": "./src/t3ToolSummary.ts",
-      "default": "./src/t3ToolSummary.ts"
+    "./moonfoldToolSummary": {
+      "types": "./src/moonfoldToolSummary.ts",
+      "default": "./src/moonfoldToolSummary.ts"
     },
     "./relay": {
       "types": "./src/relay/index.ts",
@@ -425,16 +425,16 @@
     "test": "vp test run"
   },
   "dependencies": {
+    "@moonfold/contracts": "workspace:*",
+    "@moonfold/shared": "workspace:*",
+    "@moonfold/source-control-azure-devops": "workspace:*",
+    "@moonfold/source-control-bitbucket": "workspace:*",
+    "@moonfold/source-control-core": "workspace:*",
+    "@moonfold/source-control-forgejo": "workspace:*",
+    "@moonfold/source-control-gitcafe": "workspace:*",
+    "@moonfold/source-control-github": "workspace:*",
+    "@moonfold/source-control-gitlab": "workspace:*",
     "@pierre/diffs": "catalog:",
-    "@t3tools/contracts": "workspace:*",
-    "@t3tools/shared": "workspace:*",
-    "@t3tools/source-control-azure-devops": "workspace:*",
-    "@t3tools/source-control-bitbucket": "workspace:*",
-    "@t3tools/source-control-core": "workspace:*",
-    "@t3tools/source-control-forgejo": "workspace:*",
-    "@t3tools/source-control-gitcafe": "workspace:*",
-    "@t3tools/source-control-github": "workspace:*",
-    "@t3tools/source-control-gitlab": "workspace:*",
     "effect": "catalog:",
     "three": "0.180.0"
   },
