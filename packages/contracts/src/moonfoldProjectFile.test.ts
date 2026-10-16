@@ -1,16 +1,20 @@
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vite-plus/test";
 
-import { T3ProjectFile, type T3ProjectFile as T3ProjectFileType } from "./t3ProjectFile.ts";
+import {
+  MoonfoldProjectFile,
+  type MoonfoldProjectFile as MoonfoldProjectFileType,
+} from "./moonfoldProjectFile.ts";
 
-const decode = Schema.decodeUnknownSync(T3ProjectFile as never) as (
+const decode = Schema.decodeUnknownSync(MoonfoldProjectFile as never) as (
   input: unknown,
-) => T3ProjectFileType;
+) => MoonfoldProjectFileType;
 
-describe("T3ProjectFile", () => {
+describe("MoonfoldProjectFile", () => {
   it("decodes a full project file", () => {
     const decoded = decode({
-      $schema: "https://t3.codes/schema/t3.json",
+      $schema:
+        "https://raw.githubusercontent.com/Mr-Dark-debug/Moonfold/main/schemas/moonfold.json",
       iconPath: "assets/logo.svg",
       scripts: [
         {

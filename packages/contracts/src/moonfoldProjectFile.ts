@@ -5,14 +5,15 @@ import { ThreadEnvMode, WorktreeSubmodules } from "./environment.ts";
 import { ProjectScriptIcon } from "./project.ts";
 import type { ProjectScopedServerSettingKey, ServerSettings } from "./settings.ts";
 
-/** File name of the checked-in T3 project file, resolved at the workspace root. */
-export const T3_PROJECT_FILE_NAME = "t3.json";
+/** File name of the checked-in Moonfold project file, resolved at the workspace root. */
+export const MOONFOLD_PROJECT_FILE_NAME = "moonfold.json";
 
-/** Public URL of the published JSON Schema for {@link T3ProjectFile}. */
-export const T3_PROJECT_FILE_SCHEMA_URL = "https://t3.codes/schema/t3.json";
+/** Public URL of the published JSON Schema for {@link MoonfoldProjectFile}. */
+export const MOONFOLD_PROJECT_FILE_SCHEMA_URL =
+  "https://raw.githubusercontent.com/Mr-Dark-debug/Moonfold/main/schemas/moonfold.json";
 
-const T3_PROJECT_FILE_PATH_MAX_LENGTH = 512;
-const T3_PROJECT_FILE_MAX_SCRIPTS = 50;
+const MOONFOLD_PROJECT_FILE_PATH_MAX_LENGTH = 512;
+const MOONFOLD_PROJECT_FILE_MAX_SCRIPTS = 50;
 
 // Annotations go on the encoded (string) side so they survive into the
 // published JSON Schema; decoding still trims and re-validates non-emptiness.
@@ -25,12 +26,12 @@ const trimmedNonEmpty = (annotations: { readonly description: string }, maxLengt
   return encoded.pipe(Schema.decodeTo(encoded, SchemaTransformation.trim()));
 };
 
-export const T3ProjectFileScript = Schema.Struct({
+export const MoonfoldProjectFileScript = Schema.Struct({
   name: trimmedNonEmpty({
-    description: "Display name for the script, shown in the T3 Code scripts menu.",
+    description: "Display name for the script, shown in the Moonfold scripts menu.",
   }),
   command: trimmedNonEmpty({
-    description: "Shell command executed in a T3 Code terminal at the project root.",
+    description: "Shell command executed in a Moonfold terminal at the project root.",
   }),
   icon: Schema.optionalKey(
     ProjectScriptIcon.annotate({
@@ -68,56 +69,56 @@ export const T3ProjectFileScript = Schema.Struct({
     }),
   ),
 }).annotate({
-  description: "A project script that team members can import into T3 Code.",
+  description: "A project script that team members can import into Moonfold.",
 });
-export type T3ProjectFileScript = typeof T3ProjectFileScript.Type;
+export type MoonfoldProjectFileScript = typeof MoonfoldProjectFileScript.Type;
 
-export const T3ProjectFile = Schema.Struct({
+export const MoonfoldProjectFile = Schema.Struct({
   $schema: Schema.optionalKey(
     Schema.String.annotate({
-      description: `URL of the JSON Schema for this file, typically "${T3_PROJECT_FILE_SCHEMA_URL}".`,
+      description: `URL of the JSON Schema for this file, typically "${MOONFOLD_PROJECT_FILE_SCHEMA_URL}".`,
     }),
   ),
   iconPath: Schema.optionalKey(
     trimmedNonEmpty(
       {
         description:
-          'Workspace-relative path to the project icon (e.g. "assets/logo.svg"). Checked before T3 Code\'s built-in icon locations.',
+          'Workspace-relative path to the project icon (e.g. "assets/logo.svg"). Checked before Moonfold\'s built-in icon locations.',
       },
-      T3_PROJECT_FILE_PATH_MAX_LENGTH,
+      MOONFOLD_PROJECT_FILE_PATH_MAX_LENGTH,
     ),
   ),
   defaultThreadEnvMode: Schema.optionalKey(
     ThreadEnvMode.annotate({
       description:
-        'Where new threads start for this repository: "worktree" for a fresh git worktree, "local" for the current checkout. A per-project setting in T3 Code overrides this; when neither is set, the global default applies.',
+        'Where new threads start for this repository: "worktree" for a fresh git worktree, "local" for the current checkout. A per-project setting in Moonfold overrides this; when neither is set, the global default applies.',
     }),
   ),
   worktreeSubmodules: Schema.optionalKey(
     WorktreeSubmodules.annotate({
       description:
-        'How new worktrees populate git submodules: "recursive" (the default) initializes nested submodules too, "top-level" initializes only those declared by this repository, and "none" leaves every submodule empty for a setup script to handle. A project or environment setting in T3 Code overrides this.',
+        'How new worktrees populate git submodules: "recursive" (the default) initializes nested submodules too, "top-level" initializes only those declared by this repository, and "none" leaves every submodule empty for a setup script to handle. A project or environment setting in Moonfold overrides this.',
     }),
   ),
   scripts: Schema.optionalKey(
-    Schema.Array(T3ProjectFileScript)
+    Schema.Array(MoonfoldProjectFileScript)
       .annotate({
-        description: "Project scripts shared with everyone who opens this repository in T3 Code.",
+        description: "Project scripts shared with everyone who opens this repository in Moonfold.",
       })
-      .check(Schema.isMaxLength(T3_PROJECT_FILE_MAX_SCRIPTS)),
+      .check(Schema.isMaxLength(MOONFOLD_PROJECT_FILE_MAX_SCRIPTS)),
   ),
 }).annotate({
-  title: "T3 project file",
+  title: "Moonfold project file",
   description:
-    "Checked-in project configuration for T3 Code (t3.json at the repository root). See https://t3.codes for documentation.",
+    "Checked-in project configuration for Moonfold (moonfold.json at the repository root). See https://github.com/Mr-Dark-debug/Moonfold/blob/main/docs/user/project-settings.md for documentation.",
 });
-export type T3ProjectFile = typeof T3ProjectFile.Type;
+export type MoonfoldProjectFile = typeof MoonfoldProjectFile.Type;
 
 /**
- * Settings a repository can also declare in t3.json. A key here must be
+ * Settings a repository can also declare in moonfold.json. A key here must be
  * nullable on `ServerSettings` (null means inherit) so both the project
  * override and the environment value can defer to the file; `field` names
- * the t3.json field carrying the same value and `builtIn` is what applies
+ * the moonfold.json field carrying the same value and `builtIn` is what applies
  * when every tier is unset. `resolveProjectSettings` walks project override,
  * environment value, file, built-in, so listing a key here is the whole
  * change for a new file-backed setting.
@@ -131,12 +132,12 @@ export const PROJECT_FILE_BACKED_SETTINGS = {
   // in settings.ts), so it cannot be file-backed and is excluded here.
   readonly [K in ProjectScopedServerSettingKey & keyof ServerSettings]?: {
     readonly field: {
-      readonly [F in keyof T3ProjectFile]: T3ProjectFile[F] extends
+      readonly [F in keyof MoonfoldProjectFile]: MoonfoldProjectFile[F] extends
         | Exclude<ServerSettings[K], null>
         | undefined
         ? F
         : never;
-    }[keyof T3ProjectFile];
+    }[keyof MoonfoldProjectFile];
     readonly builtIn: Exclude<ServerSettings[K], null>;
   };
 };
@@ -144,7 +145,7 @@ export type ProjectFileBackedSettingKey = keyof typeof PROJECT_FILE_BACKED_SETTI
 
 /**
  * `ServerSettings` with every file-backed key resolved to a concrete value.
- * What `resolveProjectSettings(...).settings` produces once a t3.json (or
+ * What `resolveProjectSettings(...).settings` produces once a moonfold.json (or
  * its absence) has been accounted for.
  */
 export type ResolvedServerSettings = Omit<ServerSettings, ProjectFileBackedSettingKey> & {
