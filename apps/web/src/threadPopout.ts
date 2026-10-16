@@ -24,7 +24,7 @@ export function canPopOutThreads(): boolean {
 }
 
 /** The renderer route the desktop app opens in the new window. */
-export function threadPopoutPath(ref: ScopedThreadRef): string {
+function threadPopoutPath(ref: ScopedThreadRef): string {
   return `/${encodeURIComponent(ref.environmentId)}/${encodeURIComponent(ref.threadId)}`;
 }
 

@@ -46,7 +46,7 @@ const CALL_TIMEOUT: Duration.Input = "30 seconds";
 /** Importing sessions copies whole transcripts, which takes longer than a lookup. */
 const IMPORT_TIMEOUT: Duration.Input = "10 minutes";
 
-export function codexMcpServerFromStatus(
+function codexMcpServerFromStatus(
   status: CodexSchema.V2ListMcpServerStatusResponse["data"][number],
 ): ProviderMcpServer {
   return {
@@ -61,9 +61,7 @@ export function codexMcpServerFromStatus(
   };
 }
 
-export function codexSkillListFromResponse(
-  response: CodexSchema.V2SkillsListResponse,
-): ProviderSkillList {
+function codexSkillListFromResponse(response: CodexSchema.V2SkillsListResponse): ProviderSkillList {
   const seen = new Set<string>();
   const skills: Array<ProviderSkillEntry> = [];
   const errors: Array<{ path: string; message: string }> = [];
@@ -87,9 +85,7 @@ export function codexSkillListFromResponse(
   return { skills, errors };
 }
 
-export function codexHookListFromResponse(
-  response: CodexSchema.V2HooksListResponse,
-): ProviderHookList {
+function codexHookListFromResponse(response: CodexSchema.V2HooksListResponse): ProviderHookList {
   const seen = new Set<string>();
   const hooks: Array<ProviderHookEntry> = [];
   const warnings: Array<string> = [];
@@ -126,7 +122,7 @@ export function codexHookListFromResponse(
 type CodexImportItem = CodexSchema.V2ExternalAgentConfigDetectResponse["items"][number];
 
 /** Stable for one detection result; import re-detects and matches on it. */
-export function codexImportItemId(item: CodexImportItem): string {
+function codexImportItemId(item: CodexImportItem): string {
   return JSON.stringify([item.itemType, item.cwd ?? null, item.description]);
 }
 
@@ -140,7 +136,7 @@ function importEntryName(entry: unknown): string | null {
   return null;
 }
 
-export function codexImportItemFromDetected(item: CodexImportItem): ProviderAgentImportItem {
+function codexImportItemFromDetected(item: CodexImportItem): ProviderAgentImportItem {
   const details = (item.details ?? {}) as Record<string, unknown>;
   const entries = Object.values(details).flatMap((value) =>
     Array.isArray(value) ? value.map(importEntryName).filter((name) => name !== null) : [],
@@ -154,7 +150,7 @@ export function codexImportItemFromDetected(item: CodexImportItem): ProviderAgen
   };
 }
 
-export function codexImportResultFromCompleted(
+function codexImportResultFromCompleted(
   completed: CodexSchema.V2ExternalAgentConfigImportCompletedNotification,
 ): ProviderAgentImportResult {
   return {
@@ -167,7 +163,7 @@ export function codexImportResultFromCompleted(
   };
 }
 
-export function codexAccountUsageFromResponse(
+function codexAccountUsageFromResponse(
   response: CodexSchema.V2GetAccountTokenUsageResponse,
 ): ProviderAccountUsage {
   const count = (value: number | null | undefined) =>

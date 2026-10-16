@@ -41,7 +41,7 @@ export class DesktopQuickWindow extends Context.Service<
   }
 >()("@moonfold/desktop/window/DesktopQuickWindow") {}
 
-export const make = Effect.gen(function* () {
+const make = Effect.gen(function* () {
   const clientSettings = yield* DesktopClientSettings.DesktopClientSettings;
   const desktopWindow = yield* DesktopWindow.DesktopWindow;
   const services = yield* Effect.context<never>();
