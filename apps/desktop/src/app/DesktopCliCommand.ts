@@ -1,4 +1,4 @@
-import type { DesktopCliCommandState } from "@t3tools/contracts";
+import type { DesktopCliCommandState } from "@moonfold/contracts";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
@@ -12,8 +12,8 @@ import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
 import * as DesktopCliShim from "./DesktopCliShim.ts";
 import * as DesktopEnvironment from "./DesktopEnvironment.ts";
 
-// Settings → Install `t3` command, like VS Code's "Install 'code' command".
-// The app's launcher (see DesktopCliShim) lives in the T3 home and is off PATH
+// Settings → Install `moonfold` command, like VS Code's "Install 'code' command".
+// The app's launcher (see DesktopCliShim) lives in the Moonfold home and is off PATH
 // by default. Installing links it into a folder on the user's PATH, or on
 // Windows adds the launcher's folder to the user's PATH. Removing undoes only
 // what installing did: a link that points at one of the app's launchers, or a
@@ -38,7 +38,7 @@ const sameWindowsPath = (left: string, right: string) =>
   left.replace(/[\\/]+$/, "").toLowerCase() === right.replace(/[\\/]+$/, "").toLowerCase();
 
 /**
- * Reads, or with `T3_SET` set writes, the user's PATH in the registry, keeping
+ * Reads, or with `MOONFOLD_SET` set writes, the user's PATH in the registry, keeping
  * `%VAR%` entries unexpanded. Writes keep REG_EXPAND_SZ (Windows' default for
  * PATH; `SetEnvironmentVariable` would store REG_SZ and break every `%VAR%`
  * entry), then broadcast WM_SETTINGCHANGE so Explorer and the terminals it
@@ -47,16 +47,16 @@ const sameWindowsPath = (left: string, right: string) =>
  */
 const WINDOWS_USER_PATH_SCRIPT = `
 $ErrorActionPreference = 'Stop'
-if ($env:T3_SET -eq '1') {
+if ($env:MOONFOLD_SET -eq '1') {
   $key = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey('Environment')
   $kind = [Microsoft.Win32.RegistryValueKind]::ExpandString
   if ($key.GetValueNames() -contains 'Path' -and $key.GetValueKind('Path') -eq 'String') {
     $kind = [Microsoft.Win32.RegistryValueKind]::String
   }
-  $key.SetValue('Path', $env:T3_PATH, $kind)
-  Add-Type -Namespace T3 -Name Env -MemberDefinition '[DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern System.IntPtr SendMessageTimeout(System.IntPtr hWnd, uint Msg, System.UIntPtr wParam, string lParam, uint fuFlags, uint uTimeout, out System.UIntPtr lpdwResult);'
+  $key.SetValue('Path', $env:MOONFOLD_PATH, $kind)
+  Add-Type -Namespace Moonfold -Name Env -MemberDefinition '[DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern System.IntPtr SendMessageTimeout(System.IntPtr hWnd, uint Msg, System.UIntPtr wParam, string lParam, uint fuFlags, uint uTimeout, out System.UIntPtr lpdwResult);'
   $result = [System.UIntPtr]::Zero
-  [void][T3.Env]::SendMessageTimeout([System.IntPtr]0xffff, 0x1A, [System.UIntPtr]::Zero, 'Environment', 2, 5000, [ref]$result)
+  [void][Moonfold.Env]::SendMessageTimeout([System.IntPtr]0xffff, 0x1A, [System.UIntPtr]::Zero, 'Environment', 2, 5000, [ref]$result)
 } else {
   $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment')
   $value = if ($key) { $key.GetValue('Path', '', 'DoNotExpandEnvironmentNames') } else { '' }
@@ -71,7 +71,7 @@ export class DesktopCliCommand extends Context.Service<
     readonly install: Effect.Effect<DesktopCliCommandState, DesktopCliCommandError>;
     readonly uninstall: Effect.Effect<DesktopCliCommandState, DesktopCliCommandError>;
   }
->()("@t3tools/desktop/app/DesktopCliCommand") {}
+>()("@moonfold/desktop/app/DesktopCliCommand") {}
 
 /** @public Service construction is part of the canonical Effect module API. */
 export const make = Effect.gen(function* () {
@@ -95,13 +95,13 @@ export const make = Effect.gen(function* () {
 
   /**
    * A link to one of the app's launchers, by the marker the launcher carries.
-   * This also finds links made under a previous T3 home, so Remove can clean
+   * This also finds links made under a previous Moonfold home, so Remove can clean
    * them up and Install does not add a second.
    */
   const isOurLink = (link: string) =>
     Effect.gen(function* () {
       yield* fs.readLink(link);
-      // The launcher is a few KB; never read a large binary another `t3` links to.
+      // The launcher is a few KB; never read a large binary another `moonfold` links to.
       const info = yield* fs.stat(link);
       if (info.type !== "File" || Number(info.size) > 16_384) return false;
       const content = yield* fs.readFileString(link);
@@ -132,21 +132,21 @@ export const make = Effect.gen(function* () {
     Effect.mapError(() => fail("Could not read your PATH, so it was left unchanged.")),
   );
   const writeUserPath = (value: string) =>
-    powershell({ T3_SET: "1", T3_PATH: value }).pipe(
+    powershell({ MOONFOLD_SET: "1", MOONFOLD_PATH: value }).pipe(
       Effect.asVoid,
       Effect.mapError(() => fail("Could not update your PATH.")),
     );
 
-  /** The `t3` a new shell runs, by PATH order, or none. */
+  /** The `moonfold` a new shell runs, by PATH order, or none. */
   const firstOnPath = Effect.gen(function* () {
     for (const directory of pathEntries(process.env.PATH, ":")) {
-      const candidate = path.join(directory, "t3");
+      const candidate = path.join(directory, "moonfold");
       if (yield* exists(candidate)) return Option.some(candidate);
     }
     return Option.none<string>();
   });
 
-  /** The `t3` a new shell runs when it is not this app's, on Unix. */
+  /** The `moonfold` a new shell runs when it is not this app's, on Unix. */
   const foreignFirstOnPath = Effect.gen(function* () {
     if (windows) return Option.none<string>();
     const first = yield* firstOnPath;
@@ -164,7 +164,7 @@ export const make = Effect.gen(function* () {
         : Option.none<string>();
     }
     for (const directory of unixCandidates(environment.homeDirectory, environment.platform)) {
-      const link = path.join(directory, "t3");
+      const link = path.join(directory, "moonfold");
       if (yield* isOurLink(link)) return Option.some(link);
     }
     return Option.none<string>();
@@ -181,7 +181,7 @@ export const make = Effect.gen(function* () {
       return { supported: true, installedPath: null, onPath: false, ...shadow };
     }
     // On Windows only terminals opened after the change see it. On Unix the
-    // first `t3` on PATH must be ours; a `t3` earlier on PATH would shadow it.
+    // first `moonfold` on PATH must be ours; a `moonfold` earlier on PATH would shadow it.
     const first = yield* firstOnPath;
     const onPath = windows || (Option.isSome(first) && (yield* isOurLink(first.value)));
     return { supported: true, installedPath: installed.value, onPath, ...shadow };
@@ -193,14 +193,14 @@ export const make = Effect.gen(function* () {
     Effect.provideService(FileSystem.FileSystem, fs),
     Effect.flatMap(
       Option.match({
-        onNone: () => Effect.fail(fail(`Could not set up the t3 launcher at ${launcher}.`)),
+        onNone: () => Effect.fail(fail(`Could not set up the moonfold launcher at ${launcher}.`)),
         onSome: () => Effect.void,
       }),
     ),
   );
 
   const install: DesktopCliCommand["Service"]["install"] = Effect.gen(function* () {
-    if (!environment.isPackaged) return yield* fail("The t3 command needs an installed app.");
+    if (!environment.isPackaged) return yield* fail("The moonfold command needs an installed app.");
     yield* ensureLauncher;
     if (windows) {
       const entries = pathEntries(yield* readUserPath, ";");
@@ -208,7 +208,9 @@ export const make = Effect.gen(function* () {
         yield* writeUserPath([...entries, binDirectory].join(";"));
         yield* fs
           .writeFileString(ownedPathMarker, `${binDirectory}\n`)
-          .pipe(Effect.mapError(() => fail("Added t3 to your PATH but could not record it.")));
+          .pipe(
+            Effect.mapError(() => fail("Added moonfold to your PATH but could not record it.")),
+          );
       }
       return yield* state;
     }
@@ -216,16 +218,16 @@ export const make = Effect.gen(function* () {
     if (Option.isSome(existing)) {
       const target = yield* fs.readLink(existing.value).pipe(Effect.option);
       if (Option.getOrUndefined(target) === launcher) return yield* state;
-      // A link to a previous T3 home's launcher: point it at this one instead.
+      // A link to a previous Moonfold home's launcher: point it at this one instead.
       yield* fs
         .remove(existing.value)
         .pipe(Effect.mapError(() => fail(`Could not replace ${existing.value}.`)));
     }
-    // A link behind another `t3` never runs, so installing one would only hide the problem.
+    // A link behind another `moonfold` never runs, so installing one would only hide the problem.
     const shadowedBy = yield* foreignFirstOnPath;
     if (Option.isSome(shadowedBy)) {
       return yield* fail(
-        `Another t3 at ${shadowedBy.value} runs first in a new terminal. Remove it, or run the launcher directly at ${launcher}.`,
+        `Another moonfold at ${shadowedBy.value} runs first in a new terminal. Remove it, or run the launcher directly at ${launcher}.`,
       );
     }
     const onPath = pathEntries(process.env.PATH, ":");
@@ -235,7 +237,7 @@ export const make = Effect.gen(function* () {
       ...candidates.filter((candidate) => onPath.includes(candidate)),
       ...candidates.filter((candidate) => !onPath.includes(candidate)),
     ]) {
-      const link = path.join(directory, "t3");
+      const link = path.join(directory, "moonfold");
       const created = (yield* exists(directory))
         ? yield* writableDirectory(directory)
         : yield* fs.makeDirectory(directory, { recursive: true }).pipe(
@@ -251,7 +253,7 @@ export const make = Effect.gen(function* () {
       if (linked) return yield* state;
     }
     return yield* fail(
-      `Another t3 command is already installed, or no folder on your PATH is writable. Run the launcher directly at ${launcher}.`,
+      `Another moonfold command is already installed, or no folder on your PATH is writable. Run the launcher directly at ${launcher}.`,
     );
   }).pipe(Effect.withSpan("desktop.cliCommand.install"));
 
@@ -266,7 +268,7 @@ export const make = Effect.gen(function* () {
       return yield* state;
     }
     for (const directory of unixCandidates(environment.homeDirectory, environment.platform)) {
-      const link = path.join(directory, "t3");
+      const link = path.join(directory, "moonfold");
       if (yield* isOurLink(link)) {
         yield* fs.remove(link).pipe(Effect.mapError(() => fail(`Could not remove ${link}.`)));
       }

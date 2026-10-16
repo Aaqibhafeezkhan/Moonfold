@@ -1,0 +1,4 @@
+interface:
+  display_name: "Moonfold App Testing"
+  short_description: "Test web and desktop in Moonfold's Browser panel"
+  default_prompt: "Use $test-moonfold-app to verify the affected web or desktop flow through Moonfold's Browser panel."
