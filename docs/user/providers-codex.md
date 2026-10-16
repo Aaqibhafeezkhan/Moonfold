@@ -92,6 +92,19 @@ in the thread on web or desktop. Some tools offer access for one request,
 the current session, or permanently. See [Permission modes](./permission-modes.md)
 for command and file approvals.
 
+## Review changes
+
+Send `/review` to have Codex review your uncommitted changes. The review runs in the thread, and
+the findings arrive as Codex's reply.
+
+- `/review branch main` reviews everything on your branch against `main`.
+- `/review commit <sha>` reviews one commit.
+- `/review` followed by any other text reviews with those instructions, for example
+  `/review focus on error handling`.
+
+The diff panel has a review button on Codex threads. It puts the matching command for the
+changes on screen into the composer, so you can add a focus before you send.
+
 ## Codex says I hit a usage limit
 
 When Codex stops on a usage limit, the thread names the window that ran out and
