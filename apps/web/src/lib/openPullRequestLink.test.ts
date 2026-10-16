@@ -10,8 +10,8 @@ import {
   pullRequestCandidateUrlFromReferenceAutolink,
   shouldOpenPullRequestExternally,
 } from "./openPullRequestLink";
-import { ProjectId, type RepositoryIdentity } from "@t3tools/contracts";
-import { normalizeGitRemoteUrl } from "@t3tools/shared/git";
+import { ProjectId, type RepositoryIdentity } from "@moonfold/contracts";
+import { normalizeGitRemoteUrl } from "@moonfold/shared/git";
 
 function repositoryIdentity(
   provider: string,
@@ -135,20 +135,20 @@ describe("pullRequestCandidateUrlFromReferenceAutolink", () => {
   it("turns GitHub's shared issue route into a pull request candidate", () => {
     expect(
       pullRequestCandidateUrlFromReferenceAutolink(
-        "https://github.com/pingdotgg/t3code/issues/8600#issuecomment-1",
+        "https://github.com/moonfold-dev/moonfold/issues/8600#issuecomment-1",
       ),
-    ).toBe("https://github.com/pingdotgg/t3code/pull/8600#issuecomment-1");
+    ).toBe("https://github.com/moonfold-dev/moonfold/pull/8600#issuecomment-1");
   });
 
   it("does not reinterpret other issue hosts or malformed references", () => {
     expect(
       pullRequestCandidateUrlFromReferenceAutolink(
-        "https://gitlab.com/pingdotgg/t3code/-/issues/8600",
+        "https://gitlab.com/moonfold-dev/moonfold/-/issues/8600",
       ),
     ).toBeNull();
     expect(
       pullRequestCandidateUrlFromReferenceAutolink(
-        "https://github.com/pingdotgg/t3code/issues/not-a-number",
+        "https://github.com/moonfold-dev/moonfold/issues/not-a-number",
       ),
     ).toBeNull();
   });
@@ -157,16 +157,16 @@ describe("pullRequestCandidateUrlFromReferenceAutolink", () => {
 describe("matchesLinkedPullRequestUrl", () => {
   const linkedPullRequest = {
     projectId: ProjectId.make("project-1"),
-    repository: "pingdotgg/t3code",
+    repository: "moonfold-dev/moonfold",
     number: 42,
-    url: "https://github.com/pingdotgg/t3code/pull/42",
+    url: "https://github.com/moonfold-dev/moonfold/pull/42",
   };
 
   it("matches the same pull request without looking up its project", () => {
     expect(
       matchesLinkedPullRequestUrl(
         linkedPullRequest,
-        "https://github.com/PingDotGG/T3Code/pull/42/files",
+        "https://github.com/Moonfold-Dev/Moonfold/pull/42/files",
       ),
     ).toBe(true);
   });
@@ -188,7 +188,7 @@ describe("matchesLinkedPullRequestUrl", () => {
     expect(
       matchesLinkedPullRequestUrl(
         linkedPullRequest,
-        "https://github.com:8443/pingdotgg/t3code/pull/42",
+        "https://github.com:8443/moonfold-dev/moonfold/pull/42",
       ),
     ).toBe(true);
   });
@@ -204,12 +204,15 @@ describe("matchesLinkedPullRequestUrl", () => {
 
   it("rejects a different pull request or host", () => {
     expect(
-      matchesLinkedPullRequestUrl(linkedPullRequest, "https://github.com/pingdotgg/t3code/pull/43"),
+      matchesLinkedPullRequestUrl(
+        linkedPullRequest,
+        "https://github.com/moonfold-dev/moonfold/pull/43",
+      ),
     ).toBe(false);
     expect(
       matchesLinkedPullRequestUrl(
         linkedPullRequest,
-        "https://github.example.com/pingdotgg/t3code/pull/42",
+        "https://github.example.com/moonfold-dev/moonfold/pull/42",
       ),
     ).toBe(false);
   });
@@ -366,20 +369,20 @@ describe("findProjectForChangeRequest", () => {
 
   it("matches a nested GitLab group by the whole path below the host", () => {
     // The server identifies a repository by `displayName`, which keeps every group segment; the
-    // two-segment owner/name form would look for `t3tools/t3code` and find nothing.
+    // two-segment owner/name form would look for `moonfold-dev/moonfold` and find nothing.
     const projects = [
       project({
-        canonicalKey: "gitlab.com/t3tools/platform/t3code",
+        canonicalKey: "gitlab.com/moonfold/platform/moonfold",
         provider: "gitlab",
-        displayName: "t3tools/platform/t3code",
-        owner: "t3tools",
-        name: "t3code",
+        displayName: "moonfold/platform/moonfold",
+        owner: "moonfold",
+        name: "moonfold",
       }),
     ];
     expect(
       findProjectForChangeRequest(projects, {
         host: "gitlab.com",
-        repository: "t3tools/platform/t3code",
+        repository: "moonfold/platform/moonfold",
         number: 42,
       }),
     ).toBe(projects[0]);
@@ -388,16 +391,16 @@ describe("findProjectForChangeRequest", () => {
   it("keeps two hosts apart, so an Enterprise link does not open the public one", () => {
     const projects = [
       project({
-        canonicalKey: "github.com/pingdotgg/t3code",
+        canonicalKey: "github.com/moonfold-dev/moonfold",
         provider: "github",
-        owner: "pingdotgg",
-        name: "t3code",
+        owner: "moonfold-dev",
+        name: "moonfold",
       }),
     ];
     expect(
       findProjectForChangeRequest(projects, {
         host: "github.acme.test",
-        repository: "pingdotgg/t3code",
+        repository: "moonfold-dev/moonfold",
         number: 1,
       }),
     ).toBeUndefined();
@@ -410,20 +413,22 @@ describe("findProjectForChangeRequest", () => {
     //
     // Derived from the SSH remote the way the server derives it rather than written out, so the
     // day that normalization stops reaching the web spelling this fails here too.
-    const canonicalKey = normalizeGitRemoteUrl("git@ssh.dev.azure.com:v3/T3Tools/Platform/T3Code");
+    const canonicalKey = normalizeGitRemoteUrl(
+      "git@ssh.dev.azure.com:v3/Moonfold/Platform/Moonfold",
+    );
     const projects = [
       project({
         canonicalKey,
         provider: "azure-devops",
         displayName: canonicalKey.split("/").slice(1).join("/"),
-        owner: "t3tools",
-        name: "t3code",
+        owner: "moonfold",
+        name: "moonfold",
       }),
     ];
     expect(
       findProjectForChangeRequest(projects, {
         host: "dev.azure.com",
-        repository: "t3tools/platform/_git/t3code",
+        repository: "moonfold/platform/_git/moonfold",
         number: 1,
       }),
     ).toBe(projects[0]);
@@ -432,16 +437,16 @@ describe("findProjectForChangeRequest", () => {
   it("claims nothing for a lookalike host, which is what keeps a link a link", () => {
     const projects = [
       project({
-        canonicalKey: "github.com/pingdotgg/t3code",
+        canonicalKey: "github.com/moonfold-dev/moonfold",
         provider: "github",
-        owner: "pingdotgg",
-        name: "t3code",
+        owner: "moonfold-dev",
+        name: "moonfold",
       }),
     ];
     expect(
       findProjectForChangeRequest(projects, {
         host: "github.com-evil.test",
-        repository: "pingdotgg/t3code",
+        repository: "moonfold-dev/moonfold",
         number: 1,
       }),
     ).toBeUndefined();

@@ -1,5 +1,5 @@
-import { scopeThreadRef } from "@t3tools/client-runtime/environment";
-import { EnvironmentId, ThreadId } from "@t3tools/contracts";
+import { scopeThreadRef } from "@moonfold/client-runtime/environment";
+import { EnvironmentId, ThreadId } from "@moonfold/contracts";
 import { describe, expect, it } from "vite-plus/test";
 
 import { resolveThreadDetailRef } from "./entities";

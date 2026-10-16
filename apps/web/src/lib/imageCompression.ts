@@ -18,11 +18,11 @@ import {
   downscalableImageMimeType,
   fitImageAttachmentSize,
   IMAGE_ATTACHMENT_MAX_EDGE,
-} from "@t3tools/client-runtime/image-attachment-size";
+} from "@moonfold/client-runtime/image-attachment-size";
 import {
   IMAGE_DIMENSIONS_HEADER_BYTES,
   readImageDimensions,
-} from "@t3tools/shared/imageDimensions";
+} from "@moonfold/shared/imageDimensions";
 
 /** Longest edge kept when an image has to be re-encoded. */
 const MAX_DIMENSION = IMAGE_ATTACHMENT_MAX_EDGE;

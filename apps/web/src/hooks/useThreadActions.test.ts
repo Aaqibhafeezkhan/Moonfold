@@ -1,4 +1,4 @@
-import { EnvironmentId, ThreadId } from "@t3tools/contracts";
+import { EnvironmentId, ThreadId } from "@moonfold/contracts";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import {
