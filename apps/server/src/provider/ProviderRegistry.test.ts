@@ -464,6 +464,11 @@ it.layer(
             input: { hint: "Objective, or pause, resume, clear" },
           },
           {
+            name: "review",
+            description: "Have Codex review uncommitted changes, a branch, or a commit",
+            input: { hint: "branch <name>, commit <sha>, or what to focus on (optional)" },
+          },
+          {
             name: "feedback",
             description: "Send this thread and Codex logs to OpenAI",
             input: { hint: "Describe the issue (optional)" },

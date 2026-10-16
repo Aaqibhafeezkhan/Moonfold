@@ -9495,4 +9495,143 @@ describe("CodexAdapterV2 post-settle continuation", () => {
       ),
     );
   });
+  describe("native review", () => {
+    const nativeThreadId = "review-thread";
+    const nativeTurnId = "review-turn";
+    const notification = (
+      label: string,
+      method: string,
+      params: unknown,
+    ): CodexReplay.CodexAppServerReplayEntry => ({
+      type: "emit_inbound",
+      label,
+      frame: { method, params },
+    });
+    const sessionStart = codexReplayPreamble({
+      nativeThreadId,
+      nativeTurnId: "unused",
+      prompt: "unused",
+    }).slice(0, 5);
+
+    it("parses /review targets", () => {
+      assert.deepEqual(CodexAdapterV2.parseCodexReviewCommand("/review"), {
+        type: "uncommittedChanges",
+      });
+      assert.deepEqual(CodexAdapterV2.parseCodexReviewCommand(" /review branch main "), {
+        type: "baseBranch",
+        branch: "main",
+      });
+      assert.deepEqual(CodexAdapterV2.parseCodexReviewCommand("/review base origin/dev"), {
+        type: "baseBranch",
+        branch: "origin/dev",
+      });
+      assert.deepEqual(CodexAdapterV2.parseCodexReviewCommand("/review commit 1a2b3c4d"), {
+        type: "commit",
+        sha: "1a2b3c4d",
+        title: null,
+      });
+      assert.deepEqual(CodexAdapterV2.parseCodexReviewCommand("/review focus on\nerror paths"), {
+        type: "custom",
+        instructions: "focus on\nerror paths",
+      });
+      assert.deepEqual(CodexAdapterV2.parseCodexReviewCommand("/review commit not-a-sha"), {
+        type: "custom",
+        instructions: "commit not-a-sha",
+      });
+      assert.isNull(CodexAdapterV2.parseCodexReviewCommand("/reviewer"));
+      assert.isNull(CodexAdapterV2.parseCodexReviewCommand("please /review this"));
+    });
+
+    it.effect("runs /review as a native review turn with start and finish notices", () =>
+      Effect.gen(function* () {
+        const transcript = makeCodexReplayTranscript({
+          scenario: "review-uncommitted",
+          entries: [
+            ...sessionStart,
+            {
+              type: "expect_outbound",
+              label: "review/start",
+              frame: {
+                id: 3,
+                method: "review/start",
+                params: {
+                  threadId: nativeThreadId,
+                  target: { type: "uncommittedChanges" },
+                  delivery: "inline",
+                },
+              },
+            },
+            {
+              type: "emit_inbound",
+              label: "review/start",
+              frame: {
+                id: 3,
+                result: {
+                  turn: makeCodexReplayTurn({ id: nativeTurnId, status: "inProgress" }),
+                  reviewThreadId: nativeThreadId,
+                },
+              },
+            },
+            notification("entered", "item/completed", {
+              threadId: nativeThreadId,
+              turnId: nativeTurnId,
+              item: { type: "enteredReviewMode", id: "review-entered", review: "current changes" },
+            }),
+            notification("exited", "item/completed", {
+              threadId: nativeThreadId,
+              turnId: nativeTurnId,
+              item: { type: "exitedReviewMode", id: "review-exited", review: "Looks good." },
+            }),
+            notification("findings", "item/completed", {
+              threadId: nativeThreadId,
+              turnId: nativeTurnId,
+              item: { type: "agentMessage", id: "review-findings", text: "Looks good." },
+            }),
+            notification("done", "turn/completed", {
+              threadId: nativeThreadId,
+              turn: makeCodexReplayTurn({ id: nativeTurnId, status: "completed" }),
+            }),
+          ],
+        });
+        const harness = yield* makeCodexReplayHarness(transcript);
+        const now = yield* DateTime.now;
+        yield* harness.runtime.startTurn(
+          makeCodexTestTurnInput({
+            threadId: harness.threadId,
+            providerThread: harness.providerThread,
+            now,
+            attemptId: RunAttemptId.make("review-attempt"),
+            text: "/review",
+          }),
+        );
+        yield* harness.firstTerminal;
+
+        assert.deepEqual(
+          harness.terminalEvents().map((event) => event.status),
+          ["completed"],
+        );
+        assert.deepEqual(
+          harness.events.flatMap((event) =>
+            event.type === "turn_item.updated" && event.turnItem.type === "system_notice"
+              ? [event.turnItem.message]
+              : [],
+          ),
+          ["Code review started: current changes", "Code review finished"],
+        );
+        assert.isTrue(
+          harness.events.some(
+            (event) =>
+              event.type === "turn_item.updated" &&
+              event.turnItem.type === "assistant_message" &&
+              event.turnItem.text === "Looks good.",
+          ),
+        );
+      }).pipe(
+        Effect.scoped,
+        Effect.provide(
+          Layer.mergeAll(IdAllocator.layer, McpProviderSessions.layer, NodeServices.layer),
+        ),
+      ),
+    );
+  });
 });

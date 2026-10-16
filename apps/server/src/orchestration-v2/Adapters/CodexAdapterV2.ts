@@ -925,6 +925,30 @@ export function parseCodexGoalCommand(text: string): CodexGoalCommand | null {
   }
 }
 
+export type CodexReviewTarget = CodexSchema.V2ReviewStartParams__ReviewTarget;
+
+/**
+ * Parses a `/review` message into a Codex review target:
+ *
+ *   /review                     uncommitted changes
+ *   /review branch <name>       changes against a base branch (also `base <name>`)
+ *   /review commit <sha>        one commit
+ *   /review <instructions>      a custom review prompt
+ *
+ * Returns null for every other message.
+ */
+export function parseCodexReviewCommand(text: string): CodexReviewTarget | null {
+  const match = /^\/review(?:\s+([\s\S]*))?$/u.exec(text.trim());
+  if (match === null) return null;
+  const argument = (match[1] ?? "").trim();
+  if (argument.length === 0) return { type: "uncommittedChanges" };
+  const branch = /^(?:branch|base)\s+(\S+)$/iu.exec(argument);
+  if (branch !== null) return { type: "baseBranch", branch: branch[1]! };
+  const commit = /^commit\s+([0-9a-f]{4,64})$/iu.exec(argument);
+  if (commit !== null) return { type: "commit", sha: commit[1]!, title: null };
+  return { type: "custom", instructions: argument };
+}
+
 type CodexThreadGoal = CodexSchema.V2ThreadGoalUpdatedNotification["goal"];
 
 const CODEX_GOAL_STATUSES = {
@@ -4693,6 +4717,47 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
           });
         });
 
+        /** A short notice where a review starts and ends; the findings arrive as a message. */
+        const emitReviewModeNotice = Effect.fn("CodexAdapterV2.emitReviewModeNotice")(function* (
+          context: ActiveCodexTurnContext,
+          item: {
+            readonly type: "enteredReviewMode" | "exitedReviewMode";
+            readonly id: string;
+            readonly review: string;
+          },
+        ) {
+          const now = yield* DateTime.now;
+          const { ordinal, startedAt } = yield* resolveItemPosition(context, item.id);
+          const title =
+            item.type === "enteredReviewMode" ? "Code review started" : "Code review finished";
+          const scope = item.type === "enteredReviewMode" ? item.review.trim() : "";
+          yield* emitProviderEvent({
+            type: "turn_item.updated",
+            driver: CODEX_PROVIDER,
+            turnItem: {
+              id: idAllocator.derive.turnItemFromProviderItem({
+                driver: CODEX_PROVIDER,
+                nativeItemId: item.id,
+              }),
+              threadId: context.projectionThreadId,
+              runId: context.projectionRunId,
+              nodeId: context.providerNodeId,
+              providerThreadId: context.providerThread.id,
+              providerTurnId: context.providerTurnId,
+              nativeItemRef: codexNativeItemRef(item.id),
+              parentItemId: null,
+              ordinal,
+              type: "system_notice",
+              status: "completed",
+              title,
+              message: scope.length > 0 ? `${title}: ${scope}` : title,
+              startedAt,
+              completedAt: now,
+              updatedAt: now,
+            },
+          });
+        });
+
         yield* client.handleServerNotification("item/started", (payload) =>
           Effect.gen(function* () {
             const context = yield* awaitActiveTurn(payload.turnId);
@@ -4855,6 +4920,14 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
 
             if (payload.item.type === "contextCompaction") {
               yield* emitCompactionItem(context, payload.item.id, "completed");
+              return;
+            }
+
+            if (
+              payload.item.type === "enteredReviewMode" ||
+              payload.item.type === "exitedReviewMode"
+            ) {
+              yield* emitReviewModeNotice(context, payload.item);
               return;
             }
 
@@ -6279,6 +6352,44 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
           );
         });
 
+        /**
+         * Starts a native review turn. `review/start` answers like `turn/start`, so the turn is
+         * registered the same way and its items stream through the usual handlers.
+         */
+        const startNativeReview = (
+          turnInput: ProviderAdapter.ProviderAdapterV2TurnInput,
+          target: CodexReviewTarget,
+        ) =>
+          Effect.gen(function* () {
+            const threadId = yield* getNativeThreadId(turnInput.providerThread);
+            yield* Ref.update(pendingRootTurns, (current) => {
+              const updated = new Map(current);
+              updated.set(threadId, turnInput);
+              return updated;
+            });
+            const started = yield* client.request("review/start", {
+              threadId,
+              target,
+              delivery: "inline",
+            });
+            yield* registerRootTurn({
+              turnInput,
+              nativeTurnId: started.turn.id,
+              startedAt: codexTimestamp(started.turn.startedAt),
+              waitForNativeStart: started.turn.startedAt === null,
+            });
+          }).pipe(
+            Effect.ensuring(
+              Effect.flatMap(getNativeThreadId(turnInput.providerThread), (threadId) =>
+                Ref.update(pendingRootTurns, (current) => {
+                  const updated = new Map(current);
+                  updated.delete(threadId);
+                  return updated;
+                }),
+              ).pipe(Effect.ignore),
+            ),
+          );
+
         /** Starts a native turn with this run's full turn configuration. */
         const startNativeTurn = (
           turnInput: ProviderAdapter.ProviderAdapterV2TurnInput,
@@ -6726,7 +6837,16 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
                 ? parseCodexGoalCommand(turnInput.message.text)
                 : null;
             if (goalCommand !== null) return runGoalCommand(turnInput, goalCommand);
+            const reviewTarget =
+              turnInput.message.attachments.length === 0 &&
+              turnInput.restartContinuationOfRunId === undefined
+                ? parseCodexReviewCommand(turnInput.message.text)
+                : null;
             return Effect.gen(function* () {
+              if (reviewTarget !== null) {
+                yield* startNativeReview(turnInput, reviewTarget);
+                return;
+              }
               yield* startNativeTurn(
                 turnInput,
                 turnInput.restartContinuationOfRunId === undefined

@@ -16,6 +16,7 @@ import {
   FolderTreeIcon,
   PilcrowIcon,
   Rows3Icon,
+  ScanSearchIcon,
   TextWrapIcon,
 } from "lucide-react";
 import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown } from "lucide";
@@ -26,7 +27,7 @@ import { useCodeViewFileReveal } from "./diffs/useCodeViewFileReveal";
 import { useFilesystemReadAccess } from "~/state/filesystem";
 import { useOpenInPreferredEditor } from "../editorPreferences";
 import { useFileContextMenuHandler } from "../fileContextMenu";
-import { type DraftId } from "../composerDraftStore";
+import { type DraftId, useComposerDraftStore } from "../composerDraftStore";
 import { openDiffFilePrimaryAction } from "../diffFileActions";
 import { useCheckpointDiff } from "~/lib/checkpointDiffState";
 import { cn } from "~/lib/utils";
@@ -734,6 +735,26 @@ export default function DiffPanel({
     }
   };
 
+  // Codex reviews the scope on screen natively; the command lands in the composer so the user can
+  // add a focus before sending. Turn diffs have no matching review target.
+  const setComposerPrompt = useComposerDraftStore((store) => store.setPrompt);
+  const threadProviderInstanceId = activeThread?.modelSelection.instanceId ?? null;
+  const threadOffersReview =
+    serverConfig?.providers.some(
+      (provider) =>
+        provider.instanceId === threadProviderInstanceId &&
+        provider.driver === "codex" &&
+        provider.slashCommands.some((command) => command.name === "review"),
+    ) ?? false;
+  const reviewCommand =
+    !threadOffersReview || selectedRunId !== null
+      ? null
+      : selectedGitScope === "unstaged"
+        ? "/review"
+        : selectedGitSource?.baseRef
+          ? `/review branch ${selectedGitSource.baseRef}`
+          : null;
+
   const headerRow = (
     <>
       <div className="flex min-w-0 flex-1 items-center gap-3 [-webkit-app-region:no-drag]">
@@ -904,6 +925,24 @@ export default function DiffPanel({
         )}
       </div>
       <div className="flex shrink-0 items-center gap-1 [-webkit-app-region:no-drag]">
+        {reviewCommand !== null && (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="ghost"
+                  aria-label="Review these changes"
+                  onClick={() => setComposerPrompt(composerDraftTarget, reviewCommand)}
+                />
+              }
+            >
+              <ScanSearchIcon className="size-3.5" />
+            </TooltipTrigger>
+            <TooltipPopup side="top">Review these changes ({reviewCommand})</TooltipPopup>
+          </Tooltip>
+        )}
         {codeViewFiles.length > 0 || (!selectedTurn && selectedGitSource?.files?.length) ? (
           <DiffStatLabel
             additions={diffLineStat.additions}
