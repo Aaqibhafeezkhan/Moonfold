@@ -30,8 +30,27 @@ Method: manual `git grep` of the tree at the T3 import (commit `65a3bc9f5`), cro
 - OpenAI, Anthropic and other providers: reached by the user's own provider CLIs, not by us. The web bundle contains `chatgpt.com` and `claude.ai` strings (REA), consistent with provider login flows (`CodexChatGptAuth.ts`, `CodexAuthCallback.ts`).
 - Vendored reference repos under `.repos/` contain unrelated URLs (e.g. Datadog); they are not shipped.
 
+## Server bundle cross-check (2026-10-16)
+
+REA completed on `apps/server/dist` this time (REA-SELF-AUDIT). A host-literal scan of the bundle
+found 87 hosts; standards and docs hosts are ignored. Hosts the manual audit did not list, with the
+module that holds them (from the bundle's source map):
+
+| Host                                                          | Module                                                                  | What it is / action                                                                                                  |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `registry.npmjs.org`                                          | `packages/provider-core/src/server/maintenanceResolver.ts`              | Checks npm for provider CLI updates ("update available" banner). Keep, document, make it respect an offline setting. |
+| `api.meta.ai`                                                 | `packages/provider-muse/src/server/maintenance.ts`                      | Muse provider maintenance check. Keep if Muse stays; document.                                                       |
+| `dl.google.com`                                               | `src/provider/antigravityRelease.ts`, `AntigravityInstallation.ts`      | Antigravity release lookup and download. Document.                                                                   |
+| `storage.googleapis.com`                                      | `src/preview/PreviewBrowser.ts`                                         | **TODO** read: likely a browser runtime download for the preview pane.                                               |
+| `cloudcode-pa.googleapis.com` (+ `daily-` variant)            | `src/provider/antigravityUsageLimits.ts`                                | Reads the user's Antigravity usage limits with the user's own login. Phase 4 input.                                  |
+| `cli-chat-proxy.grok.com`                                     | `packages/provider-grok/src/server/usageLimits.ts`                      | Grok usage limits, user's own login. Phase 4 input.                                                                  |
+| `api2.cursor.sh`                                              | `packages/provider-cursor/src/server/usageLimits.ts`                    | Cursor usage limits, user's own login. Phase 4 input.                                                                |
+| `mcp-proxy.anthropic.com`, `beacon.claude-ai.staging.ant.dev` | bundled dependency without source content (likely the Claude agent SDK) | Provider SDK internals; not called by T3 code directly. Confirm in Phase 1.                                          |
+| `t3.chat`                                                     | also `packages/contracts/src/previewAutomation.ts`                      | Add this file to the `t3.chat` removal row above.                                                                    |
+| `t3.codes`                                                    | also `packages/source-control-github/src/server/githubStackRebase.ts`   | Add to the Phase 1 rename list.                                                                                      |
+
 ## Open items
 
-1. Server bundle (`apps/server/dist`) REA run timed out; re-run per-file (see REA-SELF-AUDIT).
+1. ~~Server bundle REA timed out~~ Done 2026-10-16; see table above. Read `PreviewBrowser.ts` host use.
 2. Desktop bundle not built here (no display); REA on the unpacked asar is a Phase 1 gate.
 3. Proxy capture of a running build (Phase 1 gate) not done yet.

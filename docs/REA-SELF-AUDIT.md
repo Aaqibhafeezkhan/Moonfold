@@ -13,9 +13,19 @@ Date: 2026-10-15. Tool: REA 6.5.0, `analyze-javascript-application`, `--artifact
 - No analytics SDK host (PostHog etc.) appears in the web bundle: telemetry is sent from the server (`AnalyticsService.ts`), consistent with the manual audit.
 - Limitation noted by REA: Electron relationships derive from inert syntax; reachability and defaults are not proven.
 
-## apps/server/dist: incomplete
+## apps/server/dist: completed on re-run (2026-10-16, Windows)
 
-The run hit the tool's analysis timeout ("Analysis took too long") with partial observations only. Not used as evidence. Follow-up: re-run with `--source-path` per entry (`bin.mjs`, `binCli-*.mjs`, provider chunks) or a larger `--analysis-timeout-ms`.
+- First run (container, 2026-10-15) hit the 120 s per-file timeout. Re-run through the REA MCP
+  server with `source_paths` = `bin.mjs`, `binCli-*.mjs`, `AcpMcpStdioBridge-*.mjs`, 8 GB analyzer
+  heap and a 900 s per-file deadline.
+- Parent Evidence `ev_befef4252bc99f05a3b213450697880230b51935769f6e363cdb37394efd27a5`, subject
+  sha256 `1064fc8dc6d0fa00ea5d5254abda6b836083c740079276f1de2d6e19ebd06dee`.
+- 4,646 files inventoried; 3 parsed, 0 parse failures, 1.64 M AST nodes, 1,480 findings. The
+  13.6 MB CLI chunk's semantic graph exceeded the result budget, so its request/data-flow
+  relations are partial; module facts were kept.
+- 0 Electron windows or IPC (expected: this is the Node server), 3 sender-validation observations.
+- Outbound hosts: cross-checked with a host-literal scan and source-map attribution. New hosts are
+  recorded in NETWORK-AUDIT.md "Server bundle cross-check". No analytics host beyond PostHog.
 
 ## Not yet done
 
