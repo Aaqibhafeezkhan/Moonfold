@@ -131,3 +131,22 @@ PostHog telemetry is off by default and needs `MOONFOLD_TELEMETRY_ENABLED=true` 
 `scripts/render-brand-icons.ts` renders every icon (three channels, macOS safe area, ICO, favicons,
 DMG backgrounds, Icon Composer layers) from the folded-moon geometry, and `--check` runs in CI.
 Apple's Icon Composer export is not used because it requires macOS.
+
+## D-17 /review, goal budgets and their syntax
+
+`/review` maps to Codex's `review/start` with inline delivery: no argument reviews uncommitted
+changes, `branch <name>` or `base <name>` a base branch, `commit <sha>` one commit, and any other
+text is custom instructions. `/goal --budget 200k <objective>` and `/goal budget <tokens|off>` add
+token budgets; a budget-only `thread/goal/set` keeps the objective and status, and `null` clears
+the budget (checked against codex-cli 0.161.0). The command palette has no provider commands, so
+`/review` is reached from the composer and the diff panel only.
+
+## D-18 Provider-native configuration lives on the provider card
+
+MCP servers, skills, hooks, imports from other agents and account usage are Codex's own
+configuration, so they live on each Codex provider's settings card, not on new top-level settings
+pages. Each Codex instance can use a different Codex home and account, and the card is already
+per instance. Account usage sits there too rather than on the Usage page, which reports local
+transcripts across providers. The server side is a provider-neutral `nativeConfig` capability, so
+another provider can implement it later. Each call spawns a short-lived `codex app-server`; a
+section loads only when opened.
