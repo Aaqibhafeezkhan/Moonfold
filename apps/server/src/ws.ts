@@ -205,6 +205,7 @@ import { linkCreatedPullRequest } from "./git/linkCreatedPullRequest.ts";
 import * as ReviewService from "./review/ReviewService.ts";
 import * as ProjectEnrichmentService from "./project/ProjectEnrichmentService.ts";
 import * as ProjectService from "./project/ProjectService.ts";
+import * as ProviderNativeConfigService from "./provider/ProviderNativeConfigService.ts";
 import * as ManagedProjectFolders from "./project/ManagedProjectFolders.ts";
 import { projectMutationOperation } from "./project/ProjectMutation.ts";
 import * as ProjectSetupScriptRunner from "./project/ProjectSetupScriptRunner.ts";
@@ -1294,6 +1295,7 @@ const layerWsRpc = (
         yield* AcpRegistryRuntimeCoordinator.AcpRegistryRuntimeCoordinator;
       const providerMaintenanceRunner = yield* ProviderMaintenanceRunner.ProviderMaintenanceRunner;
       const providerAuth = yield* ProviderAuthService.ProviderAuthService;
+      const providerNativeConfig = yield* ProviderNativeConfigService.ProviderNativeConfigService;
       const providerInstallation = yield* makeProviderInstallation();
       const serverSelfUpdate = yield* ServerSelfUpdate.ServerSelfUpdate;
       const config = yield* ServerConfig.ServerConfig;
@@ -2357,6 +2359,21 @@ const layerWsRpc = (
             );
             return { outcome };
           }),
+        [WS_METHODS.providerMcpServersList]: (input) => providerNativeConfig.listMcpServers(input),
+        [WS_METHODS.providerMcpServerLogin]: (input) => providerNativeConfig.loginMcpServer(input),
+        [WS_METHODS.providerMcpServersReload]: (input) =>
+          providerNativeConfig.reloadMcpServers(input),
+        [WS_METHODS.providerSkillsList]: (input) => providerNativeConfig.listSkills(input),
+        [WS_METHODS.providerSkillSetEnabled]: (input) =>
+          providerNativeConfig.setSkillEnabled(input),
+        [WS_METHODS.providerSkillRead]: (input) => providerNativeConfig.readSkill(input),
+        [WS_METHODS.providerHooksList]: (input) => providerNativeConfig.listHooks(input),
+        [WS_METHODS.providerAgentImportDetect]: (input) =>
+          providerNativeConfig.detectAgentImports(input),
+        [WS_METHODS.providerAgentImportRun]: (input) =>
+          providerNativeConfig.importAgentConfig(input),
+        [WS_METHODS.providerAccountUsageRead]: (input) =>
+          providerNativeConfig.readAccountUsage(input),
         [WS_METHODS.providerAuthStart]: (input) => providerAuth.start(input, currentSessionId),
         [WS_METHODS.providerAuthRespond]: (input) =>
           Effect.annotateCurrentSpan({ instanceId: input.instanceId }).pipe(

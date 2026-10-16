@@ -60,7 +60,7 @@ function codexSources(directory: string): ReadonlyArray<string> {
   for (const entry of NodeFS.readdirSync(directory, { withFileTypes: true })) {
     const path = NodePath.join(directory, entry.name);
     if (entry.isDirectory()) found.push(...codexSources(path));
-    else if (/^Codex.*\.ts$/.test(entry.name) && !/\.test(kit)?\.ts$/.test(entry.name)) {
+    else if (/^codex.*\.ts$/i.test(entry.name) && !/\.test(kit)?\.ts$/.test(entry.name)) {
       found.push(path);
     }
   }

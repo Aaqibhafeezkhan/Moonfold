@@ -27,13 +27,22 @@ import type {
   AcpRegistryListProvidersResult,
   AcpRegistryOperationError,
   AcpRegistrySetProviderInput,
+  ProviderAccountUsage,
+  ProviderAgentImportDetectResult,
+  ProviderAgentImportResult,
   ProviderDriverKind,
+  ProviderHookList,
   ProviderInstanceEnvironment,
   ProviderInstanceId,
+  ProviderMcpServerList,
+  ProviderMcpServerLoginEvent,
+  ProviderSkillList,
+  ProviderSkillSetEnabledResult,
   ServerProvider,
   ServerProviderWorkspaceSnapshot,
 } from "@moonfold/contracts";
 import type * as Effect from "effect/Effect";
+import type * as Stream from "effect/Stream";
 import type * as Schema from "effect/Schema";
 import type * as Scope from "effect/Scope";
 
@@ -105,6 +114,37 @@ export interface ProviderInstance {
   readonly orchestrationAdapter: ProviderAdapter.ProviderAdapterV2["Service"];
   readonly textGeneration: ProviderTextGeneration;
   readonly auth?: ProviderAuthController;
+  /**
+   * Configuration the provider keeps in its own home: MCP servers, skills,
+   * hooks, imports from other agents and account usage. `cwd` adds that
+   * project's config; without it only user-level config is read.
+   */
+  readonly nativeConfig?: {
+    readonly listMcpServers: () => Effect.Effect<ProviderMcpServerList, ProviderDriverError>;
+    /** Streams the URL to open, then the outcome once the browser finishes. */
+    readonly loginMcpServer: (
+      name: string,
+    ) => Stream.Stream<ProviderMcpServerLoginEvent, ProviderDriverError>;
+    readonly reloadMcpServers: () => Effect.Effect<void, ProviderDriverError>;
+    readonly listSkills: (
+      cwd: string | undefined,
+    ) => Effect.Effect<ProviderSkillList, ProviderDriverError>;
+    readonly setSkillEnabled: (input: {
+      readonly path: string;
+      readonly enabled: boolean;
+    }) => Effect.Effect<ProviderSkillSetEnabledResult, ProviderDriverError>;
+    readonly listHooks: (
+      cwd: string | undefined,
+    ) => Effect.Effect<ProviderHookList, ProviderDriverError>;
+    readonly detectAgentImports: (
+      cwd: string | undefined,
+    ) => Effect.Effect<ProviderAgentImportDetectResult, ProviderDriverError>;
+    readonly importAgentConfig: (input: {
+      readonly cwd: string | undefined;
+      readonly itemIds: ReadonlyArray<string>;
+    }) => Effect.Effect<ProviderAgentImportResult, ProviderDriverError>;
+    readonly readAccountUsage: () => Effect.Effect<ProviderAccountUsage, ProviderDriverError>;
+  };
   readonly acpSessionManagement?: {
     readonly listSessions: (input: {
       readonly cwd: string;

@@ -15,7 +15,10 @@ import {
   checkCodexProviderStatus,
   makePendingCodexProvider,
   probeCodexSkillsForCwd,
+  withCodexAppServerClient,
 } from "../CodexProvider.ts";
+import { makeCodexNativeConfig } from "../codexNativeConfig.ts";
+import * as HostProcess from "@moonfold/shared/HostProcess";
 import { makeManagedServerProvider } from "@moonfold/provider-core/server/managedProvider";
 import { mergeProviderInstanceEnvironment } from "@moonfold/provider-core/server/instanceEnvironment";
 import {
@@ -271,6 +274,24 @@ export const makeManagedCodexProvider = Effect.fn("makeManagedCodexProvider")(fu
     generateReviewGuide: (value) =>
       protect("generateReviewGuide", nativeGeneration.generateReviewGuide(value)),
   };
+  const nativeConfig = makeCodexNativeConfig({
+    driver: DRIVER,
+    instanceId,
+    userCwd: yield* HostProcess.HomeDirectory,
+    open: (cwd) =>
+      resolveRuntime.pipe(
+        Effect.flatMap((effective) =>
+          withCodexAppServerClient({
+            binaryPath: effective.config.binaryPath,
+            homePath: effective.config.homePath,
+            launchArgs: effective.config.launchArgs,
+            cwd,
+            environment: effective.environment,
+          }),
+        ),
+        Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
+      ),
+  });
   return {
     instanceId,
     driverKind: DRIVER,
@@ -282,6 +303,7 @@ export const makeManagedCodexProvider = Effect.fn("makeManagedCodexProvider")(fu
     orchestrationAdapter,
     textGeneration,
     auth: runtime.auth.controller,
+    ...(enabled ? { nativeConfig } : {}),
     snapshotForCwd: (cwd: string) =>
       enabled
         ? resolveRuntime.pipe(

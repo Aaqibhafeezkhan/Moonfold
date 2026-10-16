@@ -325,6 +325,22 @@ import {
 } from "./providerUsageLimits.ts";
 import { UsagePricing, UsageReadError, UsageSummary, UsageSummaryInput } from "./usage.ts";
 import {
+  ProviderAccountUsage,
+  ProviderAgentImportDetectResult,
+  ProviderAgentImportInput,
+  ProviderAgentImportResult,
+  ProviderHookList,
+  ProviderMcpServerList,
+  ProviderMcpServerLoginEvent,
+  ProviderMcpServerLoginInput,
+  ProviderNativeConfigInput,
+  ProviderSkillList,
+  ProviderSkillReadInput,
+  ProviderSkillReadResult,
+  ProviderSkillSetEnabledInput,
+  ProviderSkillSetEnabledResult,
+} from "./providerNativeConfig.ts";
+import {
   StorageCleanupReport,
   ServerSettings,
   ServerSettingsError,
@@ -411,6 +427,16 @@ export const WS_METHODS = {
   chatGptImportProfile: "provider.chatgpt.import-profile",
   chatGptHandoffSubscribe: "provider.chatgpt.handoff.subscribe",
   codexAuthCallbackSubscribe: "provider.codex.auth-callback.subscribe",
+  providerMcpServersList: "provider.mcpServers.list",
+  providerMcpServerLogin: "provider.mcpServers.login",
+  providerMcpServersReload: "provider.mcpServers.reload",
+  providerSkillsList: "provider.skills.list",
+  providerSkillSetEnabled: "provider.skills.setEnabled",
+  providerSkillRead: "provider.skills.read",
+  providerHooksList: "provider.hooks.list",
+  providerAgentImportDetect: "provider.agentImport.detect",
+  providerAgentImportRun: "provider.agentImport.run",
+  providerAccountUsageRead: "provider.accountUsage.read",
   providerAuthRespond: "provider.auth.respond",
   providerAuthCancel: "provider.auth.cancel",
   providerAuthLogout: "provider.auth.logout",
@@ -679,6 +705,66 @@ const WsChatGptHandoffSubscribeRpc = Rpc.make(WS_METHODS.chatGptHandoffSubscribe
   error: ProviderSetupRpcError,
   stream: true,
 });
+const WsProviderMcpServersListRpc = Rpc.make(WS_METHODS.providerMcpServersList, {
+  payload: ProviderNativeConfigInput,
+  success: ProviderMcpServerList,
+  error: ProviderSetupRpcError,
+});
+
+const WsProviderMcpServerLoginRpc = Rpc.make(WS_METHODS.providerMcpServerLogin, {
+  payload: ProviderMcpServerLoginInput,
+  success: ProviderMcpServerLoginEvent,
+  error: ProviderSetupRpcError,
+  stream: true,
+});
+
+const WsProviderMcpServersReloadRpc = Rpc.make(WS_METHODS.providerMcpServersReload, {
+  payload: ProviderNativeConfigInput,
+  error: ProviderSetupRpcError,
+});
+
+const WsProviderSkillsListRpc = Rpc.make(WS_METHODS.providerSkillsList, {
+  payload: ProviderNativeConfigInput,
+  success: ProviderSkillList,
+  error: ProviderSetupRpcError,
+});
+
+const WsProviderSkillSetEnabledRpc = Rpc.make(WS_METHODS.providerSkillSetEnabled, {
+  payload: ProviderSkillSetEnabledInput,
+  success: ProviderSkillSetEnabledResult,
+  error: ProviderSetupRpcError,
+});
+
+const WsProviderSkillReadRpc = Rpc.make(WS_METHODS.providerSkillRead, {
+  payload: ProviderSkillReadInput,
+  success: ProviderSkillReadResult,
+  error: ProviderSetupRpcError,
+});
+
+const WsProviderHooksListRpc = Rpc.make(WS_METHODS.providerHooksList, {
+  payload: ProviderNativeConfigInput,
+  success: ProviderHookList,
+  error: ProviderSetupRpcError,
+});
+
+const WsProviderAgentImportDetectRpc = Rpc.make(WS_METHODS.providerAgentImportDetect, {
+  payload: ProviderNativeConfigInput,
+  success: ProviderAgentImportDetectResult,
+  error: ProviderSetupRpcError,
+});
+
+const WsProviderAgentImportRunRpc = Rpc.make(WS_METHODS.providerAgentImportRun, {
+  payload: ProviderAgentImportInput,
+  success: ProviderAgentImportResult,
+  error: ProviderSetupRpcError,
+});
+
+const WsProviderAccountUsageReadRpc = Rpc.make(WS_METHODS.providerAccountUsageRead, {
+  payload: ProviderNativeConfigInput,
+  success: ProviderAccountUsage,
+  error: ProviderSetupRpcError,
+});
+
 const WsCodexAuthCallbackSubscribeRpc = Rpc.make(WS_METHODS.codexAuthCallbackSubscribe, {
   payload: CodexAuthCallbackInput,
   success: CodexAuthCallbackState,
@@ -1881,6 +1967,16 @@ export const WsRpcGroup = RpcGroup.make(
   WsServerRefreshProvidersRpc,
   WsServerUpdateProviderRpc,
   WsProviderConsumeResetCreditRpc,
+  WsProviderMcpServersListRpc,
+  WsProviderMcpServerLoginRpc,
+  WsProviderMcpServersReloadRpc,
+  WsProviderSkillsListRpc,
+  WsProviderSkillSetEnabledRpc,
+  WsProviderSkillReadRpc,
+  WsProviderHooksListRpc,
+  WsProviderAgentImportDetectRpc,
+  WsProviderAgentImportRunRpc,
+  WsProviderAccountUsageReadRpc,
   WsProviderAuthStartRpc,
   WsProviderAuthCompleteRpc,
   WsChatGptReconnectProfileRpc,
