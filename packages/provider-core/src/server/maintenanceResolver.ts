@@ -1,20 +1,20 @@
 export type {
   ProviderMaintenanceCapabilities,
   ProviderMaintenanceCommandAction,
-} from "@t3tools/provider-core/server/maintenance";
+} from "@moonfold/provider-core/server/maintenance";
 import type {
   ProviderMaintenanceCapabilities,
   ProviderMaintenanceCommandAction,
-} from "@t3tools/provider-core/server/maintenance";
+} from "@moonfold/provider-core/server/maintenance";
 import {
   ProviderDriverKind,
   type ServerProvider,
   type ServerProviderVersionAdvisory,
-} from "@t3tools/contracts";
-import { compareSemverVersions } from "@t3tools/shared/semver";
-import * as HostProcess from "@t3tools/shared/HostProcess";
-import { causeErrorTag } from "@t3tools/shared/observability";
-import { resolveCommandPath } from "@t3tools/shared/shell";
+} from "@moonfold/contracts";
+import { compareSemverVersions } from "@moonfold/shared/semver";
+import * as HostProcess from "@moonfold/shared/HostProcess";
+import { causeErrorTag } from "@moonfold/shared/observability";
+import { resolveCommandPath } from "@moonfold/shared/shell";
 import * as Cache from "effect/Cache";
 import * as Config from "effect/Config";
 import * as DateTime from "effect/DateTime";
@@ -366,7 +366,7 @@ const runHomebrew = Effect.fn("runHomebrew")(function* (
 /**
  * Derive update capabilities from where the executable actually lives. Every
  * package-manager branch has evidence that the named tool owns that path, so
- * T3 Code never runs a package manager against an install it did not create.
+ * Moonfold never runs a package manager against an install it did not create.
  * An unproven install falls back to the provider's own updater, which detects
  * its installer itself, and stays manual-only without one.
  */
