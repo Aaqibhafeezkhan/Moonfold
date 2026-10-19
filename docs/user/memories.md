@@ -24,3 +24,7 @@ memories**; choose **Use memories** to bring them back.
 
 Codex and Claude Code turns receive memories. Other providers do not receive them yet. A change
 applies from the next turn.
+
+If you turned on Codex's own memories in its configuration, Codex may keep what you ask it to
+remember in its own memory instead, where other providers don't see it. Say "remember this in
+Moonfold" to save it here.

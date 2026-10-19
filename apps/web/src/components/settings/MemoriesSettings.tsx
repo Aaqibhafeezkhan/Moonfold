@@ -59,10 +59,29 @@ function reportFailure(title: string, result: AtomCommandResult<unknown, unknown
 
 /** Settings → Memories: what agents remember across conversations, per environment. */
 export function MemoriesSettings() {
-  const { scope, environments } = useSettingsScope();
+  const { scope, environments, connectedEnvironments, environment } = useSettingsScope();
+  const defaultEnvironment = environment ?? connectedEnvironments[0];
+  const [adding, setAdding] = useState<EnvironmentId | null>(null);
+  const canAdd = useAtomValue(
+    serverEnvironment.upsertMemory.permissionAtom(defaultEnvironment?.environmentId ?? null),
+  );
   return (
     <SettingsPageContainer>
-      <SettingsSection title="Memories" variant="plain">
+      <SettingsSection
+        title="Memories"
+        variant="plain"
+        headerAction={
+          <Button
+            size="xs"
+            variant="ghost-muted"
+            disabled={!defaultEnvironment || !canAdd}
+            onClick={() => defaultEnvironment && setAdding(defaultEnvironment.environmentId)}
+          >
+            <PlusIcon className="size-3" />
+            Add memory
+          </Button>
+        }
+      >
         <p className="text-sm text-muted-foreground">
           Memories are short notes Codex and Claude Code receive at the start of every turn. Add
           your own, or ask an agent to remember something. Other providers do not receive them yet.
@@ -88,11 +107,15 @@ export function MemoriesSettings() {
                 key={entry.environmentId}
                 environment={entry}
                 showEnvironmentHeading={environments.length > 1}
+                onAdd={() => setAdding(entry.environmentId)}
               />
             ))}
           </div>
         )}
       </SettingsSection>
+      {adding ? (
+        <MemoryEditorDialog environmentId={adding} memory={null} onClose={() => setAdding(null)} />
+      ) : null}
     </SettingsPageContainer>
   );
 }
@@ -100,9 +123,11 @@ export function MemoriesSettings() {
 function MemoryEnvironmentSection({
   environment,
   showEnvironmentHeading,
+  onAdd,
 }: {
   readonly environment: EnvironmentPresentation;
   readonly showEnvironmentHeading: boolean;
+  readonly onAdd: () => void;
 }) {
   const { environmentId } = environment;
   const connected =
@@ -114,7 +139,7 @@ function MemoryEnvironmentSection({
   const setEnabled = useAtomCommand(serverEnvironment.setMemoriesEnabled, {
     label: "memories enabled",
   });
-  const [editing, setEditing] = useState<Memory | "new" | null>(null);
+  const [editing, setEditing] = useState<Memory | null>(null);
   const [busy, setBusy] = useState(false);
   const allProjects = useProjects();
   const projects = useMemo(
@@ -143,8 +168,8 @@ function MemoryEnvironmentSection({
         />
       }
       headerAction={
-        connected && canWrite ? (
-          <Button size="xs" variant="ghost-muted" onClick={() => setEditing("new")}>
+        showEnvironmentHeading && connected && canWrite ? (
+          <Button size="xs" variant="ghost-muted" onClick={onAdd}>
             <PlusIcon className="size-3" />
             Add memory
           </Button>
@@ -202,10 +227,8 @@ function MemoryEnvironmentSection({
       {editing ? (
         <MemoryEditorDialog
           environmentId={environmentId}
-          memory={editing === "new" ? null : editing}
-          projects={projects}
+          memory={editing}
           onClose={() => setEditing(null)}
-          onSaved={memoriesQuery.refresh}
         />
       ) : null}
     </SettingsSection>
@@ -292,16 +315,21 @@ function MemoryRow({
 function MemoryEditorDialog({
   environmentId,
   memory,
-  projects,
   onClose,
-  onSaved,
 }: {
   readonly environmentId: EnvironmentId;
   readonly memory: Memory | null;
-  readonly projects: ReadonlyArray<{ readonly id: ProjectId; readonly title: string }>;
   readonly onClose: () => void;
-  readonly onSaved: () => void;
 }) {
+  const allProjects = useProjects();
+  const projects = useMemo(
+    () => allProjects.filter((project) => project.environmentId === environmentId),
+    [allProjects, environmentId],
+  );
+  // The same query the list reads, so saving refreshes the list.
+  const memoriesQuery = useEnvironmentQuery(
+    serverEnvironment.memories({ environmentId, input: {} }),
+  );
   const [text, setText] = useState(memory?.text ?? "");
   const [projectId, setProjectId] = useState<string>(memory?.projectId ?? ALL_PROJECTS);
   const [saving, setSaving] = useState(false);
@@ -325,7 +353,7 @@ function MemoryEditorDialog({
       reportFailure("Could not save the memory", result);
       return;
     }
-    onSaved();
+    memoriesQuery.refresh();
     onClose();
   };
 
