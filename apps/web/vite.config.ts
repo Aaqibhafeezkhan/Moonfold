@@ -232,6 +232,8 @@ export default defineConfig(() => {
       port,
       strictPort: true,
       allowedHosts,
+      // Like the server's static responses: the app is never framed by other pages.
+      headers: { "Content-Security-Policy": "frame-ancestors 'none'", "X-Frame-Options": "DENY" },
       // Transform the whole module graph at server start instead of on the
       // first request. Without this, a cold worktree discovers and transforms
       // modules one import-level at a time while the browser waits — which
