@@ -29,6 +29,7 @@ import * as ThreadLaunchService from "../../../orchestration-v2/ThreadLaunchServ
 import * as ThreadSearch from "../../../orchestration-v2/ThreadSearch.ts";
 import * as MemoryStore from "../../../memories/MemoryStore.ts";
 import * as BrowserSitePermissions from "../../../browser/BrowserSitePermissions.ts";
+import * as ComputerUseService from "../../../computerUse/ComputerUseService.ts";
 import * as PreviewManager from "../../../preview/Manager.ts";
 import * as SourceControlRepositoryService from "../../../sourceControl/SourceControlRepositoryService.ts";
 import * as GitVcsDriver from "../../../vcs/GitVcsDriver.ts";
@@ -61,6 +62,7 @@ const layerStubServices = Layer.mergeAll(
   Layer.mock(ThreadSearch.ThreadSearch)({}),
   Layer.mock(MemoryStore.MemoryStore)({}),
   Layer.mock(BrowserSitePermissions.BrowserSitePermissions)({}),
+  Layer.mock(ComputerUseService.ComputerUseService)({}),
 );
 
 const ToolsListPayload = Schema.fromJsonString(

@@ -411,6 +411,15 @@ import {
   BrowserSiteRemoveInput,
   BrowserSiteRuleInput,
 } from "./browserSites.ts";
+import {
+  ComputerUseActivity,
+  ComputerUseAnswerInput,
+  ComputerUseAppInput,
+  ComputerUseError,
+  ComputerUsePendingRequests,
+  ComputerUseSetEnabledInput,
+  ComputerUseState,
+} from "./computerUse.ts";
 import { SecretRequestAnswerInput, SecretRequestError } from "./secretRequest.ts";
 import {
   ProjectCloneActionInput,
@@ -618,6 +627,14 @@ export const WS_METHODS = {
   browserSitesSetDefaults: "browserSites.setDefaults",
   browserSitesSubscribePending: "browserSites.subscribePending",
   browserSitesAnswer: "browserSites.answer",
+  computerUseGetState: "computerUse.getState",
+  computerUseSetEnabled: "computerUse.setEnabled",
+  computerUseRemoveApp: "computerUse.removeApp",
+  computerUseClearLog: "computerUse.clearLog",
+  computerUseSubscribePending: "computerUse.subscribePending",
+  computerUseAnswer: "computerUse.answer",
+  computerUseSubscribeActivity: "computerUse.subscribeActivity",
+  computerUseStop: "computerUse.stop",
   scheduledTasksGetWebhookDelivery: "scheduledTasks.getWebhookDelivery",
 
   // Cloud environment methods
@@ -2108,6 +2125,50 @@ const WsBrowserSitesAnswerRpc = Rpc.make(WS_METHODS.browserSitesAnswer, {
   error: Schema.Union([BrowserSiteError, EnvironmentAuthorizationError]),
 });
 
+const ComputerUseRpcError = Schema.Union([ComputerUseError, EnvironmentAuthorizationError]);
+const WsComputerUseGetStateRpc = Rpc.make(WS_METHODS.computerUseGetState, {
+  payload: Schema.Struct({}),
+  success: ComputerUseState,
+  error: ComputerUseRpcError,
+});
+const WsComputerUseSetEnabledRpc = Rpc.make(WS_METHODS.computerUseSetEnabled, {
+  payload: ComputerUseSetEnabledInput,
+  success: ComputerUseState,
+  error: ComputerUseRpcError,
+});
+const WsComputerUseRemoveAppRpc = Rpc.make(WS_METHODS.computerUseRemoveApp, {
+  payload: ComputerUseAppInput,
+  success: ComputerUseState,
+  error: ComputerUseRpcError,
+});
+const WsComputerUseClearLogRpc = Rpc.make(WS_METHODS.computerUseClearLog, {
+  payload: Schema.Struct({}),
+  success: ComputerUseState,
+  error: ComputerUseRpcError,
+});
+/** Agents waiting for an app approval: a snapshot on subscribe, then the list after each change. */
+const WsComputerUseSubscribePendingRpc = Rpc.make(WS_METHODS.computerUseSubscribePending, {
+  payload: Schema.Struct({}),
+  success: ComputerUsePendingRequests,
+  error: ComputerUseRpcError,
+  stream: true,
+});
+const WsComputerUseAnswerRpc = Rpc.make(WS_METHODS.computerUseAnswer, {
+  payload: ComputerUseAnswerInput,
+  error: ComputerUseRpcError,
+});
+const WsComputerUseSubscribeActivityRpc = Rpc.make(WS_METHODS.computerUseSubscribeActivity, {
+  payload: Schema.Struct({}),
+  success: ComputerUseActivity,
+  error: ComputerUseRpcError,
+  stream: true,
+});
+/** Turns computer use off at once and stops the helper; answers every waiting request with no. */
+const WsComputerUseStopRpc = Rpc.make(WS_METHODS.computerUseStop, {
+  payload: Schema.Struct({}),
+  error: ComputerUseRpcError,
+});
+
 const WsMemoriesSetThreadOptOutRpc = Rpc.make(WS_METHODS.memoriesSetThreadOptOut, {
   payload: MemorySetThreadOptOutInput,
   success: MemoryThreadStatus,
@@ -2399,6 +2460,14 @@ export const WsRpcGroupPart5 = RpcGroup.make(
   WsBrowserSitesSetDefaultsRpc,
   WsBrowserSitesSubscribePendingRpc,
   WsBrowserSitesAnswerRpc,
+  WsComputerUseGetStateRpc,
+  WsComputerUseSetEnabledRpc,
+  WsComputerUseRemoveAppRpc,
+  WsComputerUseClearLogRpc,
+  WsComputerUseSubscribePendingRpc,
+  WsComputerUseAnswerRpc,
+  WsComputerUseSubscribeActivityRpc,
+  WsComputerUseStopRpc,
 ).middleware(RpcScopeAuthorization);
 
 export const WsRpcGroup = WsRpcGroupPart1.merge(

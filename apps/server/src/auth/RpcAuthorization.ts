@@ -76,6 +76,16 @@ export const RPC_REQUIRED_SCOPES = {
   [WS_METHODS.browserSitesSetDefaults]: AuthSettingsWriteScope,
   [WS_METHODS.browserSitesSubscribePending]: AuthOrchestrationReadScope,
   [WS_METHODS.browserSitesAnswer]: AuthOrchestrationOperateScope,
+  // Turning computer use on lets agents operate this machine's apps: a settings change. Stopping
+  // it must stay possible for anyone who can operate threads.
+  [WS_METHODS.computerUseGetState]: AuthOrchestrationReadScope,
+  [WS_METHODS.computerUseSetEnabled]: AuthSettingsWriteScope,
+  [WS_METHODS.computerUseRemoveApp]: AuthSettingsWriteScope,
+  [WS_METHODS.computerUseClearLog]: AuthSettingsWriteScope,
+  [WS_METHODS.computerUseSubscribePending]: AuthOrchestrationReadScope,
+  [WS_METHODS.computerUseAnswer]: AuthOrchestrationOperateScope,
+  [WS_METHODS.computerUseSubscribeActivity]: AuthOrchestrationReadScope,
+  [WS_METHODS.computerUseStop]: AuthOrchestrationOperateScope,
   [WS_METHODS.serverProbe]: AuthOrchestrationReadScope,
   [WS_METHODS.serverGetConfig]: AuthOrchestrationReadScope,
   [WS_METHODS.serverRefreshProviders]: AuthOrchestrationReadScope,

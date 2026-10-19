@@ -217,6 +217,7 @@ import * as WorktreeMcpService from "./mcp/WorktreeMcpService.ts";
 import * as PluginStore from "./plugins/PluginStore.ts";
 import * as MemoryStore from "./memories/MemoryStore.ts";
 import * as BrowserSitePermissions from "./browser/BrowserSitePermissions.ts";
+import * as ComputerUseService from "./computerUse/ComputerUseService.ts";
 import * as ManagedProjectFolders from "./project/ManagedProjectFolders.ts";
 import { projectMutationOperation } from "./project/ProjectMutation.ts";
 import * as ProjectSetupScriptRunner from "./project/ProjectSetupScriptRunner.ts";
@@ -1311,6 +1312,7 @@ const buildWsRpcHandlers = (
     const plugins = yield* PluginStore.PluginStore;
     const memories = yield* MemoryStore.MemoryStore;
     const browserSites = yield* BrowserSitePermissions.BrowserSitePermissions;
+    const computerUse = yield* ComputerUseService.ComputerUseService;
     const providerInstallation = yield* makeProviderInstallation();
     const serverSelfUpdate = yield* ServerSelfUpdate.ServerSelfUpdate;
     const config = yield* ServerConfig.ServerConfig;
@@ -2128,6 +2130,14 @@ const buildWsRpcHandlers = (
       [WS_METHODS.browserSitesSetDefaults]: (input) => browserSites.setDefaults(input),
       [WS_METHODS.browserSitesSubscribePending]: () => browserSites.pending,
       [WS_METHODS.browserSitesAnswer]: (input) => browserSites.answer(input),
+      [WS_METHODS.computerUseGetState]: () => computerUse.state,
+      [WS_METHODS.computerUseSetEnabled]: (input) => computerUse.setEnabled(input.enabled),
+      [WS_METHODS.computerUseRemoveApp]: (input) => computerUse.removeApp(input.app),
+      [WS_METHODS.computerUseClearLog]: () => computerUse.clearLog,
+      [WS_METHODS.computerUseSubscribePending]: () => computerUse.pending,
+      [WS_METHODS.computerUseAnswer]: (input) => computerUse.answer(input),
+      [WS_METHODS.computerUseSubscribeActivity]: () => computerUse.activity,
+      [WS_METHODS.computerUseStop]: () => computerUse.stop,
       [WS_METHODS.scheduledTasksListRuns]: (input) =>
         Effect.annotateCurrentSpan({ "scheduled_task.id": input.id }).pipe(
           Effect.andThen(scheduledTasks.listRuns(input)),

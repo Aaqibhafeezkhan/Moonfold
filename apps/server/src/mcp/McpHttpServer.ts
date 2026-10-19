@@ -59,6 +59,13 @@ import {
 } from "./toolkits/device/tools.ts";
 import * as HtmlHandlers from "./toolkits/html/handlers.ts";
 import * as MemoryHandlers from "./toolkits/memory/handlers.ts";
+import * as ComputerHandlers from "./toolkits/computer/handlers.ts";
+import {
+  ComputerScreenshotTool,
+  ComputerScreenshotToolkit,
+  ComputerStandardToolkit,
+} from "./toolkits/computer/tools.ts";
+import * as ComputerUseService from "../computerUse/ComputerUseService.ts";
 import { MemoryToolkit } from "./toolkits/memory/tools.ts";
 import { HtmlPreviewTool, HtmlPreviewToolkit, HtmlRenderToolkit } from "./toolkits/html/tools.ts";
 
@@ -739,6 +746,29 @@ const registerDeviceScreenshot = Effect.fn("McpHttpServer.registerDeviceScreensh
   );
 });
 
+const registerComputerScreenshot = Effect.fn("McpHttpServer.registerComputerScreenshot")(
+  function* () {
+    const computer = yield* ComputerUseService.ComputerUseService;
+    const threads = yield* ThreadManagementService.ThreadManagementService;
+    const built = yield* ComputerScreenshotToolkit;
+    yield* registerImageTool(
+      ComputerScreenshotTool,
+      (payload) =>
+        built
+          .handle("computer_screenshot", payload)
+          .pipe(Stream.unwrap, Stream.run(Sink.last()), Effect.flatMap(Effect.fromOption)),
+      (effect) =>
+        effect.pipe(
+          Effect.provideService(ComputerUseService.ComputerUseService, computer),
+          Effect.provideService(ThreadManagementService.ThreadManagementService, threads),
+        ),
+      "screenshot",
+      (error) =>
+        isOrchestratorMcpFailure(error) ? error.message : "Taking the screenshot failed.",
+    );
+  },
+);
+
 const isOrchestratorMcpFailure = Schema.is(OrchestratorMcpFailure);
 
 const registerHtmlPreview = Effect.fn("McpHttpServer.registerHtmlPreview")(function* () {
@@ -823,6 +853,11 @@ export const layerThreadToolkit = toolkitRegistration(ThreadToolkit, ThreadHandl
 
 const layerMemoryToolkit = toolkitRegistration(MemoryToolkit, MemoryHandlers.layer);
 
+const layerComputerToolkit = Layer.mergeAll(
+  toolkitRegistration(ComputerStandardToolkit, ComputerHandlers.layerStandard),
+  imageToolRegistration(registerComputerScreenshot(), ComputerHandlers.layerScreenshot),
+);
+
 const layerWorktreeToolkitRegistration = toolkitRegistration(
   WorktreeToolkit,
   WorktreeHandlers.layer,
@@ -878,6 +913,7 @@ export const layer = Layer.mergeAll(
   layerOrchestratorToolkit,
   layerThreadToolkit,
   layerMemoryToolkit,
+  layerComputerToolkit,
   layerAttachmentToolkit,
   layerProjectRegistration,
   layerEnvironmentToolkit,

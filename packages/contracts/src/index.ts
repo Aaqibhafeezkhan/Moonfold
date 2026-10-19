@@ -24,6 +24,7 @@ export * from "./threadWorkspace.ts";
 export * from "./plugins.ts";
 export * from "./memories.ts";
 export * from "./browserSites.ts";
+export * from "./computerUse.ts";
 export * from "./providerRuntime.ts";
 export * from "./providerUsageLimits.ts";
 export * from "./usageLimitSourceId.ts";

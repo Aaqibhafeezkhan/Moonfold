@@ -70,6 +70,12 @@ export const CLIENT_GUARDED_RPC_SCOPES = {
   [WS_METHODS.browserSitesRemoveRule]: AuthSettingsWriteScope,
   [WS_METHODS.browserSitesSetDefaults]: AuthSettingsWriteScope,
   [WS_METHODS.browserSitesAnswer]: AuthOrchestrationOperateScope,
+  // Computer use operates this machine's apps.
+  [WS_METHODS.computerUseSetEnabled]: AuthSettingsWriteScope,
+  [WS_METHODS.computerUseRemoveApp]: AuthSettingsWriteScope,
+  [WS_METHODS.computerUseClearLog]: AuthSettingsWriteScope,
+  [WS_METHODS.computerUseAnswer]: AuthOrchestrationOperateScope,
+  [WS_METHODS.computerUseStop]: AuthOrchestrationOperateScope,
 } as const;
 export type ClientGuardedRpcTag = keyof typeof CLIENT_GUARDED_RPC_SCOPES;
 
