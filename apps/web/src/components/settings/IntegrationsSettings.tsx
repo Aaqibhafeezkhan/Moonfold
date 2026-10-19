@@ -121,6 +121,7 @@ import { ProjectDefaultsSettings } from "./ProjectDefaultsSettings";
 import { useSettingsScope } from "./SettingsScopeContext";
 import { BrowserImportWizard, type WizardTarget } from "./BrowserImportWizard";
 import type { ImportOutcome } from "./browserImportWizard.logic";
+import { BrowserSitePermissionsSettings } from "./BrowserSitePermissionsSettings";
 
 const FILL_VALUE = "fill";
 const RESPONSIVE_VALUE = "responsive";
@@ -1576,6 +1577,7 @@ export function IntegrationsSettingsPanel() {
         )}
         <PullRequestLinksOpenInAppSetting />
       </SettingsSection>
+      <BrowserSitePermissionsSettings />
       <DeviceIntegrationSettings />
     </SettingsPageContainer>
   );

@@ -226,7 +226,7 @@ export function isWorkspaceAudioPreviewPath(path: string): boolean {
   return extensionIndex >= 0 && audioMimeTypeFromExtension(path.slice(extensionIndex)) !== null;
 }
 
-export function isWorkspaceOfficePreviewPath(path: string): boolean {
+function isWorkspaceOfficePreviewPath(path: string): boolean {
   return hasPreviewExtension(path, WORKSPACE_OFFICE_PREVIEW_EXTENSIONS);
 }
 

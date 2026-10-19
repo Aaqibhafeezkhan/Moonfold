@@ -65,6 +65,11 @@ export const CLIENT_GUARDED_RPC_SCOPES = {
   [WS_METHODS.memoriesDelete]: AuthSettingsWriteScope,
   [WS_METHODS.memoriesSetEnabled]: AuthSettingsWriteScope,
   [WS_METHODS.memoriesSetThreadOptOut]: AuthOrchestrationOperateScope,
+  // Site rules decide what agents may do on the web.
+  [WS_METHODS.browserSitesSetRule]: AuthSettingsWriteScope,
+  [WS_METHODS.browserSitesRemoveRule]: AuthSettingsWriteScope,
+  [WS_METHODS.browserSitesSetDefaults]: AuthSettingsWriteScope,
+  [WS_METHODS.browserSitesAnswer]: AuthOrchestrationOperateScope,
 } as const;
 export type ClientGuardedRpcTag = keyof typeof CLIENT_GUARDED_RPC_SCOPES;
 

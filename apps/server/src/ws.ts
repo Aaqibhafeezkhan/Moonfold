@@ -216,6 +216,7 @@ import * as ThreadSideQuestions from "./orchestration-v2/ThreadSideQuestions.ts"
 import * as WorktreeMcpService from "./mcp/WorktreeMcpService.ts";
 import * as PluginStore from "./plugins/PluginStore.ts";
 import * as MemoryStore from "./memories/MemoryStore.ts";
+import * as BrowserSitePermissions from "./browser/BrowserSitePermissions.ts";
 import * as ManagedProjectFolders from "./project/ManagedProjectFolders.ts";
 import { projectMutationOperation } from "./project/ProjectMutation.ts";
 import * as ProjectSetupScriptRunner from "./project/ProjectSetupScriptRunner.ts";
@@ -1309,6 +1310,7 @@ const buildWsRpcHandlers = (
     const worktreeTransfers = yield* WorktreeMcpService.WorktreeMcpService;
     const plugins = yield* PluginStore.PluginStore;
     const memories = yield* MemoryStore.MemoryStore;
+    const browserSites = yield* BrowserSitePermissions.BrowserSitePermissions;
     const providerInstallation = yield* makeProviderInstallation();
     const serverSelfUpdate = yield* ServerSelfUpdate.ServerSelfUpdate;
     const config = yield* ServerConfig.ServerConfig;
@@ -2120,6 +2122,12 @@ const buildWsRpcHandlers = (
       [WS_METHODS.memoriesSetEnabled]: (input) => memories.setEnabled(input.enabled),
       [WS_METHODS.memoriesThreadStatus]: (input) => memories.threadStatus(input.threadId),
       [WS_METHODS.memoriesSetThreadOptOut]: (input) => memories.setThreadOptOut(input),
+      [WS_METHODS.browserSitesGetPolicy]: () => browserSites.policy,
+      [WS_METHODS.browserSitesSetRule]: (input) => browserSites.setRule(input),
+      [WS_METHODS.browserSitesRemoveRule]: (input) => browserSites.removeRule(input.site),
+      [WS_METHODS.browserSitesSetDefaults]: (input) => browserSites.setDefaults(input),
+      [WS_METHODS.browserSitesSubscribePending]: () => browserSites.pending,
+      [WS_METHODS.browserSitesAnswer]: (input) => browserSites.answer(input),
       [WS_METHODS.scheduledTasksListRuns]: (input) =>
         Effect.annotateCurrentSpan({ "scheduled_task.id": input.id }).pipe(
           Effect.andThen(scheduledTasks.listRuns(input)),

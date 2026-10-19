@@ -402,6 +402,15 @@ import {
   MemoryThreadStatus,
   MemoryUpsertInput,
 } from "./memories.ts";
+import {
+  BrowserSiteAnswerInput,
+  BrowserSiteDecisions,
+  BrowserSiteError,
+  BrowserSitePendingRequests,
+  BrowserSitePolicy,
+  BrowserSiteRemoveInput,
+  BrowserSiteRuleInput,
+} from "./browserSites.ts";
 import { SecretRequestAnswerInput, SecretRequestError } from "./secretRequest.ts";
 import {
   ProjectCloneActionInput,
@@ -603,6 +612,12 @@ export const WS_METHODS = {
   memoriesSetEnabled: "memories.setEnabled",
   memoriesThreadStatus: "memories.threadStatus",
   memoriesSetThreadOptOut: "memories.setThreadOptOut",
+  browserSitesGetPolicy: "browserSites.getPolicy",
+  browserSitesSetRule: "browserSites.setRule",
+  browserSitesRemoveRule: "browserSites.removeRule",
+  browserSitesSetDefaults: "browserSites.setDefaults",
+  browserSitesSubscribePending: "browserSites.subscribePending",
+  browserSitesAnswer: "browserSites.answer",
   scheduledTasksGetWebhookDelivery: "scheduledTasks.getWebhookDelivery",
 
   // Cloud environment methods
@@ -2061,6 +2076,38 @@ const WsMemoriesThreadStatusRpc = Rpc.make(WS_METHODS.memoriesThreadStatus, {
   success: MemoryThreadStatus,
   error: Schema.Union([MemoryError, EnvironmentAuthorizationError]),
 });
+const WsBrowserSitesGetPolicyRpc = Rpc.make(WS_METHODS.browserSitesGetPolicy, {
+  payload: Schema.Struct({}),
+  success: BrowserSitePolicy,
+  error: Schema.Union([BrowserSiteError, EnvironmentAuthorizationError]),
+});
+const WsBrowserSitesSetRuleRpc = Rpc.make(WS_METHODS.browserSitesSetRule, {
+  payload: BrowserSiteRuleInput,
+  success: BrowserSitePolicy,
+  error: Schema.Union([BrowserSiteError, EnvironmentAuthorizationError]),
+});
+const WsBrowserSitesRemoveRuleRpc = Rpc.make(WS_METHODS.browserSitesRemoveRule, {
+  payload: BrowserSiteRemoveInput,
+  success: BrowserSitePolicy,
+  error: Schema.Union([BrowserSiteError, EnvironmentAuthorizationError]),
+});
+const WsBrowserSitesSetDefaultsRpc = Rpc.make(WS_METHODS.browserSitesSetDefaults, {
+  payload: BrowserSiteDecisions,
+  success: BrowserSitePolicy,
+  error: Schema.Union([BrowserSiteError, EnvironmentAuthorizationError]),
+});
+/** Requests waiting for an answer: a snapshot on subscribe, then the list after each change. */
+const WsBrowserSitesSubscribePendingRpc = Rpc.make(WS_METHODS.browserSitesSubscribePending, {
+  payload: Schema.Struct({}),
+  success: BrowserSitePendingRequests,
+  error: Schema.Union([BrowserSiteError, EnvironmentAuthorizationError]),
+  stream: true,
+});
+const WsBrowserSitesAnswerRpc = Rpc.make(WS_METHODS.browserSitesAnswer, {
+  payload: BrowserSiteAnswerInput,
+  error: Schema.Union([BrowserSiteError, EnvironmentAuthorizationError]),
+});
+
 const WsMemoriesSetThreadOptOutRpc = Rpc.make(WS_METHODS.memoriesSetThreadOptOut, {
   payload: MemorySetThreadOptOutInput,
   success: MemoryThreadStatus,
@@ -2346,6 +2393,12 @@ export const WsRpcGroupPart5 = RpcGroup.make(
   WsMemoriesSetEnabledRpc,
   WsMemoriesThreadStatusRpc,
   WsMemoriesSetThreadOptOutRpc,
+  WsBrowserSitesGetPolicyRpc,
+  WsBrowserSitesSetRuleRpc,
+  WsBrowserSitesRemoveRuleRpc,
+  WsBrowserSitesSetDefaultsRpc,
+  WsBrowserSitesSubscribePendingRpc,
+  WsBrowserSitesAnswerRpc,
 ).middleware(RpcScopeAuthorization);
 
 export const WsRpcGroup = WsRpcGroupPart1.merge(

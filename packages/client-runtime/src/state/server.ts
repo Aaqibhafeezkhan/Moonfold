@@ -1181,6 +1181,15 @@ export function createServerEnvironmentAtoms<R, E>(
       label: "environment-data:server:memories",
       tag: WS_METHODS.memoriesList,
     }),
+    browserSitePolicy: createEnvironmentRpcQueryAtomFamily(runtime, {
+      label: "environment-data:server:browser-sites:policy",
+      tag: WS_METHODS.browserSitesGetPolicy,
+    }),
+    /** Agents waiting for the user to allow or block a site: snapshot, then each change. */
+    browserSitePending: createEnvironmentRpcSubscriptionAtomFamily(runtime, {
+      label: "environment-data:server:browser-sites:pending",
+      tag: WS_METHODS.browserSitesSubscribePending,
+    }),
     scheduledTaskWebhookDelivery: createEnvironmentRpcQueryAtomFamily(runtime, {
       label: "environment-data:server:scheduled-task:webhook-delivery",
       tag: WS_METHODS.scheduledTasksGetWebhookDelivery,
@@ -1408,6 +1417,29 @@ export function createServerEnvironmentAtoms<R, E>(
       tag: WS_METHODS.scheduledTasksDelete,
       scheduler: configScheduler,
       concurrency: configConcurrency,
+    }),
+    setBrowserSiteRule: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:browser-sites:set-rule",
+      tag: WS_METHODS.browserSitesSetRule,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    removeBrowserSiteRule: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:browser-sites:remove-rule",
+      tag: WS_METHODS.browserSitesRemoveRule,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    setBrowserSiteDefaults: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:browser-sites:set-defaults",
+      tag: WS_METHODS.browserSitesSetDefaults,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    // An agent is waiting on this, so it never queues behind settings writes.
+    answerBrowserSiteRequest: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:browser-sites:answer",
+      tag: WS_METHODS.browserSitesAnswer,
     }),
     upsertMemory: createEnvironmentRpcCommand(runtime, {
       label: "environment-data:server:memory:upsert",

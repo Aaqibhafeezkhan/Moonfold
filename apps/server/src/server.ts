@@ -36,6 +36,7 @@ import * as Ws from "./ws.ts";
 import * as WorktreeMcpService from "./mcp/WorktreeMcpService.ts";
 import * as PluginStore from "./plugins/PluginStore.ts";
 import * as MemoryStore from "./memories/MemoryStore.ts";
+import * as BrowserSitePermissions from "./browser/BrowserSitePermissions.ts";
 import * as AgentScopeLive from "./process/agentScope.ts";
 import * as ExternalLauncher from "./process/externalLauncher.ts";
 import * as NodePtyAdapter from "./terminal/NodePtyAdapter.ts";
@@ -605,6 +606,8 @@ const layerRuntimeCoreDependenciesBase = Layer.mergeAll(
   Layer.provideMerge(layerOrchestrationApplication),
   // Turns read memories through the reference; the RPCs and MCP tools use the same store.
   Layer.provideMerge(MemoryStore.layerThreadMemories.pipe(Layer.provideMerge(MemoryStore.layer))),
+  // The browser tools and the RPCs share one instance, so an answer reaches the waiting tool.
+  Layer.provideMerge(BrowserSitePermissions.layer),
   Layer.provideMerge(RuntimeLayer.layerEventInfrastructure),
   Layer.provideMerge(Layer.merge(ProjectStore.layer, ThreadSearch.layer)),
   Layer.provideMerge(layerServerSettings),

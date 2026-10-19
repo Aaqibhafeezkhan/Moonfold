@@ -2,6 +2,7 @@ import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Schema from "effect/Schema";
 import {
+  OrchestratorMcpFailure,
   PROVIDER_SEND_TURN_MAX_FILE_BYTES,
   PREVIEW_RECORDING_STOP_TIMEOUT_MS,
   PreviewAutomationRecordingTransferError,
@@ -18,6 +19,7 @@ import {
   type PreviewAutomationSnapshot,
   type PreviewAutomationStatus,
   type PreviewTabId,
+  type BrowserSiteCapability,
 } from "@moonfold/contracts";
 
 import {
@@ -28,6 +30,7 @@ import {
 } from "../../../attachmentStore.ts";
 import { resolveAttachmentRelativePath } from "../../../attachmentPaths.ts";
 import * as ServerConfig from "../../../config.ts";
+import * as BrowserSitePermissions from "../../../browser/BrowserSitePermissions.ts";
 import * as McpInvocationContext from "../../McpInvocationContext.ts";
 import * as McpToolAccess from "../../McpToolAccess.ts";
 import * as PreviewAutomationBroker from "../../PreviewAutomationBroker.ts";
@@ -115,6 +118,26 @@ const invokeTargeted = <A extends object>(
   );
 };
 
+/**
+ * Asks the user's site rules before an agent opens a page or hands a page files. Rules cover
+ * what the agent asks for; a page it reaches by clicking a link is not checked.
+ */
+const checkSite = (capability: BrowserSiteCapability, url: string | null | undefined) =>
+  Effect.gen(function* () {
+    if (url === null || url === undefined) return;
+    const scope = yield* McpInvocationContext.McpInvocationContext;
+    if (scope.thread === undefined) return;
+    const sites = yield* BrowserSitePermissions.BrowserSitePermissions;
+    yield* sites
+      .check({ threadId: scope.thread.threadId, url, capability })
+      .pipe(
+        Effect.mapError(
+          (denied) =>
+            new OrchestratorMcpFailure({ code: "capability_denied", message: denied.message }),
+        ),
+      );
+  });
+
 const UploadedRecordingArtifact = Schema.Struct({
   ...PreviewAutomationRecordingArtifact.fields,
   uploadedAttachmentId: Schema.optional(Schema.String),
@@ -197,10 +220,16 @@ const handlers = {
     invokeTargeted<PreviewAutomationStatus>("status", input ?? {}),
   ),
   preview_open: McpToolAccess.actsAsCaller((input) =>
-    invokeTargeted<PreviewAutomationStatus>("open", normalizePreviewOpenInput(input)),
+    checkSite("browse", input.url).pipe(
+      Effect.andThen(
+        invokeTargeted<PreviewAutomationStatus>("open", normalizePreviewOpenInput(input)),
+      ),
+    ),
   ),
   preview_navigate: McpToolAccess.actsAsCaller((input) =>
-    invokeTargeted<PreviewAutomationStatus>("navigate", input, input.timeoutMs),
+    checkSite("browse", input.url).pipe(
+      Effect.andThen(invokeTargeted<PreviewAutomationStatus>("navigate", input, input.timeoutMs)),
+    ),
   ),
   preview_resize: McpToolAccess.actsAsCaller((input) =>
     invokeTargeted<PreviewAutomationResizeResult>("resize", input, input.timeoutMs),
@@ -229,7 +258,17 @@ const handlers = {
     invokeTargeted<object>("drag", input, input.timeoutMs),
   ),
   preview_upload: McpToolAccess.actsAsCaller((input) =>
-    invokeTargeted<object>("upload", input, input.timeoutMs),
+    Effect.gen(function* () {
+      // Cancelling a file picker hands the page nothing.
+      if (input.paths.length > 0) {
+        const page = yield* invokeTargeted<PreviewAutomationStatus>(
+          "status",
+          input.tabId === undefined ? {} : { tabId: input.tabId },
+        );
+        yield* checkSite("upload", page.url);
+      }
+      return yield* invokeTargeted<object>("upload", input, input.timeoutMs);
+    }),
   ),
   preview_press: McpToolAccess.actsAsCaller((input) => invokeTargeted<object>("press", input)),
   preview_scroll: McpToolAccess.actsAsCaller((input) => invokeTargeted<object>("scroll", input)),

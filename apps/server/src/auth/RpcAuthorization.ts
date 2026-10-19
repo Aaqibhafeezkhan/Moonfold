@@ -68,6 +68,14 @@ export const RPC_REQUIRED_SCOPES = {
   [WS_METHODS.memoriesSetEnabled]: AuthSettingsWriteScope,
   [WS_METHODS.memoriesThreadStatus]: AuthOrchestrationReadScope,
   [WS_METHODS.memoriesSetThreadOptOut]: AuthOrchestrationOperateScope,
+  // Site rules decide what agents may do on the web, so changing them is a settings change;
+  // answering one agent's request is operating that thread.
+  [WS_METHODS.browserSitesGetPolicy]: AuthOrchestrationReadScope,
+  [WS_METHODS.browserSitesSetRule]: AuthSettingsWriteScope,
+  [WS_METHODS.browserSitesRemoveRule]: AuthSettingsWriteScope,
+  [WS_METHODS.browserSitesSetDefaults]: AuthSettingsWriteScope,
+  [WS_METHODS.browserSitesSubscribePending]: AuthOrchestrationReadScope,
+  [WS_METHODS.browserSitesAnswer]: AuthOrchestrationOperateScope,
   [WS_METHODS.serverProbe]: AuthOrchestrationReadScope,
   [WS_METHODS.serverGetConfig]: AuthOrchestrationReadScope,
   [WS_METHODS.serverRefreshProviders]: AuthOrchestrationReadScope,

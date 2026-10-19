@@ -35,6 +35,7 @@ import * as McpToolAccessTestkit from "./McpToolAccess.testkit.ts";
 import * as McpInvocationContext from "./McpInvocationContext.ts";
 import * as McpSessionRegistry from "./McpSessionRegistry.ts";
 import * as PreviewAutomationBroker from "./PreviewAutomationBroker.ts";
+import * as BrowserSitePermissions from "../browser/BrowserSitePermissions.ts";
 
 const environmentId = EnvironmentId.make("environment-mcp-test");
 const threadId = ThreadId.make("thread-mcp-test");
@@ -69,6 +70,10 @@ const layerTest = McpHttpServer.layerPreviewToolkit.pipe(
   Layer.provideMerge(McpServer.McpServer.layer),
   Layer.provideMerge(McpToolAccessTestkit.liveThreadsLayer),
   Layer.provideMerge(PreviewAutomationBroker.layer),
+  // Site rules have their own tests; here every site is allowed.
+  Layer.provideMerge(
+    Layer.mock(BrowserSitePermissions.BrowserSitePermissions)({ check: () => Effect.void }),
+  ),
   Layer.provideMerge(
     ServerConfig.layerTest(process.cwd(), { prefix: "moonfold-mcp-http-server-test-" }),
   ),
