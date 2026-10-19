@@ -24,6 +24,7 @@ import {
   isWorkspacePreviewEntryPath,
   WORKSPACE_BROWSER_PREVIEW_EXTENSIONS,
   WORKSPACE_IMAGE_PREVIEW_EXTENSIONS,
+  WORKSPACE_OFFICE_PREVIEW_EXTENSIONS,
 } from "@moonfold/shared/filePreview";
 import {
   IMAGE_DIMENSIONS_HEADER_BYTES,
@@ -88,6 +89,7 @@ const inlinePreviewMimeTypeForExtension = (extension: string) =>
 const PREVIEW_ASSET_EXTENSIONS = new Set([
   ...WORKSPACE_BROWSER_PREVIEW_EXTENSIONS,
   ...WORKSPACE_IMAGE_PREVIEW_EXTENSIONS,
+  ...WORKSPACE_OFFICE_PREVIEW_EXTENSIONS,
   ".css",
   ".js",
   ".mjs",
