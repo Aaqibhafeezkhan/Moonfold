@@ -34,6 +34,7 @@ import { guardHttpResponseWriteErrors } from "./httpResponseErrorGuard.ts";
 import { fixPath } from "./os-jank.ts";
 import * as Ws from "./ws.ts";
 import * as WorktreeMcpService from "./mcp/WorktreeMcpService.ts";
+import * as PluginStore from "./plugins/PluginStore.ts";
 import * as AgentScopeLive from "./process/agentScope.ts";
 import * as ExternalLauncher from "./process/externalLauncher.ts";
 import * as NodePtyAdapter from "./terminal/NodePtyAdapter.ts";
@@ -647,6 +648,11 @@ const layerRuntimeCoreDependencies = layerRuntimeCoreDependenciesBase.pipe(
       ResetCreditCoordinator.layer,
       ProviderLatestVersions.layer,
       McpProviderSessions.layer,
+      // Provider sessions read the user's enabled plugins from the same store the RPCs manage.
+      PluginStore.layerProviderPlugins.pipe(
+        Layer.provideMerge(PluginStore.layer),
+        Layer.provide(GitVcsDriver.layer),
+      ),
     ),
   ),
   // `OpenCodeDriver.create()` yields `OpenCodeRuntime`; previously the old

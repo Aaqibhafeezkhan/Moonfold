@@ -383,6 +383,14 @@ import {
   ScheduledTaskUpsertInput,
   ScheduledTaskMutationResult,
 } from "./scheduledTask.ts";
+import {
+  PluginError,
+  PluginIdInput,
+  PluginInstallInput,
+  PluginListResult,
+  PluginMutationResult,
+  PluginSetEnabledInput,
+} from "./plugins.ts";
 import { SecretRequestAnswerInput, SecretRequestError } from "./secretRequest.ts";
 import {
   ProjectCloneActionInput,
@@ -573,6 +581,11 @@ export const WS_METHODS = {
   secretsAnswerRequest: "secrets.answerRequest",
   scheduledTasksListWebhookDeliveries: "scheduledTasks.listWebhookDeliveries",
   scheduledTasksListRuns: "scheduledTasks.listRuns",
+  pluginsList: "plugins.list",
+  pluginsInstall: "plugins.install",
+  pluginsUpdate: "plugins.update",
+  pluginsSetEnabled: "plugins.setEnabled",
+  pluginsRemove: "plugins.remove",
   scheduledTasksGetWebhookDelivery: "scheduledTasks.getWebhookDelivery",
 
   // Cloud environment methods
@@ -1983,6 +1996,31 @@ const WsScheduledTasksListRunsRpc = Rpc.make(WS_METHODS.scheduledTasksListRuns, 
   error: Schema.Union([ScheduledTaskError, EnvironmentAuthorizationError]),
 });
 
+const WsPluginsListRpc = Rpc.make(WS_METHODS.pluginsList, {
+  payload: Schema.Struct({}),
+  success: PluginListResult,
+  error: Schema.Union([PluginError, EnvironmentAuthorizationError]),
+});
+const WsPluginsInstallRpc = Rpc.make(WS_METHODS.pluginsInstall, {
+  payload: PluginInstallInput,
+  success: PluginMutationResult,
+  error: Schema.Union([PluginError, EnvironmentAuthorizationError]),
+});
+const WsPluginsUpdateRpc = Rpc.make(WS_METHODS.pluginsUpdate, {
+  payload: PluginIdInput,
+  success: PluginMutationResult,
+  error: Schema.Union([PluginError, EnvironmentAuthorizationError]),
+});
+const WsPluginsSetEnabledRpc = Rpc.make(WS_METHODS.pluginsSetEnabled, {
+  payload: PluginSetEnabledInput,
+  success: PluginMutationResult,
+  error: Schema.Union([PluginError, EnvironmentAuthorizationError]),
+});
+const WsPluginsRemoveRpc = Rpc.make(WS_METHODS.pluginsRemove, {
+  payload: PluginIdInput,
+  error: Schema.Union([PluginError, EnvironmentAuthorizationError]),
+});
+
 const WsScheduledTasksGetWebhookDeliveryRpc = Rpc.make(
   WS_METHODS.scheduledTasksGetWebhookDelivery,
   {
@@ -2195,10 +2233,6 @@ export const WsRpcGroupPart3 = RpcGroup.make(
 ).middleware(RpcScopeAuthorization);
 
 export const WsRpcGroupPart4 = RpcGroup.make(
-  WsThreadsAskSideQuestionRpc,
-  WsThreadsMoveToWorktreeRpc,
-  WsThreadsReturnToProjectRpc,
-  WsScheduledTasksListRunsRpc,
   WsTerminalObserveRpc,
   WsTerminalWriteRpc,
   WsTerminalResizeRpc,
@@ -2250,4 +2284,21 @@ export const WsRpcGroupPart4 = RpcGroup.make(
   WsOrchestrationV2SubscribeThreadRpc,
 ).middleware(RpcScopeAuthorization);
 
-export const WsRpcGroup = WsRpcGroupPart1.merge(WsRpcGroupPart2, WsRpcGroupPart3, WsRpcGroupPart4);
+export const WsRpcGroupPart5 = RpcGroup.make(
+  WsThreadsAskSideQuestionRpc,
+  WsThreadsMoveToWorktreeRpc,
+  WsThreadsReturnToProjectRpc,
+  WsScheduledTasksListRunsRpc,
+  WsPluginsListRpc,
+  WsPluginsInstallRpc,
+  WsPluginsUpdateRpc,
+  WsPluginsSetEnabledRpc,
+  WsPluginsRemoveRpc,
+).middleware(RpcScopeAuthorization);
+
+export const WsRpcGroup = WsRpcGroupPart1.merge(
+  WsRpcGroupPart2,
+  WsRpcGroupPart3,
+  WsRpcGroupPart4,
+  WsRpcGroupPart5,
+);

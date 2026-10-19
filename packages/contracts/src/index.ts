@@ -21,6 +21,7 @@ export * from "./providerNativeConfig.ts";
 export * from "./agentInstructions.ts";
 export * from "./sideQuestion.ts";
 export * from "./threadWorkspace.ts";
+export * from "./plugins.ts";
 export * from "./providerRuntime.ts";
 export * from "./providerUsageLimits.ts";
 export * from "./usageLimitSourceId.ts";

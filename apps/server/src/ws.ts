@@ -105,6 +105,7 @@ import {
   WsRpcGroupPart2,
   WsRpcGroupPart3,
   WsRpcGroupPart4,
+  WsRpcGroupPart5,
 } from "@moonfold/contracts";
 import { resolveServerBackgroundActivitySettings } from "@moonfold/shared/backgroundActivitySettings";
 import {
@@ -213,6 +214,7 @@ import * as ProviderNativeConfigService from "./provider/ProviderNativeConfigSer
 import * as AgentInstructions from "./project/AgentInstructions.ts";
 import * as ThreadSideQuestions from "./orchestration-v2/ThreadSideQuestions.ts";
 import * as WorktreeMcpService from "./mcp/WorktreeMcpService.ts";
+import * as PluginStore from "./plugins/PluginStore.ts";
 import * as ManagedProjectFolders from "./project/ManagedProjectFolders.ts";
 import { projectMutationOperation } from "./project/ProjectMutation.ts";
 import * as ProjectSetupScriptRunner from "./project/ProjectSetupScriptRunner.ts";
@@ -1304,6 +1306,7 @@ const buildWsRpcHandlers = (
     const agentInstructions = yield* AgentInstructions.AgentInstructions;
     const threadSideQuestions = yield* ThreadSideQuestions.ThreadSideQuestions;
     const worktreeTransfers = yield* WorktreeMcpService.WorktreeMcpService;
+    const plugins = yield* PluginStore.PluginStore;
     const providerInstallation = yield* makeProviderInstallation();
     const serverSelfUpdate = yield* ServerSelfUpdate.ServerSelfUpdate;
     const config = yield* ServerConfig.ServerConfig;
@@ -2100,6 +2103,14 @@ const buildWsRpcHandlers = (
         Effect.annotateCurrentSpan({ "orchestration_v2.thread_id": input.threadId }).pipe(
           Effect.andThen(secretRequests.answer(input)),
         ),
+      [WS_METHODS.pluginsList]: () => plugins.list,
+      [WS_METHODS.pluginsInstall]: (input) =>
+        plugins.install(input.source).pipe(Effect.map((plugin) => ({ plugin }))),
+      [WS_METHODS.pluginsUpdate]: (input) =>
+        plugins.update(input.id).pipe(Effect.map((plugin) => ({ plugin }))),
+      [WS_METHODS.pluginsSetEnabled]: (input) =>
+        plugins.setEnabled(input.id, input.enabled).pipe(Effect.map((plugin) => ({ plugin }))),
+      [WS_METHODS.pluginsRemove]: (input) => plugins.remove(input.id),
       [WS_METHODS.scheduledTasksListRuns]: (input) =>
         Effect.annotateCurrentSpan({ "scheduled_task.id": input.id }).pipe(
           Effect.andThen(scheduledTasks.listRuns(input)),
@@ -3186,6 +3197,7 @@ const ServerWsRpcPart1 = WsRpcGroupPart1.middleware(RpcInstrumentation);
 const ServerWsRpcPart2 = WsRpcGroupPart2.middleware(RpcInstrumentation);
 const ServerWsRpcPart3 = WsRpcGroupPart3.middleware(RpcInstrumentation);
 const ServerWsRpcPart4 = WsRpcGroupPart4.middleware(RpcInstrumentation);
+const ServerWsRpcPart5 = WsRpcGroupPart5.middleware(RpcInstrumentation);
 
 const layerWsRpc = (...args: Parameters<typeof buildWsRpcHandlers>) =>
   Layer.unwrap(
@@ -3196,6 +3208,7 @@ const layerWsRpc = (...args: Parameters<typeof buildWsRpcHandlers>) =>
           ServerWsRpcPart2.toLayer(pickPartHandlers(ServerWsRpcPart2, handlers)),
           ServerWsRpcPart3.toLayer(pickPartHandlers(ServerWsRpcPart3, handlers)),
           ServerWsRpcPart4.toLayer(pickPartHandlers(ServerWsRpcPart4, handlers)),
+          ServerWsRpcPart5.toLayer(pickPartHandlers(ServerWsRpcPart5, handlers)),
         ),
       ),
     ),

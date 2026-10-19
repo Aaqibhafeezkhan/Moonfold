@@ -69,6 +69,12 @@ export const RPC_REQUIRED_SCOPES = {
   [WS_METHODS.providerConsumeResetCredit]: AuthProvidersManageScope,
   // A provider's own config names servers, commands and file paths on this machine.
   [WS_METHODS.providerMcpServersList]: AuthProvidersManageScope,
+  // Plugins bring skills and MCP servers, which run programs on this machine.
+  [WS_METHODS.pluginsList]: AuthProvidersManageScope,
+  [WS_METHODS.pluginsInstall]: AuthProvidersManageScope,
+  [WS_METHODS.pluginsUpdate]: AuthProvidersManageScope,
+  [WS_METHODS.pluginsSetEnabled]: AuthProvidersManageScope,
+  [WS_METHODS.pluginsRemove]: AuthProvidersManageScope,
   [WS_METHODS.providerMcpServerLogin]: AuthProvidersManageScope,
   [WS_METHODS.providerMcpServersReload]: AuthProvidersManageScope,
   [WS_METHODS.providerSkillsList]: AuthProvidersManageScope,
