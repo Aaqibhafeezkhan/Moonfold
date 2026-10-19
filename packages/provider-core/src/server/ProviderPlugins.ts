@@ -6,7 +6,7 @@
  */
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
-import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
 
 export interface ProviderPluginMcpServer {
   /** Unique across plugins, so two plugins' servers never collide. */
@@ -43,8 +43,17 @@ export class ProviderPlugins extends Context.Service<
   }
 >()("@moonfold/provider-core/server/ProviderPlugins") {}
 
-/** No plugins: for tests and hosts without a plugin store. */
-export const layerEmpty = Layer.succeed(
+/**
+ * The enabled-plugins reader from the current context. Adapters capture it when they are built;
+ * hosts without a plugin store (tests, one-off CLI runs) get a reader that returns no plugins.
+ */
+export const capture: Effect.Effect<Effect.Effect<ProviderPluginBundle>> = Effect.serviceOption(
   ProviderPlugins,
-  ProviderPlugins.of({ read: Effect.succeed(EMPTY_PROVIDER_PLUGIN_BUNDLE) }),
+).pipe(
+  Effect.map(
+    Option.match({
+      onNone: () => Effect.succeed(EMPTY_PROVIDER_PLUGIN_BUNDLE),
+      onSome: (service) => service.read,
+    }),
+  ),
 );

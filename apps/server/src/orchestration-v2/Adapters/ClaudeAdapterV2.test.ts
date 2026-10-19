@@ -554,6 +554,55 @@ describe("ClaudeAdapterV2 MCP query overrides", () => {
     browserToolsAvailable: true,
   });
 
+  it("passes enabled plugins as local plugin folders and MCP servers", () => {
+    assert.deepEqual(
+      ClaudeAdapterV2.claudePluginQueryOverrides({
+        skillRoots: ["/home/user/.moonfold/plugins/review/view/skills"],
+        claudePluginDirs: ["/home/user/.moonfold/plugins/review/view"],
+        mcpServers: [
+          {
+            name: "review-lint",
+            command: "node",
+            args: ["/home/user/.moonfold/plugins/review/source/server.js"],
+            cwd: "/home/user/.moonfold/plugins/review/source",
+            url: null,
+            env: { LEVEL: "strict" },
+            envVars: ["GITHUB_TOKEN"],
+          },
+          {
+            name: "review-docs",
+            command: null,
+            args: [],
+            cwd: null,
+            url: "https://docs.example.com/mcp",
+            env: {},
+            envVars: [],
+          },
+        ],
+      }),
+      {
+        plugins: [{ type: "local", path: "/home/user/.moonfold/plugins/review/view" }],
+        mcpServers: {
+          "review-lint": {
+            type: "stdio",
+            command: "node",
+            args: ["/home/user/.moonfold/plugins/review/source/server.js"],
+            env: { LEVEL: "strict" },
+          },
+          "review-docs": { type: "http", url: "https://docs.example.com/mcp" },
+        },
+      },
+    );
+    assert.deepEqual(
+      ClaudeAdapterV2.claudePluginQueryOverrides({
+        skillRoots: [],
+        claudePluginDirs: [],
+        mcpServers: [],
+      }),
+      {},
+    );
+  });
+
   it("leaves an absent allowlist absent when no MCP session exists", () => {
     const overrides = ClaudeAdapterV2.claudeMcpQueryOverrides({
       mcpSession: undefined,

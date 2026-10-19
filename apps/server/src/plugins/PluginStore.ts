@@ -23,6 +23,7 @@ import {
   type PluginSource,
 } from "@moonfold/contracts";
 import {
+  EMPTY_PROVIDER_PLUGIN_BUNDLE,
   type ProviderPluginBundle,
   ProviderPlugins,
 } from "@moonfold/provider-core/server/ProviderPlugins";
@@ -540,7 +541,7 @@ const make = Effect.gen(function* () {
     }),
     Effect.catch((error) =>
       Effect.logWarning("Could not read enabled plugins", { error }).pipe(
-        Effect.as({ skillRoots: [], claudePluginDirs: [], mcpServers: [] }),
+        Effect.as(EMPTY_PROVIDER_PLUGIN_BUNDLE),
       ),
     ),
   );

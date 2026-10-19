@@ -685,6 +685,54 @@ describe("CodexAdapterV2 process spawning", () => {
     );
   });
 
+  it("adds enabled plugins' MCP servers beside Moonfold's own", () => {
+    const params = CodexAdapterV2.codexThreadRuntimeParams({
+      mcpSession: undefined,
+      plugins: {
+        skillRoots: ["/home/user/.moonfold/plugins/review/view/skills"],
+        claudePluginDirs: ["/home/user/.moonfold/plugins/review/view"],
+        mcpServers: [
+          {
+            name: "review-lint",
+            command: "node",
+            args: ["/home/user/.moonfold/plugins/review/source/server.js"],
+            cwd: "/home/user/.moonfold/plugins/review/source",
+            url: null,
+            env: { LEVEL: "strict" },
+            envVars: ["GITHUB_TOKEN"],
+          },
+          {
+            name: "review-docs",
+            command: null,
+            args: [],
+            cwd: null,
+            url: "https://docs.example.com/mcp",
+            env: {},
+            envVars: [],
+          },
+        ],
+      },
+    });
+    assert.deepEqual(params.config.mcp_servers, {
+      "review-lint": {
+        command: "node",
+        args: ["/home/user/.moonfold/plugins/review/source/server.js"],
+        cwd: "/home/user/.moonfold/plugins/review/source",
+        env: { LEVEL: "strict" },
+        env_vars: ["GITHUB_TOKEN"],
+      },
+      "review-docs": { url: "https://docs.example.com/mcp" },
+    });
+    assert.equal(
+      "mcp_servers" in
+        CodexAdapterV2.codexThreadRuntimeParams({
+          mcpSession: undefined,
+          plugins: { skillRoots: [], claudePluginDirs: [], mcpServers: [] },
+        }).config,
+      false,
+    );
+  });
+
   it.effect("resolves Windows command shims through the shared spawn policy", () =>
     Effect.gen(function* () {
       const command = yield* CodexAdapterV2.makeCodexAppServerSpawnCommand({
