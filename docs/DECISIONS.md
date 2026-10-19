@@ -198,3 +198,58 @@ the app's index route, which already starts a draft in the most recent project. 
 renderer or route is needed, it works with every provider, and the window behaves like any
 pop-out (sidebar collapsed, keep-on-top toggle). The hotkey is released while a new one is being
 recorded, and a hotkey held by another app is reported in Settings.
+
+## D-25 Schedules are our own cron, in the task's time zone
+
+One-off and cron schedules use a small cron parser of our own (five fields, presets in the UI)
+rather than an RRULE dependency. Times are read in the task's IANA time zone so a task keeps its
+local time wherever the server runs. A one-off whose time passed while Moonfold was down is marked
+missed instead of running late. A run's status follows the agent's turn, not the hand-off of the
+prompt.
+
+## D-26 Plugins are folders that start disabled
+
+A plugin is a git repository or a copied folder of `SKILL.md` skills and optional MCP servers; the
+Codex and Claude Code plugin layouts load as they are. Nothing reaches an agent until the user
+turns the plugin on, and turning on one with MCP servers lists the programs it will run. An update
+that changes those servers turns the plugin off again. Codex receives skills through
+`skills/extraRoots/set` and servers in the thread's `mcp_servers` config; Claude through the SDK's
+local plugins option. Other providers do not load plugins yet. A plugin's servers are not
+pre-approved; the thread's permission mode decides each call.
+
+## D-27 Memories: one store, two trust levels
+
+Memories live in the environment's database, for every project or one. Each Codex and Claude turn
+receives them unless memories are off, as a whole or for the thread. What the user wrote is
+delivered as the user's own instruction (Codex developer context, Claude system prompt); what an
+agent saved through `remember` is delivered as background (Codex untrusted context, its own
+labelled block for Claude), so a misled agent cannot plant an instruction for later turns. Editing
+an agent's memory makes it the user's. Codex's own memory feature is not overridden: when a user
+has it on, Codex may keep things there, and the guide says how to ask for Moonfold's.
+
+## D-28 Office previews are read in the browser
+
+.docx renders through mammoth (BSD-2-Clause, loaded on first use) and DOMPurify, without scripts,
+styles or remote images. .xlsx is read by a reader of our own on JSZip and the browser's XML
+parser, avoiding the npm SheetJS build with known advisories. The server only serves the bytes,
+as types a browser downloads rather than runs.
+
+## D-29 Agent browsing rules sit at the browser tools
+
+Rules apply where agents ask the browser to act: `preview_open` and `preview_navigate` check the
+target, `preview_upload` the page the files would go to. A page reached by clicking a link is not
+checked, and downloads are not covered yet; the guide says to block sites outright rather than
+rely on asking. Local servers are always allowed. Asks wait up to five minutes and are answered
+from any connected client. Annotations on streamed (non-desktop) tabs are deferred: the stream
+carries pixels only, and drawing on it needs its own protocol work.
+
+## D-30 Computer use is Windows-first, through our own helper
+
+A PowerShell helper uses UI Automation, SendInput and window capture, all built into Windows, so
+nothing extra ships. It runs only while computer use is on. Apps are approved per thread or
+always; Moonfold's own windows (by process or a title naming Moonfold) and the Windows credential
+and consent screens are never reachable, and Windows keeps elevated apps out of reach. Clicks are
+refused when another window covers the point, and password fields are detected by UI Automation
+and by the edit control's password style. The log never stores typed text. macOS and Linux are
+documented but not built: they cannot be verified on this machine. A provider's own computer use
+(some Codex installs carry one) runs outside these controls; the guide says so.
