@@ -6,6 +6,7 @@ import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import * as HostProcess from "@moonfold/shared/HostProcess";
 import { assert, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -63,7 +64,7 @@ const center = (element: Element) => {
   return { x: x + Math.round(width / 2), y: y + Math.round(height / 2) };
 };
 
-it.effect.skipIf(NodeOS.platform() !== "win32")(
+it.effect.skipIf(HostProcess.Platform.defaultValue() !== "win32")(
   "reads and operates a window it owns, and never returns a password",
   () =>
     Effect.gen(function* () {
