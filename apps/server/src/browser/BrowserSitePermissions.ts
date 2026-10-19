@@ -33,6 +33,7 @@ import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
 import * as SubscriptionRef from "effect/SubscriptionRef";
+import { normalizePreviewUrl } from "@moonfold/shared/preview";
 
 /** Browsing stays as it was before rules existed; handing a site local files is asked about. */
 const DEFAULT_SITE_DECISIONS: BrowserSiteDecisions = { browse: "allow", upload: "ask" };
@@ -53,21 +54,34 @@ const isDecision = (value: string): value is BrowserSiteDecision =>
 
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]", "0.0.0.0"]);
 
+/** Pages that are not on the web: a blank tab, an error page, inline or local content. */
+const NON_WEB_SCHEME =
+  /^(about|blob|chrome|chrome-error|data|devtools|file|javascript|view-source):/i;
+
+export type SiteOfUrl =
+  | { readonly kind: "site"; readonly site: string }
+  /** Not on the web, or this machine's own servers: rules do not apply. */
+  | { readonly kind: "exempt" }
+  /** Not an address a browser would open: refused rather than guessed at. */
+  | { readonly kind: "invalid" };
+
 /**
- * The site a URL belongs to, or null when rules do not apply to it: pages that are not on the
- * web (about:, data:, file:) and this machine's own servers.
+ * The site an address belongs to, read the way the browser will read it: an address without a
+ * scheme gets one, so `example.com` and `example.com:443` are both the site `example.com`.
  */
-export function siteOfUrl(url: string): string | null {
-  let parsed: URL;
+export function siteOfUrl(url: string): SiteOfUrl {
+  const trimmed = url.trim();
+  if (NON_WEB_SCHEME.test(trimmed)) return { kind: "exempt" };
+  let normalized: string;
   try {
-    parsed = new URL(url);
+    normalized = normalizePreviewUrl(trimmed);
   } catch {
-    return null;
+    return { kind: "invalid" };
   }
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
-  const host = parsed.hostname.toLowerCase().replace(/\.$/, "");
-  if (LOOPBACK_HOSTS.has(host) || host.endsWith(".localhost")) return null;
-  return host;
+  const host = new URL(normalized).hostname.toLowerCase().replace(/\.$/, "");
+  if (host.length === 0) return { kind: "invalid" };
+  if (LOOPBACK_HOSTS.has(host) || host.endsWith(".localhost")) return { kind: "exempt" };
+  return { kind: "site", site: host };
 }
 
 /** The rule for a host: its own, or the closest parent domain's. */
@@ -256,8 +270,17 @@ const make = Effect.gen(function* () {
 
   const check: BrowserSitePermissions["Service"]["check"] = (input) =>
     Effect.gen(function* () {
-      const site = siteOfUrl(input.url);
-      if (site === null || !isSiteHost(site)) return;
+      const target = siteOfUrl(input.url);
+      if (target.kind === "exempt") return;
+      if (target.kind === "invalid") {
+        return yield* new BrowserSiteDenied({
+          message: `Moonfold cannot tell which site "${input.url.slice(0, 200)}" is, so it was not opened. Use a full https:// address.`,
+        });
+      }
+      const site = target.site;
+      // Hosts a rule cannot name (IP literals, underscores) follow the defaults, and an "always"
+      // answer for them applies once.
+      const ruleable = isSiteHost(site);
       const policy = yield* readPolicy.pipe(
         // A rule store that cannot be read must not open every site: treat it as asking.
         Effect.catch(() =>
@@ -290,10 +313,10 @@ const make = Effect.gen(function* () {
           yield* Ref.update(threadAllows, (current) => new Set([...current, key]));
           return;
         case "always_allow":
-          yield* rememberDecision(site, input.capability, "allow");
+          if (ruleable) yield* rememberDecision(site, input.capability, "allow");
           return;
         case "always_block":
-          yield* rememberDecision(site, input.capability, "block");
+          if (ruleable) yield* rememberDecision(site, input.capability, "block");
           return yield* new BrowserSiteDenied({
             message: `The user blocked agents from ${verb} ${site}. Do not retry.`,
           });

@@ -26,16 +26,23 @@ const nextRequest = (sites: BrowserSitePermissions.BrowserSitePermissions["Servi
   );
 
 describe("siteOfUrl", () => {
-  it("names web sites and leaves out local servers and non-web pages", () => {
-    assert.strictEqual(
-      BrowserSitePermissions.siteOfUrl("https://Docs.Example.com/a?b"),
-      "docs.example.com",
-    );
-    assert.strictEqual(BrowserSitePermissions.siteOfUrl("http://localhost:5173/"), null);
-    assert.strictEqual(BrowserSitePermissions.siteOfUrl("http://app.localhost/"), null);
-    assert.strictEqual(BrowserSitePermissions.siteOfUrl("http://127.0.0.1:8080"), null);
-    assert.strictEqual(BrowserSitePermissions.siteOfUrl("about:blank"), null);
-    assert.strictEqual(BrowserSitePermissions.siteOfUrl("not a url"), null);
+  it("reads an address the way the browser will, with or without a scheme", () => {
+    const site = (url: string) => BrowserSitePermissions.siteOfUrl(url);
+    assert.deepStrictEqual(site("https://Docs.Example.com/a?b"), {
+      kind: "site",
+      site: "docs.example.com",
+    });
+    assert.deepStrictEqual(site("blocked.com"), { kind: "site", site: "blocked.com" });
+    assert.deepStrictEqual(site("blocked.com:443/x"), { kind: "site", site: "blocked.com" });
+    assert.deepStrictEqual(site("http://[2606:4700::1]/"), {
+      kind: "site",
+      site: "[2606:4700::1]",
+    });
+    assert.deepStrictEqual(site("http://localhost:5173/"), { kind: "exempt" });
+    assert.deepStrictEqual(site("http://app.localhost/"), { kind: "exempt" });
+    assert.deepStrictEqual(site("http://127.0.0.1:8080"), { kind: "exempt" });
+    assert.deepStrictEqual(site("about:blank"), { kind: "exempt" });
+    assert.deepStrictEqual(site("not a url"), { kind: "invalid" });
   });
 
   it("matches a rule for a parent domain, preferring the closest", () => {
@@ -61,6 +68,13 @@ it.effect("allows browsing by default and blocks a site with a block rule", () =
     // Local dev servers are never blocked.
     yield* sites.check({ threadId: thread, url: "http://localhost:3000/", capability: "browse" });
 
+    // An address without a scheme is the same site.
+    for (const url of ["shop.example.com", "shop.example.com:443/cart"]) {
+      const bare = yield* sites
+        .check({ threadId: thread, url, capability: "browse" })
+        .pipe(Effect.flip);
+      assert.include(bare.message, "blocks agents from opening shop.example.com");
+    }
     yield* sites.removeRule("example.com");
     yield* sites.check({
       threadId: thread,
@@ -133,5 +147,22 @@ it.effect("gives up when nobody answers, and the request stops waiting", () =>
     assert.include(denied.message, "did not answer");
     const late = yield* sites.answer({ id: request.id, answer: "allow_once" }).pipe(Effect.flip);
     assert.include(late.message, "no longer waiting");
+  }).pipe(Effect.provide(layer)),
+);
+
+it.effect("hosts no rule can name follow the defaults instead of slipping through", () =>
+  Effect.gen(function* () {
+    const sites = yield* BrowserSitePermissions.BrowserSitePermissions;
+    yield* sites.setDefaults({ browse: "block", upload: "block" });
+    for (const url of ["http://[2606:4700::1]/", "https://a_b.example.com/"]) {
+      const denied = yield* sites
+        .check({ threadId: thread, url, capability: "browse" })
+        .pipe(Effect.flip);
+      assert.include(denied.message, "blocks agents from opening");
+    }
+    const invalid = yield* sites
+      .check({ threadId: thread, url: "not a url", capability: "browse" })
+      .pipe(Effect.flip);
+    assert.include(invalid.message, "cannot tell which site");
   }).pipe(Effect.provide(layer)),
 );

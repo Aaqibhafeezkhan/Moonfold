@@ -25,6 +25,8 @@ the agent waits up to five minutes for your answer:
 - **Always allow** and **Always block** save a rule for the site.
 - **Deny**, or closing the question, refuses this one action.
 
-Rules apply to what an agent asks the browser to do. A page it reaches by clicking a link on
-another page is not checked, so block a site you never want agents on rather than relying on
+Rules also follow the agent: before each action in a tab, and again after a click, key press or
+script that may have moved the tab, Moonfold checks the page the tab is on. An agent that lands on
+a blocked site through a redirect or a link can't keep working there. The action that carried it
+there has already happened, so block a site you never want agents on rather than relying on
 asking.

@@ -55,7 +55,8 @@ export type BrowserSiteRemoveInput = typeof BrowserSiteRemoveInput.Type;
 export const BrowserSitePermissionRequest = Schema.Struct({
   id: TrimmedNonEmptyString,
   threadId: ThreadId,
-  site: BrowserSiteHost,
+  /** The host as the browser reads it; IP literals included. */
+  site: TrimmedNonEmptyString,
   capability: BrowserSiteCapability,
   /** The page the agent wants to open, or the page it wants to upload files to. */
   url: Schema.String,
