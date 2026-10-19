@@ -7,8 +7,9 @@ keeps its own memories on its own machine.
 ## Add a memory
 
 Choose **Add memory**, write it in a sentence or two, and pick where it applies: all projects, or
-one project. You can also tell an agent "remember that…" in a thread; it saves the memory itself,
-and Settings shows it as **Saved by an agent** with a link to the thread it came from.
+one project. You can also tell an agent "remember that…" in a thread; it saves the memory itself
+for that thread's project, and Settings shows it as **Saved by an agent** with a link to the thread
+it came from. To make it apply everywhere, edit it there.
 
 What you write is treated as your own instruction. A memory an agent saved is passed on as
 background information instead, so an agent misled by something it read cannot turn that into an

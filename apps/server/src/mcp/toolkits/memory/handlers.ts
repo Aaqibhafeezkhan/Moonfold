@@ -21,7 +21,8 @@ export const layer = McpToolAccess.toLayer(MemoryToolkit, {
       const memory = yield* store
         .remember({
           text: input.text,
-          projectId: input.scope === "all_projects" ? null : caller.projectId,
+          // Only the user widens a memory to every project; an agent's stays where it was saved.
+          projectId: caller.projectId,
           threadId: caller.id,
         })
         .pipe(

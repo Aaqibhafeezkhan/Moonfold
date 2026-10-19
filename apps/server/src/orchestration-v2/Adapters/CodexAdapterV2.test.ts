@@ -507,7 +507,7 @@ describe("CodexAdapterV2 runtime policy", () => {
       assert.equal(params.additionalContext?.["moonfold_memory_notes"]?.kind, "untrusted");
       assert.include(
         params.additionalContext?.["moonfold_memory_notes"]?.value,
-        "- The user's name is Sam.",
+        '["The user\'s name is Sam."]',
       );
     }),
   );
