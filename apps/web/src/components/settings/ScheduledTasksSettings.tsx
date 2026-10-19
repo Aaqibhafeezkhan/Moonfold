@@ -29,6 +29,10 @@ import type {
 } from "@moonfold/contracts";
 import { DEFAULT_WEBHOOK_PROMPT } from "@moonfold/client-runtime/scheduled-task-webhook";
 import {
+  dedupeProviderSkillsByName,
+  isProviderSkillUserInvocable,
+} from "@moonfold/client-runtime/providerSkills";
+import {
   MAX_WEBHOOK_DELIVERY_AGE_MINUTES,
   MIN_SCHEDULED_TASK_INTERVAL_MS,
   ProviderInstanceId,
@@ -57,7 +61,7 @@ import {
   useEnvironmentHttpBaseUrl,
   type EnvironmentPresentation,
 } from "../../state/environments";
-import { useProjects } from "../../state/entities";
+import { useProjects, useThreadShells } from "../../state/entities";
 import { useEnvironmentQuery } from "../../state/query";
 import { EMPTY_SERVER_PROVIDERS, serverEnvironment } from "../../state/server";
 import { useAtomCommand } from "../../state/use-atom-command";
@@ -69,6 +73,8 @@ import { useSettingsScope } from "./SettingsScopeContext";
 import {
   CRON_PRESETS,
   WEBHOOK_SIGNATURE_DEFAULTS,
+  appendSkillMention,
+  applyPullRequestFixTemplate,
   calendarScheduleProblem,
   browserTimeZone,
   defaultOnceAt,
@@ -261,12 +267,24 @@ function statusVariant(status: ScheduledTask["lastRunStatus"]) {
 export function ScheduledTasksSettings(target: {
   readonly environmentId?: EnvironmentId;
   readonly taskId?: ScheduledTaskId | undefined;
+  /** Open a new task that continues this thread, in this project. */
+  readonly threadId?: ThreadId | undefined;
+  readonly projectId?: ProjectId | undefined;
 }) {
   const { scope, environments, connectedEnvironments, environment } = useSettingsScope();
   const [editor, setEditor] = useState<{
     environmentId: EnvironmentId;
     task: ScheduledTask | null;
-  } | null>(null);
+    initialDraft?: Partial<DraftState>;
+  } | null>(() =>
+    target.environmentId && target.threadId && target.projectId && !target.taskId
+      ? {
+          environmentId: target.environmentId,
+          task: null,
+          initialDraft: { threadId: target.threadId, projectId: target.projectId },
+        }
+      : null,
+  );
   const openForEdit = useCallback((environmentId: EnvironmentId, task: ScheduledTask) => {
     setEditor({ environmentId, task });
   }, []);
@@ -332,6 +350,7 @@ export function ScheduledTasksSettings(target: {
           key={`${editor.environmentId}:${editor.task?.id ?? "new"}`}
           initialEnvironmentId={editor.environmentId}
           task={editor.task}
+          {...(editor.initialDraft ? { initialDraft: editor.initialDraft } : {})}
           onClose={() => setEditor(null)}
         />
       ) : null}
@@ -908,10 +927,13 @@ function WebhookDeliveryMode({ environmentId }: { readonly environmentId: Enviro
 function ScheduledTaskEditorDialog({
   initialEnvironmentId,
   task,
+  initialDraft,
   onClose,
 }: {
   readonly initialEnvironmentId: EnvironmentId;
   readonly task: ScheduledTask | null;
+  /** Prefills a new task, such as the thread it continues. */
+  readonly initialDraft?: Partial<DraftState>;
   readonly onClose: () => void;
 }) {
   const { scope, connectedEnvironments } = useSettingsScope();
@@ -942,8 +964,11 @@ function ScheduledTaskEditorDialog({
     label: "scheduled task upsert",
   });
   const [draft, setDraft] = useState<DraftState>(() =>
-    task ? taskToDraft(task) : { ...EMPTY_DRAFT, projectId: projects[0]?.id ?? "" },
+    task
+      ? taskToDraft(task)
+      : { ...EMPTY_DRAFT, projectId: projects[0]?.id ?? "", ...initialDraft },
   );
+  const threadShells = useThreadShells();
   const [saving, setSaving] = useState(false);
   const submissionPending = useRef(false);
   const editingTaskMissing =
@@ -957,6 +982,26 @@ function ScheduledTaskEditorDialog({
     : task;
   const selectedProjectId = draft.projectId || projects[0]?.id || "";
   const selectedProject = projects.find((project) => project.id === selectedProjectId);
+  // Threads a task can keep going: the project's own, newest first.
+  const projectThreads = useMemo(
+    () =>
+      threadShells
+        .filter(
+          (thread) =>
+            thread.environmentId === environmentId &&
+            thread.projectId === selectedProjectId &&
+            thread.archivedAt === null &&
+            thread.lineage.relationshipToParent !== "subagent",
+        )
+        .toSorted((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+        .slice(0, 50),
+    [environmentId, selectedProjectId, threadShells],
+  );
+  const boundThread = draft.threadId
+    ? threadShells.find(
+        (thread) => thread.environmentId === environmentId && thread.id === draft.threadId,
+      )
+    : undefined;
   // The task runs in selectedProject, so its model picker should reflect that
   // project's effective enablement, not just the machine's.
   const instanceEntries = useMemo(
@@ -986,6 +1031,16 @@ function ScheduledTaskEditorDialog({
   const modelOptionsByInstance = useMemo(
     () => getCustomModelOptionsByInstance(settings, providers, activeInstanceId, activeModel),
     [settings, providers, activeInstanceId, activeModel],
+  );
+  // Skills the chosen provider can run, offered as `$name` mentions in the prompt.
+  const promptSkills = useMemo(
+    () =>
+      dedupeProviderSkillsByName(
+        (
+          providers.find((provider) => provider.instanceId === activeInstanceId)?.skills ?? []
+        ).filter(isProviderSkillUserInvocable),
+      ),
+    [providers, activeInstanceId],
   );
 
   const reportFailure = (title: string, error: unknown) => {
@@ -1111,9 +1166,20 @@ function ScheduledTaskEditorDialog({
         <DialogHeader>
           <DialogTitle>{draft.editingId ? "Edit task" : "New task"}</DialogTitle>
           <DialogDescription>
-            Run a prompt automatically — on an interval, at a fixed time, or when a webhook is
-            called.
+            Run a prompt automatically — on a schedule, once, or when a webhook is called.
           </DialogDescription>
+          {draft.editingId ? null : (
+            <div>
+              <Button
+                type="button"
+                variant="outline"
+                size="xs"
+                onClick={() => setDraft((current) => applyPullRequestFixTemplate(current))}
+              >
+                Use the pull request fix template
+              </Button>
+            </div>
+          )}
         </DialogHeader>
 
         <DialogPanel>
@@ -1190,7 +1256,12 @@ function ScheduledTaskEditorDialog({
                 <Select
                   value={selectedProjectId}
                   onValueChange={(projectId) =>
-                    setDraft((current) => ({ ...current, projectId: projectId ?? "" }))
+                    // A thread belongs to its project, so switching projects drops the binding.
+                    setDraft((current) => ({
+                      ...current,
+                      projectId: projectId ?? "",
+                      threadId: "",
+                    }))
                   }
                 >
                   <SelectTrigger size="sm" id="scheduled-task-project">
@@ -1208,6 +1279,41 @@ function ScheduledTaskEditorDialog({
                 </Select>
               </Field>
 
+              <Field label="Run in" htmlFor="scheduled-task-thread">
+                <Select
+                  value={draft.threadId || "new"}
+                  onValueChange={(value) =>
+                    setDraft((current) => ({
+                      ...current,
+                      threadId: typeof value === "string" && value !== "new" ? value : "",
+                    }))
+                  }
+                >
+                  <SelectTrigger size="sm" id="scheduled-task-thread">
+                    <SelectValue>
+                      {draft.threadId
+                        ? (boundThread?.title ?? "A thread of this project")
+                        : "A new thread each run"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectPopup>
+                    <SelectItem value="new">A new thread each run</SelectItem>
+                    {projectThreads.map((thread) => (
+                      <SelectItem key={thread.id} value={thread.id}>
+                        {thread.title}
+                      </SelectItem>
+                    ))}
+                  </SelectPopup>
+                </Select>
+              </Field>
+            </div>
+
+            {draft.threadId ? (
+              <p className="text-xs text-muted-foreground">
+                Each run sends the prompt to this thread, queued behind any work in progress, in the
+                thread's own checkout.
+              </p>
+            ) : (
               <Field label="Workspace" htmlFor="scheduled-task-workspace">
                 <Select
                   value={draft.workspaceMode}
@@ -1225,9 +1331,9 @@ function ScheduledTaskEditorDialog({
                   </SelectPopup>
                 </Select>
               </Field>
-            </div>
+            )}
 
-            {draft.workspaceMode === "worktree" ? (
+            {!draft.threadId && draft.workspaceMode === "worktree" ? (
               <Field label="Base branch" htmlFor="scheduled-task-base-ref">
                 <WorktreeBaseBranchPicker
                   key={`${environmentId}:${selectedProjectId}`}
@@ -1244,7 +1350,7 @@ function ScheduledTaskEditorDialog({
                 />
               </Field>
             ) : null}
-            {draft.workspaceMode === "existing_worktree" ? (
+            {!draft.threadId && draft.workspaceMode === "existing_worktree" ? (
               <Field label="Checkout path" htmlFor="scheduled-task-checkout">
                 <Input
                   id="scheduled-task-checkout"
@@ -1270,6 +1376,28 @@ function ScheduledTaskEditorDialog({
                   setDraft((current) => ({ ...current, prompt: event.target.value }))
                 }
               />
+              {promptSkills.length > 0 ? (
+                <Menu>
+                  <MenuTrigger render={<Button type="button" variant="ghost" size="xs" />}>
+                    Add a skill
+                  </MenuTrigger>
+                  <MenuPopup align="start">
+                    {promptSkills.map((skill) => (
+                      <MenuItem
+                        key={skill.name}
+                        onClick={() =>
+                          setDraft((current) => ({
+                            ...current,
+                            prompt: appendSkillMention(current.prompt, skill.name),
+                          }))
+                        }
+                      >
+                        {skill.displayName ?? skill.name}
+                      </MenuItem>
+                    ))}
+                  </MenuPopup>
+                </Menu>
+              ) : null}
             </Field>
 
             <Field label="Model">

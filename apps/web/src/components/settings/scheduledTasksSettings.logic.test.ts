@@ -17,6 +17,8 @@ import { resolveSettingsScope, type SettingsScopeSearch } from "./settingsScope"
 
 import { deriveProviderInstanceEntries } from "../../providerInstances";
 import {
+  appendSkillMention,
+  applyPullRequestFixTemplate,
   calendarScheduleProblem,
   scheduledTaskDefaultModel,
   matchesScheduledTaskScope,
@@ -368,5 +370,28 @@ describe("one-off and repeating scheduled tasks", () => {
     const cron = { ...once, scheduleMode: "cron" as const, cronExpression: "0 25 * * *" };
     expect(calendarScheduleProblem(cron, now)).toMatch(/hour must be between 0 and 23/);
     expect(calendarScheduleProblem({ ...cron, cronExpression: "0 9 * * *" }, now)).toBeNull();
+  });
+});
+
+describe("scheduled task prompt helpers", () => {
+  it("adds a skill mention once, at the end", () => {
+    expect(appendSkillMention("", "review")).toBe("$review ");
+    expect(appendSkillMention("Check the PR  ", "review")).toBe("Check the PR $review ");
+    expect(appendSkillMention("Use $review here", "review")).toBe("Use $review here");
+  });
+
+  it("fills the pull request template without losing a chosen title or binding", () => {
+    const draft = applyPullRequestFixTemplate({
+      ...taskToDraft(legacyTask),
+      title: "",
+      threadId: "thread-pr",
+    });
+    expect(draft.title).toBe("Keep the pull request green");
+    expect(draft.threadId).toBe("thread-pr");
+    expect(draft.scheduleMode).toBe("cron");
+    expect(draft.cronExpression).toBe("0 * * * *");
+    expect(draft.notify).toBe("failures");
+    expect(draft.prompt).toMatch(/never create scheduled tasks/i);
+    expect(applyPullRequestFixTemplate({ ...draft, title: "PR 42" }).title).toBe("PR 42");
   });
 });

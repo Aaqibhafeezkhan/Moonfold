@@ -4820,6 +4820,16 @@ export default function Sidebar() {
               });
             });
             return;
+          case "schedule-follow-up":
+            void router.navigate({
+              to: "/settings/scheduled-tasks",
+              search: {
+                environmentId: threadRef.environmentId,
+                threadId: threadRef.threadId,
+                projectId: thread.projectId,
+              },
+            });
+            return;
           case "move-to-worktree":
             await moveToWorktree(threadRef, {
               title: thread.title,

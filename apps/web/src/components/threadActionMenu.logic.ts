@@ -28,6 +28,7 @@ export type ThreadActionMenuId =
   | "copy-branch"
   | "copy-thread-id"
   | "open-in-window"
+  | "schedule-follow-up"
   | "move-to-worktree"
   | "return-to-project"
   | "archive"
@@ -241,6 +242,7 @@ export function buildThreadActionMenuItems(
           },
         ]
       : []),
+    { id: "schedule-follow-up", label: "Schedule a follow-up…", icon: "clock" },
     {
       id: "copy",
       label: "Copy",

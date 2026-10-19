@@ -4,6 +4,19 @@ A scheduled task sends a prompt to an agent on a schedule. Create and edit tasks
 **Settings → Scheduled tasks**; agents can also create them for you through Moonfold's tools.
 Each run starts a new thread in the task's project, or continues the thread the task is bound to.
 
+## Keep a thread going
+
+**Run in** chooses where each run happens: a new thread every time, or one of the project's
+threads, which then receives the prompt on every run, queued behind any work already going on.
+To set one up from a thread, choose **Schedule a follow-up…** from its menu.
+
+**Use the pull request fix template** starts a task that checks a thread's pull request every
+hour and fixes failing checks or open review comments in that thread's worktree; choose the pull
+request's thread under **Run in**. It never touches the project's main checkout.
+
+**Add a skill** under the prompt inserts a `$skill` mention for the chosen model's provider, so
+each run uses that skill.
+
 ## Choose when a task runs
 
 - **At a time** runs at a time of day on the weekdays you pick, in the server's time zone.

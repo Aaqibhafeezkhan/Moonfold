@@ -1,7 +1,8 @@
 import {
   EnvironmentId,
-  type ProjectId,
+  ProjectId,
   ScheduledTaskId,
+  ThreadId,
   type ScheduledTask,
   type ScheduledTaskNotifyPolicy,
   type ScheduledTaskUpsertSchedule,
@@ -45,6 +46,13 @@ export function validateScheduledTasksSearch(raw: Record<string, unknown>) {
       : {}),
     ...(typeof raw.taskId === "string" && raw.taskId.trim()
       ? { taskId: ScheduledTaskId.make(raw.taskId) }
+      : {}),
+    // Opens a new task that continues this thread on each run.
+    ...(typeof raw.threadId === "string" && raw.threadId.trim()
+      ? { threadId: ThreadId.make(raw.threadId) }
+      : {}),
+    ...(typeof raw.projectId === "string" && raw.projectId.trim()
+      ? { projectId: ProjectId.make(raw.projectId) }
       : {}),
   };
 }
@@ -241,6 +249,34 @@ function localDate(iso: string, timeZone: string): string {
   );
   const pad = (value: number) => value.toString().padStart(2, "0");
   return `${parts.year}-${pad(parts.month)}-${pad(parts.day)}`;
+}
+
+/**
+ * Starts a task that keeps a thread's pull request healthy: bound to the PR's thread, it checks
+ * each hour and fixes failing checks or open review comments in that thread's worktree.
+ */
+export function applyPullRequestFixTemplate(draft: DraftState): DraftState {
+  return {
+    ...draft,
+    title: draft.title.trim() ? draft.title : "Keep the pull request green",
+    prompt: [
+      "Check the pull request for this thread.",
+      "If checks are failing or review comments are unresolved, fix them in this thread's worktree, commit, and push.",
+      "If everything passes and nothing is open, reply that the pull request is green and change nothing.",
+      "Never touch the project's main checkout and never create scheduled tasks.",
+    ].join(" "),
+    scheduleMode: "cron",
+    cronExpression: "0 * * * *",
+    notify: "failures",
+  };
+}
+
+/** Appends a `$skill` mention, the form providers read as a request to use that skill. */
+export function appendSkillMention(prompt: string, skillName: string): string {
+  const mention = `$${skillName}`;
+  if (prompt.includes(mention)) return prompt;
+  const trimmed = prompt.replace(/\s+$/, "");
+  return trimmed ? `${trimmed} ${mention} ` : `${mention} `;
 }
 
 /** Ready-made cron schedules the form offers before the custom expression. */
