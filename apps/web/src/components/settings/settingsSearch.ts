@@ -24,6 +24,7 @@ export type SettingsPath =
   | "/settings/providers"
   | "/settings/integrations"
   | "/settings/plugins"
+  | "/settings/memories"
   | "/settings/scheduled-tasks"
   | "/settings/source-control"
   | "/settings/storage"
@@ -105,6 +106,7 @@ export const SETTINGS_SECTION_LABELS: Readonly<Record<SettingsPath, string>> = {
   "/settings/providers": "Providers",
   "/settings/integrations": "Integrations",
   "/settings/plugins": "Plugins",
+  "/settings/memories": "Memories",
   "/settings/scheduled-tasks": "Scheduled Tasks",
   "/settings/source-control": "Source Control",
   "/settings/storage": "Storage",
@@ -1047,6 +1049,12 @@ export const SETTINGS_SEARCH_ITEMS = [
     searchTerms: ["skills mcp servers extensions install git repository codex claude marketplace"],
   },
   {
+    id: "memories",
+    title: "Memories",
+    to: "/settings/memories",
+    searchTerms: ["remember preferences notes personalization context agent"],
+  },
+  {
     id: "archive",
     title: "Archived threads",
     to: "/settings/archived",
@@ -1077,6 +1085,8 @@ const SETTINGS_CATEGORY_SCOPES: Readonly<Record<SettingsPath, SettingsSearchScop
   "/settings/scheduled-tasks": null,
   // Picks its own environment; plugins live on the environment's machine.
   "/settings/plugins": null,
+  // Picks its own environment; memories live in the environment's database.
+  "/settings/memories": null,
   "/settings/archived": "project-defaults",
 };
 

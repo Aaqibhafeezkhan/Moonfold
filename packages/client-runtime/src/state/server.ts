@@ -1177,6 +1177,10 @@ export function createServerEnvironmentAtoms<R, E>(
       label: "environment-data:server:plugins",
       tag: WS_METHODS.pluginsList,
     }),
+    memories: createEnvironmentRpcQueryAtomFamily(runtime, {
+      label: "environment-data:server:memories",
+      tag: WS_METHODS.memoriesList,
+    }),
     scheduledTaskWebhookDelivery: createEnvironmentRpcQueryAtomFamily(runtime, {
       label: "environment-data:server:scheduled-task:webhook-delivery",
       tag: WS_METHODS.scheduledTasksGetWebhookDelivery,
@@ -1404,6 +1408,33 @@ export function createServerEnvironmentAtoms<R, E>(
       tag: WS_METHODS.scheduledTasksDelete,
       scheduler: configScheduler,
       concurrency: configConcurrency,
+    }),
+    upsertMemory: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:memory:upsert",
+      tag: WS_METHODS.memoriesUpsert,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    deleteMemory: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:memory:delete",
+      tag: WS_METHODS.memoriesDelete,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    setMemoriesEnabled: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:memory:set-enabled",
+      tag: WS_METHODS.memoriesSetEnabled,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    // Read when a thread's menu opens, so the menu shows the thread's current choice.
+    readThreadMemoryStatus: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:memory:thread-status",
+      tag: WS_METHODS.memoriesThreadStatus,
+    }),
+    setThreadMemoryOptOut: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:memory:thread-opt-out",
+      tag: WS_METHODS.memoriesSetThreadOptOut,
     }),
     // Installing clones a repository, so it stays off the config lane like run-now.
     installPlugin: createEnvironmentRpcCommand(runtime, {

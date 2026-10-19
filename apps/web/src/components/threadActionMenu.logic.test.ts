@@ -182,6 +182,19 @@ describe("buildThreadActionMenuItems", () => {
     expect(items[filterIndex + 1]?.id).toBe("auto-settle");
   });
 
+  it("shows the thread's memory choice, and hides it when the environment did not answer", () => {
+    const optedIn = buildThreadActionMenuItems({ ...baseState, memoriesOptedOut: false });
+    expect(optedIn.find((item) => item.id === "memories")?.children).toEqual([
+      { id: "memories:on", label: "Use memories", checked: true },
+      { id: "memories:off", label: "Don't use memories", checked: false },
+    ]);
+    const optedOut = buildThreadActionMenuItems({ ...baseState, memoriesOptedOut: true });
+    expect(
+      optedOut.find((item) => item.id === "memories")?.children?.find((child) => child.checked)?.id,
+    ).toBe("memories:off");
+    expect(ids({ ...baseState, memoriesOptedOut: null })).not.toContain("memories");
+  });
+
   it("includes branch items only for threads with a branch", () => {
     const withBranch = allIds({ ...baseState, branch: "feat/menu" });
     expect(withBranch).toContain("new-thread-on-branch");

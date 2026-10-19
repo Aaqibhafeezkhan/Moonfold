@@ -17,6 +17,9 @@ export type ThreadActionMenuId =
   | "auto-settle"
   | "auto-settle:enabled"
   | "auto-settle:disabled"
+  | "memories"
+  | "memories:on"
+  | "memories:off"
   | "snooze"
   | `snooze:${string}`
   | "unsnooze"
@@ -89,6 +92,11 @@ export interface ThreadActionMenuState {
   readonly isSettled: boolean;
   /** False while the user has turned automatic settlement off for this thread. */
   readonly autoSettleEnabled: boolean;
+  /**
+   * Whether the user turned memories off for this thread, or null when the environment's
+   * answer is unknown (an older server, or the read failed), which hides the item.
+   */
+  readonly memoriesOptedOut?: boolean | null;
   readonly isSnoozed: boolean;
   readonly canSnoozeNow: boolean;
   readonly isRegeneratingTitle: boolean;
@@ -242,6 +250,27 @@ export function buildThreadActionMenuItems(
           },
         ]
       : []),
+    ...(state.memoriesOptedOut === undefined || state.memoriesOptedOut === null
+      ? []
+      : [
+          {
+            id: "memories" as const,
+            label: "Memories",
+            icon: "bookmark",
+            children: [
+              {
+                id: "memories:on" as const,
+                label: "Use memories",
+                checked: !state.memoriesOptedOut,
+              },
+              {
+                id: "memories:off" as const,
+                label: "Don't use memories",
+                checked: state.memoriesOptedOut,
+              },
+            ],
+          },
+        ]),
     { id: "schedule-follow-up", label: "Schedule a follow-up…", icon: "clock" },
     {
       id: "copy",

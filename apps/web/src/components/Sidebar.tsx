@@ -144,6 +144,7 @@ import {
 } from "../threadSelectionStore";
 import { useAcknowledgeThreadWoke, useThreadActions } from "../hooks/useThreadActions";
 import { useThreadWorkspaceTransfer } from "../hooks/useThreadWorkspaceTransfer";
+import { useThreadMemoryChoice } from "../hooks/useThreadMemoryChoice";
 import { useHandleNewThread } from "../hooks/useHandleNewThread";
 import { useSidebarProjectGroups } from "../hooks/useSidebarProjectGroups";
 import { useTerminalFocus } from "../hooks/useTerminalFocus";
@@ -2458,6 +2459,7 @@ export default function Sidebar() {
     deleteThread,
   } = useThreadActions();
   const { moveToWorktree, returnToProject } = useThreadWorkspaceTransfer();
+  const threadMemoryChoice = useThreadMemoryChoice();
   const updateThreadMetadata = useOrchestrationCommand(threadEnvironment.updateMetadata, {
     reportFailure: false,
   });
@@ -4643,6 +4645,7 @@ export default function Sidebar() {
                 projectRef.projectId === thread.projectId,
             ),
           ) ?? null;
+        const memoriesOptedOut = await threadMemoryChoice.read(threadRef);
         const clicked = await settlePromise(() =>
           api.contextMenu.show(
             buildThreadActionMenuItems({
@@ -4660,6 +4663,7 @@ export default function Sidebar() {
               isPinned,
               isSettled,
               autoSettleEnabled: thread.autoSettleDisabledAt == null,
+              memoriesOptedOut,
               isSnoozed,
               canSnoozeNow: canSnooze(thread, { now: new Date().toISOString() }),
               isRegeneratingTitle,
@@ -4747,6 +4751,18 @@ export default function Sidebar() {
             return;
           case "unpin":
             attemptUnpin(threadRef);
+            return;
+          case "memories:on":
+          case "memories:off":
+            if (!(await threadMemoryChoice.choose(threadRef, clicked.value === "memories:off"))) {
+              toastManager.add(
+                stackedThreadToast({
+                  type: "error",
+                  title: "Could not change memories for this thread",
+                  description: "Try again in a moment.",
+                }),
+              );
+            }
             return;
           case "auto-settle:enabled":
           case "auto-settle:disabled": {

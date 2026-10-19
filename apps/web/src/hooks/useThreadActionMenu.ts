@@ -50,6 +50,7 @@ import { useNewThreadHandler } from "./useHandleNewThread";
 import { useClientSettings } from "./useSettings";
 import { useThreadActions } from "./useThreadActions";
 import { useThreadWorkspaceTransfer } from "./useThreadWorkspaceTransfer";
+import { useThreadMemoryChoice } from "./useThreadMemoryChoice";
 import { canPopOutThreads, openThreadInNewWindow } from "../threadPopout";
 
 function failureToast(title: string, error: unknown) {
@@ -109,6 +110,7 @@ export function useThreadActionMenu(input: {
   });
   const handleNewThread = useNewThreadHandler();
   const { moveToWorktree, returnToProject } = useThreadWorkspaceTransfer();
+  const threadMemoryChoice = useThreadMemoryChoice();
   const confirmThreadDelete = useClientSettings((s) => s.confirmThreadDelete);
   const confirmThreadArchive = useClientSettings((s) => s.confirmThreadArchive);
   const timestampFormat = useClientSettings((s) => s.timestampFormat);
@@ -152,6 +154,7 @@ export function useThreadActionMenu(input: {
         };
         const isRegeneratingTitle = thread.titleRegeneration != null;
         const snoozePresets = resolveSnoozePresets(now, timestampFormat);
+        const memoriesOptedOut = await threadMemoryChoice.read(threadRef);
         const items = buildThreadActionMenuItems({
           canOperate: readEnvironmentScope(threadRef.environmentId, AuthOrchestrationOperateScope),
           branch: thread.branch ?? null,
@@ -159,6 +162,7 @@ export function useThreadActionMenu(input: {
           isPinned: thread.pinnedAt != null,
           isSettled: supports.settlement && thread.settledOverride === "settled",
           autoSettleEnabled: thread.autoSettleDisabledAt == null,
+          memoriesOptedOut,
           isSnoozed: supports.snooze && effectiveSnoozed(thread, { now: now.toISOString() }),
           canSnoozeNow: canSnooze(thread, { now: now.toISOString() }),
           isRegeneratingTitle,
@@ -254,6 +258,15 @@ export function useThreadActionMenu(input: {
             await reportFailure("Failed to unpin thread", () => confirmAndUnpinThread(threadRef));
             return;
           }
+          case "memories:on":
+          case "memories:off":
+            if (!(await threadMemoryChoice.choose(threadRef, action === "memories:off"))) {
+              failureToast(
+                "Could not change memories for this thread",
+                new Error("Try again in a moment."),
+              );
+            }
+            return;
           case "auto-settle:enabled":
           case "auto-settle:disabled":
             await reportFailure("Failed to update auto-settle", () =>
@@ -394,6 +407,7 @@ export function useThreadActionMenu(input: {
       setThreadAutoSettle,
       settleThread,
       snoozeThread,
+      threadMemoryChoice,
       threadRef,
       timestampFormat,
       unsettleThread,
