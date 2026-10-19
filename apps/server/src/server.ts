@@ -35,6 +35,7 @@ import { fixPath } from "./os-jank.ts";
 import * as Ws from "./ws.ts";
 import * as WorktreeMcpService from "./mcp/WorktreeMcpService.ts";
 import * as PluginStore from "./plugins/PluginStore.ts";
+import * as MemoryStore from "./memories/MemoryStore.ts";
 import * as AgentScopeLive from "./process/agentScope.ts";
 import * as ExternalLauncher from "./process/externalLauncher.ts";
 import * as NodePtyAdapter from "./terminal/NodePtyAdapter.ts";
@@ -602,6 +603,8 @@ const layerRuntimeCoreDependenciesBase = Layer.mergeAll(
 ).pipe(
   // Core Services
   Layer.provideMerge(layerOrchestrationApplication),
+  // Turns read memories through the reference; the RPCs and MCP tools use the same store.
+  Layer.provideMerge(MemoryStore.layerThreadMemories.pipe(Layer.provideMerge(MemoryStore.layer))),
   Layer.provideMerge(RuntimeLayer.layerEventInfrastructure),
   Layer.provideMerge(Layer.merge(ProjectStore.layer, ThreadSearch.layer)),
   Layer.provideMerge(layerServerSettings),

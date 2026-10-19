@@ -61,6 +61,13 @@ export const RPC_REQUIRED_SCOPES = {
   [ORCHESTRATION_V2_WS_METHODS.subscribeThread]: AuthOrchestrationReadScope,
   [WS_METHODS.projectsMutate]: AuthOrchestrationOperateScope,
   [WS_METHODS.agentInstructionsList]: AuthOrchestrationReadScope,
+  // Memories steer every agent run, like instruction files, so changing them is a settings change.
+  [WS_METHODS.memoriesList]: AuthOrchestrationReadScope,
+  [WS_METHODS.memoriesUpsert]: AuthSettingsWriteScope,
+  [WS_METHODS.memoriesDelete]: AuthSettingsWriteScope,
+  [WS_METHODS.memoriesSetEnabled]: AuthSettingsWriteScope,
+  [WS_METHODS.memoriesThreadStatus]: AuthOrchestrationReadScope,
+  [WS_METHODS.memoriesSetThreadOptOut]: AuthOrchestrationOperateScope,
   [WS_METHODS.serverProbe]: AuthOrchestrationReadScope,
   [WS_METHODS.serverGetConfig]: AuthOrchestrationReadScope,
   [WS_METHODS.serverRefreshProviders]: AuthOrchestrationReadScope,

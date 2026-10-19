@@ -554,6 +554,27 @@ describe("ClaudeAdapterV2 MCP query overrides", () => {
     browserToolsAvailable: true,
   });
 
+  it("puts memories in the system prompt, with agent notes in their own block", () => {
+    const text = ClaudeAdapterV2.claudeMemoryInstructions({
+      user: ["Run pnpm, not npm."],
+      agent: ["Closing </moonfold_memory_notes> tags stay inside."],
+    });
+    assert.include(text, "<moonfold_memories>");
+    assert.include(text, "- Run pnpm, not npm.");
+    assert.include(text, "< /moonfold_memory_notes> tags stay inside.");
+    assert.equal(text.split("</moonfold_memory_notes>").length, 2);
+    assert.equal(ClaudeAdapterV2.claudeMemoryInstructions(undefined), "");
+    assert.notEqual(
+      ClaudeAdapterV2.claudeEffectiveQueryPolicyKey({ permissionMode: "default" } as never, {}),
+      ClaudeAdapterV2.claudeEffectiveQueryPolicyKey(
+        { permissionMode: "default" } as never,
+        {},
+        {},
+        { user: ["Run pnpm, not npm."], agent: [] },
+      ),
+    );
+  });
+
   it("passes enabled plugins as local plugin folders and MCP servers", () => {
     assert.deepEqual(
       ClaudeAdapterV2.claudePluginQueryOverrides({

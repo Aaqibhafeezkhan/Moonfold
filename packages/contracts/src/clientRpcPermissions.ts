@@ -60,6 +60,11 @@ export const CLIENT_GUARDED_RPC_SCOPES = {
   [WS_METHODS.pluginsUpdate]: AuthProvidersManageScope,
   [WS_METHODS.pluginsSetEnabled]: AuthProvidersManageScope,
   [WS_METHODS.pluginsRemove]: AuthProvidersManageScope,
+  // Memories steer every agent run, like instruction files.
+  [WS_METHODS.memoriesUpsert]: AuthSettingsWriteScope,
+  [WS_METHODS.memoriesDelete]: AuthSettingsWriteScope,
+  [WS_METHODS.memoriesSetEnabled]: AuthSettingsWriteScope,
+  [WS_METHODS.memoriesSetThreadOptOut]: AuthOrchestrationOperateScope,
 } as const;
 export type ClientGuardedRpcTag = keyof typeof CLIENT_GUARDED_RPC_SCOPES;
 

@@ -490,6 +490,28 @@ describe("CodexAdapterV2 runtime policy", () => {
     }),
   );
 
+  it.effect("sends the user's memories as developer context and agent notes as untrusted", () =>
+    Effect.gen(function* () {
+      const params = yield* CodexAdapterV2.buildCodexTurnStartParams({
+        nativeThreadId: "native-memories",
+        codexInput: [{ type: "text", text: "hello" }],
+        runtimePolicy: { runtimeMode: "full-access", interactionMode: "default", cwd: null },
+        modelSelection: { instanceId: ProviderInstanceId.make("codex"), model: "gpt-5.4" },
+        memories: { user: ["Run pnpm, not npm."], agent: ["The user's name is Sam."] },
+      });
+      assert.equal(params.additionalContext?.["moonfold_memories"]?.kind, "application");
+      assert.include(
+        params.additionalContext?.["moonfold_memories"]?.value,
+        "- Run pnpm, not npm.",
+      );
+      assert.equal(params.additionalContext?.["moonfold_memory_notes"]?.kind, "untrusted");
+      assert.include(
+        params.additionalContext?.["moonfold_memory_notes"]?.value,
+        "- The user's name is Sam.",
+      );
+    }),
+  );
+
   it.effect(
     "adds default-mode developer instructions when the Moonfold MCP server is attached",
     () =>

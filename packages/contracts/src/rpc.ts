@@ -391,6 +391,17 @@ import {
   PluginMutationResult,
   PluginSetEnabledInput,
 } from "./plugins.ts";
+import {
+  MemoryError,
+  MemoryIdInput,
+  MemoryListResult,
+  MemoryMutationResult,
+  MemorySetEnabledInput,
+  MemorySetThreadOptOutInput,
+  MemoryThreadInput,
+  MemoryThreadStatus,
+  MemoryUpsertInput,
+} from "./memories.ts";
 import { SecretRequestAnswerInput, SecretRequestError } from "./secretRequest.ts";
 import {
   ProjectCloneActionInput,
@@ -586,6 +597,12 @@ export const WS_METHODS = {
   pluginsUpdate: "plugins.update",
   pluginsSetEnabled: "plugins.setEnabled",
   pluginsRemove: "plugins.remove",
+  memoriesList: "memories.list",
+  memoriesUpsert: "memories.upsert",
+  memoriesDelete: "memories.delete",
+  memoriesSetEnabled: "memories.setEnabled",
+  memoriesThreadStatus: "memories.threadStatus",
+  memoriesSetThreadOptOut: "memories.setThreadOptOut",
   scheduledTasksGetWebhookDelivery: "scheduledTasks.getWebhookDelivery",
 
   // Cloud environment methods
@@ -2021,6 +2038,35 @@ const WsPluginsRemoveRpc = Rpc.make(WS_METHODS.pluginsRemove, {
   error: Schema.Union([PluginError, EnvironmentAuthorizationError]),
 });
 
+const WsMemoriesListRpc = Rpc.make(WS_METHODS.memoriesList, {
+  payload: Schema.Struct({}),
+  success: MemoryListResult,
+  error: Schema.Union([MemoryError, EnvironmentAuthorizationError]),
+});
+const WsMemoriesUpsertRpc = Rpc.make(WS_METHODS.memoriesUpsert, {
+  payload: MemoryUpsertInput,
+  success: MemoryMutationResult,
+  error: Schema.Union([MemoryError, EnvironmentAuthorizationError]),
+});
+const WsMemoriesDeleteRpc = Rpc.make(WS_METHODS.memoriesDelete, {
+  payload: MemoryIdInput,
+  error: Schema.Union([MemoryError, EnvironmentAuthorizationError]),
+});
+const WsMemoriesSetEnabledRpc = Rpc.make(WS_METHODS.memoriesSetEnabled, {
+  payload: MemorySetEnabledInput,
+  error: Schema.Union([MemoryError, EnvironmentAuthorizationError]),
+});
+const WsMemoriesThreadStatusRpc = Rpc.make(WS_METHODS.memoriesThreadStatus, {
+  payload: MemoryThreadInput,
+  success: MemoryThreadStatus,
+  error: Schema.Union([MemoryError, EnvironmentAuthorizationError]),
+});
+const WsMemoriesSetThreadOptOutRpc = Rpc.make(WS_METHODS.memoriesSetThreadOptOut, {
+  payload: MemorySetThreadOptOutInput,
+  success: MemoryThreadStatus,
+  error: Schema.Union([MemoryError, EnvironmentAuthorizationError]),
+});
+
 const WsScheduledTasksGetWebhookDeliveryRpc = Rpc.make(
   WS_METHODS.scheduledTasksGetWebhookDelivery,
   {
@@ -2294,6 +2340,12 @@ export const WsRpcGroupPart5 = RpcGroup.make(
   WsPluginsUpdateRpc,
   WsPluginsSetEnabledRpc,
   WsPluginsRemoveRpc,
+  WsMemoriesListRpc,
+  WsMemoriesUpsertRpc,
+  WsMemoriesDeleteRpc,
+  WsMemoriesSetEnabledRpc,
+  WsMemoriesThreadStatusRpc,
+  WsMemoriesSetThreadOptOutRpc,
 ).middleware(RpcScopeAuthorization);
 
 export const WsRpcGroup = WsRpcGroupPart1.merge(

@@ -215,6 +215,7 @@ import * as AgentInstructions from "./project/AgentInstructions.ts";
 import * as ThreadSideQuestions from "./orchestration-v2/ThreadSideQuestions.ts";
 import * as WorktreeMcpService from "./mcp/WorktreeMcpService.ts";
 import * as PluginStore from "./plugins/PluginStore.ts";
+import * as MemoryStore from "./memories/MemoryStore.ts";
 import * as ManagedProjectFolders from "./project/ManagedProjectFolders.ts";
 import { projectMutationOperation } from "./project/ProjectMutation.ts";
 import * as ProjectSetupScriptRunner from "./project/ProjectSetupScriptRunner.ts";
@@ -1307,6 +1308,7 @@ const buildWsRpcHandlers = (
     const threadSideQuestions = yield* ThreadSideQuestions.ThreadSideQuestions;
     const worktreeTransfers = yield* WorktreeMcpService.WorktreeMcpService;
     const plugins = yield* PluginStore.PluginStore;
+    const memories = yield* MemoryStore.MemoryStore;
     const providerInstallation = yield* makeProviderInstallation();
     const serverSelfUpdate = yield* ServerSelfUpdate.ServerSelfUpdate;
     const config = yield* ServerConfig.ServerConfig;
@@ -2111,6 +2113,13 @@ const buildWsRpcHandlers = (
       [WS_METHODS.pluginsSetEnabled]: (input) =>
         plugins.setEnabled(input.id, input.enabled).pipe(Effect.map((plugin) => ({ plugin }))),
       [WS_METHODS.pluginsRemove]: (input) => plugins.remove(input.id),
+      [WS_METHODS.memoriesList]: () => memories.list,
+      [WS_METHODS.memoriesUpsert]: (input) =>
+        memories.upsert(input).pipe(Effect.map((memory) => ({ memory }))),
+      [WS_METHODS.memoriesDelete]: (input) => memories.remove(input.id),
+      [WS_METHODS.memoriesSetEnabled]: (input) => memories.setEnabled(input.enabled),
+      [WS_METHODS.memoriesThreadStatus]: (input) => memories.threadStatus(input.threadId),
+      [WS_METHODS.memoriesSetThreadOptOut]: (input) => memories.setThreadOptOut(input),
       [WS_METHODS.scheduledTasksListRuns]: (input) =>
         Effect.annotateCurrentSpan({ "scheduled_task.id": input.id }).pipe(
           Effect.andThen(scheduledTasks.listRuns(input)),

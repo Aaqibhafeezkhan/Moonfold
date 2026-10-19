@@ -150,6 +150,11 @@ import {
 import * as McpProviderSession from "@moonfold/provider-core/server/mcpSession";
 import * as McpProviderSessions from "@moonfold/provider-core/server/McpProviderSessions";
 import * as ProviderPlugins from "@moonfold/provider-core/server/ProviderPlugins";
+import {
+  agentMemoriesText,
+  type TurnMemories,
+  userMemoriesText,
+} from "@moonfold/provider-core/server/memoryInstructions";
 import * as IdAllocator from "@moonfold/provider-core/server/IdAllocator";
 import {
   makeProviderFailure,
@@ -1101,6 +1106,7 @@ export function makeClaudeQueryOptions(input: {
   readonly mcpServers?: ClaudeQueryOptions["mcpServers"];
   /** The user's enabled Moonfold plugins: Claude Code plugin folders and their MCP servers. */
   readonly plugins?: ClaudePluginQueryOverrides;
+  readonly memories?: TurnMemories;
   readonly tools?: ClaudeAgentSdkQueryTools;
   readonly allowedTools?: ReadonlyArray<string>;
   readonly disallowedTools?: ReadonlyArray<string>;
@@ -1196,7 +1202,8 @@ export function makeClaudeQueryOptions(input: {
       preset: "claude_code" as const,
       append:
         buildRuntimeInstructions({ harness: "Claude Code" }) +
-        (input.mcpServers === undefined ? "" : MOONFOLD_ORCHESTRATION_INSTRUCTIONS),
+        (input.mcpServers === undefined ? "" : MOONFOLD_ORCHESTRATION_INSTRUCTIONS) +
+        claudeMemoryInstructions(input.memories),
     },
     ...(Object.keys(extraArgs).length === 0 ? {} : { extraArgs }),
   };
@@ -1280,6 +1287,16 @@ export function claudeMcpQueryOverrides(input: {
       },
     },
   };
+}
+
+/** The user's memories as system prompt blocks; notes an agent saved are marked as background. */
+export function claudeMemoryInstructions(memories: TurnMemories | undefined): string {
+  const user = userMemoriesText(memories);
+  const agent = agentMemoriesText(memories);
+  return (
+    (user === undefined ? "" : `\n\n<moonfold_memories>\n${user}\n</moonfold_memories>`) +
+    (agent === undefined ? "" : `\n\n<moonfold_memory_notes>\n${agent}\n</moonfold_memory_notes>`)
+  );
 }
 
 export interface ClaudePluginQueryOverrides {
@@ -1961,6 +1978,7 @@ export function claudeEffectiveQueryPolicyKey(
     readonly mcpServers?: ClaudeQueryOptions["mcpServers"];
   },
   pluginOverrides: ClaudePluginQueryOverrides = {},
+  memories?: TurnMemories,
 ): string {
   return JSON.stringify({
     runtimePolicy: claudeRuntimeQueryPolicyKey({
@@ -1973,6 +1991,8 @@ export function claudeEffectiveQueryPolicyKey(
     ...(pluginOverrides.plugins === undefined && pluginOverrides.mcpServers === undefined
       ? {}
       : { plugins: pluginOverrides }),
+    // The system prompt carries memories, so a change reopens the query.
+    ...(memories === undefined ? {} : { memories }),
   });
 }
 
@@ -8525,6 +8545,7 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
             queryPolicy,
             mcpOverrides,
             pluginOverrides,
+            turnInput.memories,
           );
           const compiledSelection = compileClaudeModelSelection(turnInput.modelSelection);
           const resumeSessionAt = yield* getNativeConversationHeadId(turnInput.providerThread);
@@ -8636,6 +8657,7 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
               ? {}
               : { mcpServers: mcpOverrides.mcpServers }),
             plugins: pluginOverrides,
+            ...(turnInput.memories === undefined ? {} : { memories: turnInput.memories }),
             permissionMode: queryPolicy.permissionMode,
             ...(queryPolicy.allowDangerouslySkipPermissions === undefined
               ? {}

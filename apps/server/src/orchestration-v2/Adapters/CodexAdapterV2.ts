@@ -120,6 +120,10 @@ import * as McpProviderSession from "@moonfold/provider-core/server/mcpSession";
 import * as McpProviderSessions from "@moonfold/provider-core/server/McpProviderSessions";
 import * as ProviderPlugins from "@moonfold/provider-core/server/ProviderPlugins";
 import {
+  agentMemoriesText,
+  userMemoriesText,
+} from "@moonfold/provider-core/server/memoryInstructions";
+import {
   MCP_APP_EXTENSION_ID,
   MCP_APP_MIME_TYPE,
   MCP_APP_OUTPUT_KEY,
@@ -731,6 +735,7 @@ export function buildCodexTurnStartParams(input: {
   readonly omitServiceTier?: boolean;
   /** What the thread's MCP Apps want the agent to know (`ui/update-model-context`). */
   readonly appContext?: ProviderAdapter.ProviderAdapterV2TurnInput["appContext"];
+  readonly memories?: ProviderAdapter.ProviderAdapterV2TurnInput["memories"];
 }) {
   return Effect.gen(function* () {
     const runtimeModeDefaults = codexRuntimeModeTurnDefaults(input.runtimePolicy.runtimeMode);
@@ -775,10 +780,23 @@ export function buildCodexTurnStartParams(input: {
             },
           )
         : undefined;
+    // The user's own memories go in as developer input; notes an agent saved stay untrusted.
+    const userMemories = userMemoriesText(input.memories);
+    const agentMemories = agentMemoriesText(input.memories);
+    const memoryContext = {
+      ...(userMemories === undefined
+        ? {}
+        : { moonfold_memories: { kind: "application" as const, value: userMemories } }),
+      ...(agentMemories === undefined
+        ? {}
+        : { moonfold_memory_notes: { kind: "untrusted" as const, value: agentMemories } }),
+    };
     const additionalContext =
-      moonfoldContext === undefined && Object.keys(appContext).length === 0
+      moonfoldContext === undefined &&
+      Object.keys(appContext).length === 0 &&
+      Object.keys(memoryContext).length === 0
         ? undefined
-        : { ...moonfoldContext, ...appContext };
+        : { ...moonfoldContext, ...memoryContext, ...appContext };
     const collaborationMode: CodexSchema.ClientRequest__CollaborationMode | undefined =
       input.runtimePolicy.interactionMode !== "plan" && developerInstructions === undefined
         ? undefined
@@ -6563,6 +6581,7 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
               deviceToolsAvailable: mcpSession?.capabilities?.has("device") ?? false,
               omitServiceTier: adapterOptions.resolveRuntime !== undefined,
               ...(turnInput.appContext === undefined ? {} : { appContext: turnInput.appContext }),
+              ...(turnInput.memories === undefined ? {} : { memories: turnInput.memories }),
             });
             yield* Ref.update(pendingRootTurns, (current) => {
               const updated = new Map(current);
