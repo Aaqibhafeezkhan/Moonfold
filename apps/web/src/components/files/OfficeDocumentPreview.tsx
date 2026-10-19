@@ -77,7 +77,7 @@ export function OfficeDocumentPreview(props: {
     );
   }
   return state.document.kind === "docx" ? (
-    <div className="min-h-0 flex-1 overflow-auto">
+    <div className="scrollbar-gutter-both min-h-0 flex-1 overflow-auto">
       <div
         className="chat-markdown mx-auto max-w-4xl px-6 py-5"
         // Sanitized in docxToHtml: no scripts, styles or remote images.
