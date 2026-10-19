@@ -108,3 +108,73 @@ it.effect("preserves a due run when a save only pads the scheduled hour", () =>
     }).pipe(Effect.provide(ScheduledTaskService.layer.pipe(Layer.provide(layerDependencies))));
   }).pipe(Effect.provide(SqlitePersistence.layerMemory)),
 );
+
+const calendarDependencies = Layer.mergeAll(
+  NodeCrypto.layer,
+  Scheduler.layer,
+  Layer.mock(ThreadLaunchService.ThreadLaunchService)({}),
+  Layer.mock(ThreadManagementService.ThreadManagementService)({}),
+  Layer.mock(SecretRequests.SecretRequests)({}),
+);
+const calendarTask = (schedule: unknown) =>
+  decodeUpsertInput({
+    title: "Calendar task",
+    prompt: "Summarize yesterday's commits.",
+    enabled: true,
+    schedule,
+    projectId: "project-calendar",
+    workspaceStrategy: { type: "root" },
+    modelSelection: { instanceId: "codex", model: "gpt-5.4" },
+    runtimeMode: "full-access",
+    interactionMode: "default",
+  });
+
+it.effect("schedules cron tasks in their own time zone and refuses invalid ones", () =>
+  Effect.gen(function* () {
+    yield* TestClock.setTime(DateTime.toEpochMillis(DateTime.makeUnsafe("2026-10-19T00:00:00Z")));
+    yield* Effect.gen(function* () {
+      const service = yield* ScheduledTaskService.ScheduledTaskService;
+      const created = yield* service.upsert(
+        yield* calendarTask({ type: "cron", expression: "0 9 * * 1-5", timeZone: "Asia/Kolkata" }),
+      );
+      expect(created.task.nextRunAt).toBe("2026-10-19T03:30:00.000Z");
+
+      const invalid = yield* service
+        .upsert(yield* calendarTask({ type: "cron", expression: "0 9 * *", timeZone: "UTC" }))
+        .pipe(Effect.flip);
+      expect(invalid.message).toMatch(/five fields/);
+      const badZone = yield* service
+        .upsert(
+          yield* calendarTask({ type: "once", at: "2026-11-01T09:00", timeZone: "Nowhere/Here" }),
+        )
+        .pipe(Effect.flip);
+      expect(badZone.message).toMatch(/Unknown time zone/);
+      expect((yield* service.list()).tasks).toHaveLength(1);
+    }).pipe(Effect.provide(ScheduledTaskService.layer.pipe(Layer.provide(calendarDependencies))));
+  }).pipe(Effect.provide(SqlitePersistence.layerMemory)),
+);
+
+it.effect("records a one-off task that was missed while the server was down", () =>
+  Effect.gen(function* () {
+    const serviceLayer = ScheduledTaskService.layer.pipe(Layer.provide(calendarDependencies));
+    yield* TestClock.setTime(DateTime.toEpochMillis(DateTime.makeUnsafe("2026-10-19T00:00:00Z")));
+    const created = yield* Effect.gen(function* () {
+      const service = yield* ScheduledTaskService.ScheduledTaskService;
+      return yield* service.upsert(
+        yield* calendarTask({ type: "once", at: "2026-10-19T09:00", timeZone: "UTC" }),
+      );
+    }).pipe(Effect.provide(serviceLayer));
+    expect(created.task.nextRunAt).toBe("2026-10-19T09:00:00.000Z");
+
+    // The server is down past the slot and starts again two hours later.
+    yield* TestClock.setTime(DateTime.toEpochMillis(DateTime.makeUnsafe("2026-10-19T11:00:00Z")));
+    yield* Effect.gen(function* () {
+      const service = yield* ScheduledTaskService.ScheduledTaskService;
+      yield* TestClock.adjust("6 seconds");
+      const [task] = (yield* service.list()).tasks;
+      expect(task?.nextRunAt).toBeNull();
+      expect(task?.lastRunStatus).toBe("failed");
+      expect(task?.lastRunError).toMatch(/Missed/);
+    }).pipe(Effect.provide(serviceLayer));
+  }).pipe(Effect.provide(SqlitePersistence.layerMemory)),
+);

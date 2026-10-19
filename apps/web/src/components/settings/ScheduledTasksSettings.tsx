@@ -63,7 +63,11 @@ import { AuthOrchestrationOperateScope } from "@moonfold/contracts";
 import { readEnvironmentScope } from "~/state/session";
 import { useSettingsScope } from "./SettingsScopeContext";
 import {
+  CRON_PRESETS,
   WEBHOOK_SIGNATURE_DEFAULTS,
+  calendarScheduleProblem,
+  browserTimeZone,
+  defaultOnceAt,
   matchesScheduledTaskScope,
   scheduleFromDraft,
   scheduledTaskDefaultModel,
@@ -72,6 +76,14 @@ import {
   type ScheduleMode,
   type WorkspaceMode,
 } from "./scheduledTasksSettings.logic";
+import {
+  cronError,
+  describeCron,
+  isValidTimeZone,
+  nextCronOccurrence,
+  parseCron,
+} from "@moonfold/shared/cron";
+import * as DateTime from "effect/DateTime";
 import { Label } from "../ui/label";
 import { Menu, MenuTrigger, MenuPopup, MenuItem, MenuSeparator } from "../ui/menu";
 import { ToggleGroup, Toggle } from "../ui/toggle-group";
@@ -122,6 +134,10 @@ const EMPTY_DRAFT: DraftState = {
   intervalMinutes: "15",
   timeOfDay: "09:00",
   weekdays: new Set([1, 2, 3, 4, 5]),
+  onceAt: defaultOnceAt(),
+  cronExpression: "0 9 * * 1-5",
+  cronUntil: "",
+  timeZone: browserTimeZone(),
   projectId: "",
   threadId: "",
   workspaceMode: "worktree",
@@ -174,6 +190,8 @@ function splitModelKey(value: string): ModelSelection | null {
 
 export function scheduleLabel(schedule: ScheduledTaskSchedule): string {
   if (schedule.type === "webhook") return "On webhook";
+  if (schedule.type === "once") return `Once, ${schedule.at.replace("T", " ")}`;
+  if (schedule.type === "cron") return describeCron(schedule.expression) ?? schedule.expression;
   if (schedule.type === "interval") {
     const minutes = schedule.everyMs / 60_000;
     return Number.isInteger(minutes)
@@ -881,6 +899,11 @@ function ScheduledTaskEditorDialog({
       reportFailure("Scheduled task is incomplete", "Add a title, prompt, project, and model.");
       return;
     }
+    const calendarProblem = calendarScheduleProblem(draft);
+    if (calendarProblem !== null) {
+      reportFailure("Schedule is not valid", calendarProblem);
+      return;
+    }
     const schedule = scheduleFromDraft(draft);
     if (schedule === null) {
       reportFailure(
@@ -1163,7 +1186,13 @@ function ScheduledTaskEditorDialog({
                   value={[draft.scheduleMode]}
                   onValueChange={(values) => {
                     const mode = values[0] as ScheduleMode | undefined;
-                    if (mode === "fixed" || mode === "interval" || mode === "webhook")
+                    if (
+                      mode === "fixed" ||
+                      mode === "once" ||
+                      mode === "cron" ||
+                      mode === "interval" ||
+                      mode === "webhook"
+                    )
                       setDraft((current) => ({
                         ...current,
                         scheduleMode: mode,
@@ -1175,6 +1204,8 @@ function ScheduledTaskEditorDialog({
                   }}
                 >
                   <Toggle value="fixed">At a time</Toggle>
+                  <Toggle value="once">Once</Toggle>
+                  <Toggle value="cron">Repeat</Toggle>
                   <Toggle value="interval">Every interval</Toggle>
                   <Toggle value="webhook">On webhook</Toggle>
                 </ToggleGroup>
@@ -1292,6 +1323,8 @@ function ScheduledTaskEditorDialog({
                     </div>
                   ) : null}
                 </div>
+              ) : draft.scheduleMode === "once" || draft.scheduleMode === "cron" ? (
+                <CalendarScheduleFields draft={draft} setDraft={setDraft} />
               ) : draft.scheduleMode === "fixed" ? (
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="flex items-center gap-2">
@@ -1383,5 +1416,144 @@ function ScheduledTaskEditorDialog({
         </DialogFooter>
       </DialogPopup>
     </Dialog>
+  );
+}
+
+/** The next few runs of a cron draft, formatted in its own time zone. */
+function upcomingCronRuns(expression: string, timeZone: string, count: number): string[] {
+  if (cronError(expression) !== null || !isValidTimeZone(timeZone)) return [];
+  const schedule = parseCron(expression);
+  const runs: string[] = [];
+  let from: DateTime.DateTime = DateTime.nowUnsafe();
+  for (let index = 0; index < count; index += 1) {
+    const next = nextCronOccurrence(schedule, from, timeZone);
+    if (next === null) break;
+    runs.push(
+      new Date(DateTime.toEpochMillis(next)).toLocaleString(undefined, {
+        timeZone,
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    );
+    from = next;
+  }
+  return runs;
+}
+
+/** One-off and repeating (cron) schedules, both read in an explicit time zone. */
+function CalendarScheduleFields(props: {
+  readonly draft: DraftState;
+  readonly setDraft: (update: (current: DraftState) => DraftState) => void;
+}) {
+  const { draft, setDraft } = props;
+  const timeZoneValid = isValidTimeZone(draft.timeZone.trim());
+  const expressionError = draft.scheduleMode === "cron" ? cronError(draft.cronExpression) : null;
+  const upcoming =
+    draft.scheduleMode === "cron" && expressionError === null && timeZoneValid
+      ? upcomingCronRuns(draft.cronExpression, draft.timeZone.trim(), 3)
+      : [];
+  return (
+    <div className="space-y-3">
+      {draft.scheduleMode === "once" ? (
+        <Field label="Run on" htmlFor="scheduled-task-once">
+          <Input
+            type="datetime-local"
+            id="scheduled-task-once"
+            nativeInput
+            className="w-56"
+            value={draft.onceAt}
+            onChange={(event) =>
+              setDraft((current) => ({ ...current, onceAt: event.target.value }))
+            }
+          />
+        </Field>
+      ) : (
+        <>
+          <Field label="Repeat" htmlFor="scheduled-task-cron">
+            <div className="flex flex-wrap items-center gap-2">
+              <Select
+                value={
+                  CRON_PRESETS.find((preset) => preset.expression === draft.cronExpression.trim())
+                    ?.expression ?? "custom"
+                }
+                onValueChange={(value) => {
+                  if (typeof value === "string" && value !== "custom") {
+                    setDraft((current) => ({ ...current, cronExpression: value }));
+                  }
+                }}
+              >
+                <SelectTrigger size="sm" className="w-56" aria-label="Repeat preset">
+                  <SelectValue>
+                    {CRON_PRESETS.find(
+                      (preset) => preset.expression === draft.cronExpression.trim(),
+                    )?.label ?? "Custom"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectPopup>
+                  {CRON_PRESETS.map((preset) => (
+                    <SelectItem key={preset.expression} value={preset.expression}>
+                      {preset.label}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="custom">Custom</SelectItem>
+                </SelectPopup>
+              </Select>
+              <Input
+                id="scheduled-task-cron"
+                nativeInput
+                className="w-44"
+                aria-label="Cron expression"
+                aria-invalid={expressionError !== null}
+                value={draft.cronExpression}
+                onChange={(event) =>
+                  setDraft((current) => ({ ...current, cronExpression: event.target.value }))
+                }
+              />
+            </div>
+          </Field>
+          <p className="text-xs text-muted-foreground" role="status">
+            {expressionError ??
+              [
+                describeCron(draft.cronExpression),
+                upcoming.length > 0 ? `Next: ${upcoming.join(", ")}` : null,
+              ]
+                .filter((part) => part !== null)
+                .join(". ")}
+          </p>
+          <Field label="Until" hint="optional, last day to run" htmlFor="scheduled-task-until">
+            <Input
+              type="date"
+              id="scheduled-task-until"
+              nativeInput
+              className="w-44"
+              value={draft.cronUntil}
+              onChange={(event) =>
+                setDraft((current) => ({ ...current, cronUntil: event.target.value }))
+              }
+            />
+          </Field>
+        </>
+      )}
+      <Field label="Time zone" htmlFor="scheduled-task-time-zone">
+        <Input
+          id="scheduled-task-time-zone"
+          nativeInput
+          className="w-56"
+          aria-invalid={!timeZoneValid}
+          value={draft.timeZone}
+          onChange={(event) =>
+            setDraft((current) => ({ ...current, timeZone: event.target.value }))
+          }
+        />
+      </Field>
+      {timeZoneValid ? null : (
+        <p className="text-xs text-destructive-foreground" role="alert">
+          Use an IANA time zone, such as Europe/Berlin or Asia/Kolkata.
+        </p>
+      )}
+    </div>
   );
 }

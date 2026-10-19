@@ -6,6 +6,7 @@ import {
   isSameSchedule,
   nextScheduledRunAt,
   parseTimeOfDay,
+  scheduleProblem,
 } from "./Schedule.ts";
 
 describe("scheduled task schedule calculation", () => {
@@ -132,5 +133,60 @@ describe("scheduled task schedule calculation", () => {
         { type: "fixed_time", timeOfDay: after },
       ),
     ).toBe(true);
+  });
+});
+
+describe("one-off and cron schedules", () => {
+  const iso = (value: DateTime.DateTime | null) =>
+    value === null ? null : DateTime.formatIso(DateTime.toUtc(value));
+  const once = { type: "once", at: "2026-11-02T08:15", timeZone: "Europe/Berlin" } as const;
+
+  it("runs a one-off once, at its local time, and never again", () => {
+    expect(iso(nextScheduledRunAt(once, DateTime.makeUnsafe("2026-10-19T00:00:00.000Z")))).toBe(
+      "2026-11-02T07:15:00.000Z",
+    );
+    expect(nextScheduledRunAt(once, DateTime.makeUnsafe("2026-11-02T07:15:00.000Z"))).toBeNull();
+  });
+
+  it("reads cron in the task's time zone and stops after its end", () => {
+    const cron = {
+      type: "cron",
+      expression: "0 9 * * 1-5",
+      timeZone: "Asia/Kolkata",
+      until: "2026-10-20T23:59:59.000Z",
+    } as const;
+    // Monday 2026-10-19, 09:00 in Kolkata is 03:30 UTC.
+    expect(iso(nextScheduledRunAt(cron, DateTime.makeUnsafe("2026-10-19T00:00:00.000Z")))).toBe(
+      "2026-10-19T03:30:00.000Z",
+    );
+    expect(iso(nextScheduledRunAt(cron, DateTime.makeUnsafe("2026-10-19T03:30:00.000Z")))).toBe(
+      "2026-10-20T03:30:00.000Z",
+    );
+    expect(nextScheduledRunAt(cron, DateTime.makeUnsafe("2026-10-20T03:30:00.000Z"))).toBeNull();
+  });
+
+  it("reports invalid expressions and zones instead of scheduling them", () => {
+    expect(scheduleProblem({ type: "cron", expression: "0 9 * *", timeZone: "UTC" })).toMatch(
+      /five fields/,
+    );
+    expect(scheduleProblem({ ...once, timeZone: "Atlantis/Capital" })).toMatch(/Unknown time zone/);
+    expect(scheduleProblem(once)).toBeNull();
+  });
+
+  it("treats only a time-zone, end or normalized-expression change as a new schedule", () => {
+    const cron = { type: "cron", expression: "0 9 * * *", timeZone: "UTC" } as const;
+    expect(isSameSchedule(cron, { ...cron, expression: " 0  9 * * * " })).toBe(true);
+    expect(isSameSchedule(cron, { ...cron, timeZone: "Europe/Berlin" })).toBe(false);
+    expect(isSameSchedule(cron, { ...cron, until: "2026-12-31T00:00:00.000Z" })).toBe(false);
+  });
+
+  it("skips a one-off or cron run missed by more than the grace window", () => {
+    const due = DateTime.makeUnsafe("2026-11-02T07:15:00.000Z");
+    expect(isMissedFixedTimeRun(once, due, DateTime.makeUnsafe("2026-11-02T07:20:00.000Z"))).toBe(
+      false,
+    );
+    expect(isMissedFixedTimeRun(once, due, DateTime.makeUnsafe("2026-11-02T09:00:00.000Z"))).toBe(
+      true,
+    );
   });
 });

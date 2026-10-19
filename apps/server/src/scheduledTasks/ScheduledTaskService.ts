@@ -45,7 +45,12 @@ import * as Metrics from "../observability/Metrics.ts";
 import * as ThreadManagementService from "../orchestration-v2/ThreadManagementService.ts";
 import * as SecretRequests from "../secrets/SecretRequests.ts";
 import * as Scheduler from "../scheduling/Scheduler.ts";
-import { isMissedFixedTimeRun, isSameSchedule, nextScheduledRunAt } from "./Schedule.ts";
+import {
+  isMissedFixedTimeRun,
+  isSameSchedule,
+  nextScheduledRunAt,
+  scheduleProblem,
+} from "./Schedule.ts";
 import {
   redactHeaders,
   redactQuery,
@@ -886,10 +891,18 @@ export const layer = Layer.effect(
         missedRunAt: task.nextRunAt,
         rescheduledTo: next,
       });
+      // A missed one-off has no later occurrence, so say why it never ran.
+      const missedOnce = task.schedule.type === "once";
       yield* sql`
         UPDATE scheduled_tasks
         SET next_run_at = ${next},
-            updated_at = ${iso(now)}
+            updated_at = ${iso(now)},
+            last_run_status = ${missedOnce ? "failed" : task.lastRunStatus},
+            last_run_error = ${
+              missedOnce
+                ? "Missed: Moonfold was not running at the scheduled time."
+                : task.lastRunError
+            }
         WHERE task_id = ${task.id}
       `.pipe(
         Effect.mapError((cause) =>
@@ -1000,6 +1013,8 @@ export const layer = Layer.effect(
 
     const upsert: ScheduledTaskService["Service"]["upsert"] = (input) =>
       Effect.gen(function* () {
+        const problem = scheduleProblem(input.schedule);
+        if (problem !== null) return yield* taskError(problem, {});
         const now = yield* localNow;
         const uuid =
           input.commandId === undefined

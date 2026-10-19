@@ -17,6 +17,7 @@ import { resolveSettingsScope, type SettingsScopeSearch } from "./settingsScope"
 
 import { deriveProviderInstanceEntries } from "../../providerInstances";
 import {
+  calendarScheduleProblem,
   scheduledTaskDefaultModel,
   matchesScheduledTaskScope,
   scheduleFromDraft,
@@ -317,5 +318,55 @@ describe("scheduled task model defaults", () => {
         null,
       ),
     ).toBeNull();
+  });
+});
+
+describe("one-off and repeating scheduled tasks", () => {
+  it("round-trips a cron task with an end date in its own time zone", () => {
+    const draft = taskToDraft({
+      ...legacyTask,
+      schedule: {
+        type: "cron",
+        expression: "0 9 * * 1-5",
+        timeZone: "Asia/Kolkata",
+        until: "2026-12-31T18:29:59.000Z",
+      },
+    });
+    expect(draft.scheduleMode).toBe("cron");
+    expect(draft.cronUntil).toBe("2026-12-31");
+    expect(scheduleFromDraft(draft)).toEqual({
+      type: "cron",
+      expression: "0 9 * * 1-5",
+      timeZone: "Asia/Kolkata",
+      until: "2026-12-31T18:29:59.000Z",
+    });
+  });
+
+  it("round-trips a one-off task", () => {
+    const draft = taskToDraft({
+      ...legacyTask,
+      schedule: { type: "once", at: "2026-11-02T08:15", timeZone: "Europe/Berlin" },
+    });
+    expect(draft.scheduleMode).toBe("once");
+    expect(scheduleFromDraft(draft)).toEqual({
+      type: "once",
+      at: "2026-11-02T08:15",
+      timeZone: "Europe/Berlin",
+    });
+  });
+
+  it("explains what keeps a draft from saving", () => {
+    const now = new Date("2026-10-19T10:00:00.000Z");
+    const once = { ...taskToDraft(legacyTask), scheduleMode: "once" as const, timeZone: "UTC" };
+    expect(calendarScheduleProblem({ ...once, onceAt: "2026-10-19T09:00" }, now)).toBe(
+      "Pick a time in the future.",
+    );
+    expect(calendarScheduleProblem({ ...once, onceAt: "2026-10-19T11:00" }, now)).toBeNull();
+    expect(calendarScheduleProblem({ ...once, timeZone: "Nowhere/Here" }, now)).toMatch(
+      /Unknown time zone/,
+    );
+    const cron = { ...once, scheduleMode: "cron" as const, cronExpression: "0 25 * * *" };
+    expect(calendarScheduleProblem(cron, now)).toMatch(/hour must be between 0 and 23/);
+    expect(calendarScheduleProblem({ ...cron, cronExpression: "0 9 * * *" }, now)).toBeNull();
   });
 });
