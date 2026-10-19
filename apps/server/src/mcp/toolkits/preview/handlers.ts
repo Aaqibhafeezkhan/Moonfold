@@ -264,9 +264,9 @@ const handlers = {
   preview_snapshot: McpToolAccess.readsAsCaller((input) => {
     // Output selection and saving are MCP-only; the browser still produces a complete snapshot.
     const { includeImage: _includeImage, save: _save, ...operationInput } = input ?? {};
-    return onAllowedPage(
-      input?.tabId,
-      invokeTargeted<PreviewAutomationSnapshot>("snapshot", operationInput),
+    // A snapshot names the page it read, so it is checked without asking the tab first.
+    return invokeTargeted<PreviewAutomationSnapshot>("snapshot", operationInput).pipe(
+      Effect.tap((snapshot) => checkSite("browse", snapshot.url)),
     );
   }),
   preview_click: McpToolAccess.actsAsCaller((input) =>
