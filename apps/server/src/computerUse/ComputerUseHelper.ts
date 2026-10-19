@@ -42,8 +42,10 @@ export class ComputerUseHelper extends Context.Service<
       op: string,
       args?: Readonly<Record<string, unknown>>,
     ) => Effect.Effect<unknown, ComputerUseHelperError>;
-    /** Ends the helper process; the next request starts a new one. */
+    /** Ends the helper process and refuses every request until `resume`. */
     readonly stop: Effect.Effect<void>;
+    /** Lets requests start a helper again, after computer use is turned back on. */
+    readonly resume: Effect.Effect<void>;
   }
 >()("moonfold/computerUse/ComputerUseHelper") {}
 
@@ -83,6 +85,8 @@ const make = Effect.gen(function* () {
   const supported = platform === "win32";
   const startLock = yield* Semaphore.make(1);
   let running: Running | null = null;
+  // Set by Stop, so an action that passed its checks just before cannot start a new helper.
+  let stopped = false;
   let nextId = 1;
 
   const failAll = (state: Running, message: string) => {
@@ -138,6 +142,9 @@ const make = Effect.gen(function* () {
           message: "Computer use is not available on this operating system yet.",
         });
       }
+      if (stopped) {
+        return yield* new ComputerUseHelperError({ message: "Computer use was stopped." });
+      }
       const state = yield* start;
       const id = nextId++;
       const response = yield* Effect.callback<HelperResponse>((resume) => {
@@ -169,6 +176,7 @@ const make = Effect.gen(function* () {
     });
 
   const stop = Effect.sync(() => {
+    stopped = true;
     const state = running;
     running = null;
     if (state !== null) {
@@ -179,7 +187,11 @@ const make = Effect.gen(function* () {
 
   yield* Effect.addFinalizer(() => stop);
 
-  return ComputerUseHelper.of({ supported, request, stop });
+  const resume = Effect.sync(() => {
+    stopped = false;
+  });
+
+  return ComputerUseHelper.of({ supported, request, stop, resume });
 });
 
 export const layer = Layer.effect(ComputerUseHelper, make);

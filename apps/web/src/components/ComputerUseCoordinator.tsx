@@ -125,8 +125,8 @@ function AppApprovalDialog(props: {
     label: "computer use answer",
   });
   const [busy, setBusy] = useState(false);
-  // Enter on open allows for this chat only, never always.
-  const allowThreadRef = useRef<HTMLButtonElement>(null);
+  // Focus starts on Deny: an Enter meant for something else must never approve an app.
+  const denyRef = useRef<HTMLButtonElement>(null);
   const threadTitle = useThreadTitle(environmentId, request.threadId);
   const respond = async (value: ComputerUseAnswer) => {
     setBusy(true);
@@ -149,7 +149,7 @@ function AppApprovalDialog(props: {
         if (!open && !busy) void respond("deny");
       }}
     >
-      <DialogPopup className="sm:max-w-md" initialFocus={allowThreadRef}>
+      <DialogPopup className="sm:max-w-md" initialFocus={denyRef}>
         <DialogHeader>
           <DialogTitle>Let the agent use {request.app}?</DialogTitle>
           <DialogDescription>
@@ -159,11 +159,16 @@ function AppApprovalDialog(props: {
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" size="sm" disabled={busy} onClick={() => void respond("deny")}>
+          <Button
+            ref={denyRef}
+            variant="outline"
+            size="sm"
+            disabled={busy}
+            onClick={() => void respond("deny")}
+          >
             Deny
           </Button>
           <Button
-            ref={allowThreadRef}
             variant="outline"
             size="sm"
             disabled={busy}

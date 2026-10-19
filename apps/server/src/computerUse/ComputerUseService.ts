@@ -51,16 +51,39 @@ const LOG_PAGE = 200;
 
 /**
  * Apps agents never get, whatever the user approves: Moonfold itself (an agent must not answer
- * its own approval prompts) and the screens Windows uses for credentials and consent.
+ * its own approval prompts), the screens Windows uses for credentials and consent, the shell and
+ * system tools (approving them would hand over the whole machine: the Run dialog, the address
+ * bar, Settings, and Store apps, which all share one host process), and password managers.
  */
 const BLOCKED_APPS = new Set([
   "consent.exe",
   "credentialuibroker.exe",
   "lockapp.exe",
   "logonui.exe",
+  "explorer.exe",
+  "applicationframehost.exe",
+  "systemsettings.exe",
+  "sechealthui.exe",
+  "taskmgr.exe",
+  "regedit.exe",
+  "mmc.exe",
+  "1password.exe",
+  "bitwarden.exe",
+  "dashlane.exe",
+  "enpass.exe",
+  "keepass.exe",
+  "keepassxc.exe",
+  "lastpass.exe",
+  "roboform.exe",
 ]);
 export function isBlockedWindow(app: string, title: string): boolean {
-  return BLOCKED_APPS.has(app) || app.startsWith("moonfold") || /\bmoonfold\b/i.test(title);
+  return (
+    BLOCKED_APPS.has(app) ||
+    app.startsWith("moonfold") ||
+    /\bmoonfold\b/i.test(title) ||
+    // Developer tools of an Electron app can run code inside Moonfold itself.
+    /^DevTools\b/.test(title)
+  );
 }
 
 const HelperWindow = Schema.Struct({
@@ -184,7 +207,9 @@ const make = Effect.gen(function* () {
         INSERT INTO computer_use_settings (key, value) VALUES ('enabled', ${enabled ? "true" : "false"})
         ON CONFLICT (key) DO UPDATE SET value = excluded.value
       `;
-      if (!enabled) {
+      if (enabled) {
+        yield* helper.resume;
+      } else {
         yield* refuseWaiting;
         yield* helper.stop;
         yield* Ref.set(threadAllows, new Set());
@@ -372,7 +397,12 @@ const make = Effect.gen(function* () {
         detail: `${visible.length} windows`,
         outcome: "done",
       });
-      return visible.map((window) => ({ ...window, approved: allowed.has(window.app) }));
+      // Titles can name documents and mail; the agent sees them only for apps it may use.
+      return visible.map((window) => ({
+        ...window,
+        title: allowed.has(window.app) ? window.title : "",
+        approved: allowed.has(window.app),
+      }));
     });
 
   const act: ComputerUseService["Service"]["act"] = (target, action, detail, args) =>
@@ -391,6 +421,8 @@ const make = Effect.gen(function* () {
         ),
       );
       yield* markActive(target.threadId, window.app);
+      // The user may have pressed Stop while the checks above ran.
+      yield* requireEnabled;
       return yield* helper.request(action, { ...args, window: target.window }).pipe(
         Effect.tap(() =>
           log({ threadId: target.threadId, app: window.app, action, detail, outcome: "done" }),

@@ -21,9 +21,14 @@ and the window:
   where you can remove it.
 - **Deny**, or closing the question, refuses. The agent is told and should ask you in chat.
 
-Moonfold never lets agents use its own windows (including a browser tab showing Moonfold) or the
-Windows screens for passwords and permission prompts, and Windows itself keeps them away from apps
-running as administrator. Password fields are never read.
+Some windows are never available to agents, whatever you approve: Moonfold's own (including a
+browser tab showing Moonfold), the Windows screens for passwords and permission prompts, File
+Explorer, Settings, Task Manager and other system tools, Store apps (which share one Windows
+process, so approving one would approve them all), and password managers. Windows itself keeps
+apps running as administrator out of reach. Password fields are never read, and the Windows key
+can't be pressed. Agents see the titles of only the windows they may use.
+
+Typing stops the moment another window takes focus, so text never lands in a different app.
 
 ## While an agent works
 

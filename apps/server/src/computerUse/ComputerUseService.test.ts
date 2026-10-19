@@ -54,6 +54,7 @@ function makeHarness() {
     stop: Effect.sync(() => {
       stops += 1;
     }),
+    resume: Effect.void,
   });
   const layer = ComputerUseService.layer.pipe(
     Layer.provideMerge(Layer.mergeAll(helper, SqlitePersistence.layerMemory, NodeCrypto.layer)),
@@ -77,6 +78,16 @@ describe("isBlockedWindow", () => {
       ComputerUseService.isBlockedWindow("chrome.exe", "Moonfold (Dev) - Google Chrome"),
     );
     assert.isTrue(ComputerUseService.isBlockedWindow("consent.exe", "User Account Control"));
+    // The shell, system tools and password managers would hand over far more than one app.
+    for (const app of [
+      "explorer.exe",
+      "applicationframehost.exe",
+      "systemsettings.exe",
+      "keepassxc.exe",
+    ]) {
+      assert.isTrue(ComputerUseService.isBlockedWindow(app, "Window"));
+    }
+    assert.isTrue(ComputerUseService.isBlockedWindow("electron.exe", "DevTools - localhost:5733/"));
     assert.isFalse(ComputerUseService.isBlockedWindow("notepad.exe", "Untitled - Notepad"));
   });
 });
@@ -98,9 +109,10 @@ it.effect("lists reachable windows only and asks before the first use of an app"
     const computer = yield* ComputerUseService.ComputerUseService;
     yield* computer.setEnabled(true);
     const apps = yield* computer.listApps(thread);
+    // Unapproved windows show their app, never their title.
     assert.deepStrictEqual(
-      apps.map((app) => [app.app, app.approved]),
-      [["notepad.exe", false]],
+      apps.map((app) => [app.app, app.title, app.approved]),
+      [["notepad.exe", "", false]],
     );
 
     const typing = yield* computer

@@ -85,6 +85,17 @@ export function clientRpcRequiredScopes(
   method: string,
   input: unknown,
 ): readonly AuthEnvironmentScope[] {
+  // An "always" answer saves a lasting rule, which is a settings change; answering once is not.
+  if (
+    (method === WS_METHODS.computerUseAnswer || method === WS_METHODS.browserSitesAnswer) &&
+    typeof input === "object" &&
+    input !== null &&
+    "answer" in input &&
+    typeof input.answer === "string" &&
+    input.answer.startsWith("always_")
+  ) {
+    return [AuthOrchestrationOperateScope, AuthSettingsWriteScope];
+  }
   if (method === WS_METHODS.gitPreparePullRequestThread && input !== undefined) {
     const payload = decodePrepareThread(input);
     if (payload.mode === "worktree" && payload.threadId !== undefined)

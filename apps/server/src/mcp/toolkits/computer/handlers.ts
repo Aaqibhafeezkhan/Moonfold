@@ -106,7 +106,10 @@ const handlers = {
     ),
   ),
   computer_key: McpToolAccess.actsAsCaller((input) =>
-    act(input.window, "key", input.keys, { keys: input.keys }).pipe(Effect.map(done("Pressed."))),
+    // A single character pressed alone is logged as a count, like typed text.
+    act(input.window, "key", /^\S$/.test(input.keys.trim()) ? "1 key" : input.keys, {
+      keys: input.keys,
+    }).pipe(Effect.map(done("Pressed."))),
   ),
   computer_scroll: McpToolAccess.actsAsCaller((input) =>
     act(input.window, "scroll", `${input.clicks} at ${input.x},${input.y}`, {

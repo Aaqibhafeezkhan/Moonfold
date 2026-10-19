@@ -125,7 +125,8 @@ public static class MoonfoldWin {
         var hdc = g.GetHdc();
         bool printed = PrintWindow(hwnd, hdc, 2);
         g.ReleaseHdc(hdc);
-        if (!printed) g.CopyFromScreen(rect.Left, rect.Top, 0, 0, new Size(width, height));
+        // Never fall back to copying the screen: that would capture whatever covers the window.
+        if (!printed) throw new InvalidOperationException("This app does not allow screenshots of its window.");
       }
       int outWidth = Math.Max(1, (int)Math.Round(width * scale)), outHeight = Math.Max(1, (int)Math.Round(height * scale));
       using (var scaled = new Bitmap(outWidth, outHeight, PixelFormat.Format24bppRgb)) {
@@ -148,14 +149,27 @@ public static class MoonfoldWin {
 
   public static void Key(ushort vk, bool up) { Send(KeyInput(vk, 0, up ? KEYEVENTF_KEYUP : 0)); }
 
-  public static void Chord(ushort[] keys) {
+  /** Input goes only to the approved window: stop the moment another window takes focus. */
+  static void RequireForeground(long handle) {
+    if (GetAncestor(GetForegroundWindow(), 2).ToInt64() != handle)
+      throw new InvalidOperationException("Another window took focus, so Moonfold stopped typing. Nothing more was sent.");
+  }
+
+  public static void Chord(long handle, ushort[] keys) {
+    RequireForeground(handle);
     foreach (var key in keys) Key(key, false);
     for (int i = keys.Length - 1; i >= 0; i--) Key(keys[i], true);
   }
 
-  public static void TypeText(string text) {
+  public static void TypeText(long handle, string text) {
     foreach (var c in text) {
-      if (c == '\n') { Key(0x0D, false); Key(0x0D, true); continue; }
+      RequireForeground(handle);
+      if (c == '\n') {
+        Key(0x0D, false); Key(0x0D, true);
+        // Enter can open another window; check before anything else is typed.
+        System.Threading.Thread.Sleep(60);
+        continue;
+      }
       if (c == '\r') continue;
       Send(KeyInput(0, c, KEYEVENTF_UNICODE), KeyInput(0, c, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP));
     }
@@ -186,7 +200,7 @@ public static class MoonfoldWin {
 
 $MaxImageWidth = 1280
 $KeyCodes = @{
-  'ctrl' = 0x11; 'control' = 0x11; 'shift' = 0x10; 'alt' = 0x12; 'win' = 0x5B; 'meta' = 0x5B;
+  'ctrl' = 0x11; 'control' = 0x11; 'shift' = 0x10; 'alt' = 0x12;
   'enter' = 0x0D; 'return' = 0x0D; 'tab' = 0x09; 'escape' = 0x1B; 'esc' = 0x1B; 'space' = 0x20;
   'backspace' = 0x08; 'delete' = 0x2E; 'del' = 0x2E; 'insert' = 0x2D; 'home' = 0x24; 'end' = 0x23;
   'pageup' = 0x21; 'pagedown' = 0x22; 'left' = 0x25; 'up' = 0x26; 'right' = 0x27; 'down' = 0x28
@@ -219,6 +233,7 @@ function Require-Focus($window) {
 function Get-KeyCode([string]$name) {
   $lower = $name.ToLowerInvariant()
   if ($KeyCodes.ContainsKey($lower)) { return [uint16]$KeyCodes[$lower] }
+  if ($lower -eq 'win' -or $lower -eq 'meta') { throw 'The Windows key is not available: its shortcuts act outside the app.' }
   if ($lower -match '^f([1-9]|1[0-9]|2[0-4])$') { return [uint16](0x6F + [int]$Matches[1]) }
   if ($lower.Length -eq 1) {
     $c = [char]$lower.ToUpperInvariant()
@@ -306,14 +321,14 @@ function Invoke-Request($request) {
     'type' {
       $window = Get-Window $request
       Require-Focus $window
-      [MoonfoldWin]::TypeText([string]$request.text)
+      [MoonfoldWin]::TypeText($window.handle, [string]$request.text)
       return @{}
     }
     'key' {
       $window = Get-Window $request
       Require-Focus $window
       $codes = @(([string]$request.keys).Split('+') | ForEach-Object { Get-KeyCode $_.Trim() })
-      [MoonfoldWin]::Chord([uint16[]]$codes)
+      [MoonfoldWin]::Chord($window.handle, [uint16[]]$codes)
       return @{}
     }
     'scroll' {
@@ -339,7 +354,10 @@ while ($true) {
     $result = Invoke-Request $request
     $response = @{ id = $id; ok = $true; result = $result }
   } catch {
-    $response = @{ id = $id; ok = $false; error = $_.Exception.Message }
+    # A .NET method's own message, not PowerShell's "Exception calling ..." wrapper.
+    $failure = $_.Exception
+    if ($failure.InnerException -ne $null) { $failure = $failure.InnerException }
+    $response = @{ id = $id; ok = $false; error = $failure.Message }
   }
   [Console]::Out.WriteLine(($response | ConvertTo-Json -Depth 8 -Compress))
   [Console]::Out.Flush()
