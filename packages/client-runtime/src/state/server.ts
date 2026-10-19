@@ -1173,6 +1173,10 @@ export function createServerEnvironmentAtoms<R, E>(
       label: "environment-data:server:scheduled-task:runs",
       tag: WS_METHODS.scheduledTasksListRuns,
     }),
+    plugins: createEnvironmentRpcQueryAtomFamily(runtime, {
+      label: "environment-data:server:plugins",
+      tag: WS_METHODS.pluginsList,
+    }),
     scheduledTaskWebhookDelivery: createEnvironmentRpcQueryAtomFamily(runtime, {
       label: "environment-data:server:scheduled-task:webhook-delivery",
       tag: WS_METHODS.scheduledTasksGetWebhookDelivery,
@@ -1398,6 +1402,27 @@ export function createServerEnvironmentAtoms<R, E>(
     deleteScheduledTask: createEnvironmentRpcCommand(runtime, {
       label: "environment-data:server:scheduled-task:delete",
       tag: WS_METHODS.scheduledTasksDelete,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    // Installing clones a repository, so it stays off the config lane like run-now.
+    installPlugin: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:plugin:install",
+      tag: WS_METHODS.pluginsInstall,
+    }),
+    updatePlugin: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:plugin:update",
+      tag: WS_METHODS.pluginsUpdate,
+    }),
+    setPluginEnabled: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:plugin:set-enabled",
+      tag: WS_METHODS.pluginsSetEnabled,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    removePlugin: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:plugin:remove",
+      tag: WS_METHODS.pluginsRemove,
       scheduler: configScheduler,
       concurrency: configConcurrency,
     }),
