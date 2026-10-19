@@ -511,6 +511,8 @@ export const ClientSettingsSchema = Schema.Struct({
   snapShotFlash: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
   snapShotAnimations: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
   wordWrap: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
+  /** Desktop (Windows, Linux): keep running in the tray after the last window closes. */
+  desktopRunInBackground: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
   /** Desktop: the global hotkey that opens the quick window. Off (null) until the user sets one. */
   quickWindowShortcut: Schema.NullOr(SnapShotKeyChord).pipe(
     Schema.withDecodingDefault(Effect.succeed(null)),
@@ -1792,5 +1794,6 @@ export const ClientSettingsPatch = Schema.Struct({
   snapShotAnimations: Schema.optionalKey(Schema.Boolean),
   wordWrap: Schema.optionalKey(Schema.Boolean),
   quickWindowShortcut: Schema.optionalKey(Schema.NullOr(SnapShotKeyChord)),
+  desktopRunInBackground: Schema.optionalKey(Schema.Boolean),
 });
 export type ClientSettingsPatch = typeof ClientSettingsPatch.Type;

@@ -49,3 +49,11 @@ its thread. A run whose prompt could not be sent shows why. The last 100 runs ar
 every run, only when a run fails, or never. Requests for input or approval always notify, since
 the agent waits for them. Notifications appear on devices where Moonfold is open, following your
 notification settings.
+
+## Keep tasks running with the window closed
+
+Tasks run while the Moonfold server runs. On macOS the desktop app keeps running after you close
+its windows. On Windows and Linux, turn on **Settings → General → Keep running in the
+background**: closing the last window then leaves Moonfold in the system tray, and its menu opens
+a window again or quits. You can also run the server as a
+[background service](background-service.md) on Linux and macOS.

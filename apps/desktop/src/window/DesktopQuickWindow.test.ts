@@ -40,11 +40,16 @@ const withShortcut = (
 ): ClientSettings => ({ ...DEFAULT_CLIENT_SETTINGS, quickWindowShortcut });
 
 let toggles = 0;
+const backgroundSettings: Array<boolean> = [];
 const layer = DesktopQuickWindow.layer.pipe(
   Layer.provide(
     Layer.mergeAll(
       DesktopClientSettings.layerTest(Option.some(withShortcut(chord))),
       Layer.mock(DesktopWindow.DesktopWindow)({
+        setRunInBackground: (enabled) =>
+          Effect.sync(() => {
+            backgroundSettings.push(enabled);
+          }),
         toggleQuickWindow: Effect.sync(() => {
           toggles += 1;
         }),
@@ -57,7 +62,17 @@ beforeEach(() => {
   shortcuts.held.clear();
   shortcuts.taken.clear();
   toggles = 0;
+  backgroundSettings.length = 0;
 });
+
+it.effect("passes the background-mode setting to the window service", () =>
+  Effect.gen(function* () {
+    const quickWindow = yield* DesktopQuickWindow.DesktopQuickWindow;
+    yield* quickWindow.configure({ ...withShortcut(null), desktopRunInBackground: true });
+    yield* quickWindow.configure({ ...withShortcut(null), desktopRunInBackground: false });
+    assert.deepStrictEqual(backgroundSettings, [true, false]);
+  }).pipe(Effect.provide(layer)),
+);
 
 it.effect("holds the saved hotkey from startup and toggles the window with it", () =>
   Effect.gen(function* () {

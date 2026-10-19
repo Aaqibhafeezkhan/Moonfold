@@ -107,6 +107,8 @@ function layerPool(labelRef: Ref.Ref<string>): Layer.Layer<DesktopBackendPool.De
           openThreadWindow: () => Effect.void,
           setThreadWindowAlwaysOnTop: () => Effect.succeed(false),
           toggleQuickWindow: Effect.void,
+          setRunInBackground: () => Effect.void,
+          enterBackground: Effect.succeed(false),
         } satisfies DesktopWindow.DesktopWindow["Service"]),
       ),
     ),

@@ -546,6 +546,13 @@ export const SETTINGS_SEARCH_ITEMS = [
     desktopOnly: true,
   },
   {
+    id: "run-in-background",
+    title: "Keep running in the background",
+    to: "/settings/general",
+    searchTerms: ["tray system close window scheduled tasks keep alive quit windows linux"],
+    desktopOnly: true,
+  },
+  {
     id: "quick-window-shortcut",
     title: "Quick window shortcut",
     to: "/settings/general",
