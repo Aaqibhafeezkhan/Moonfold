@@ -2,6 +2,7 @@ import { useAtomValue } from "@effect/atom-react";
 import {
   Clock3Icon,
   CopyIcon,
+  HistoryIcon,
   InboxIcon,
   MoreHorizontalIcon,
   PencilIcon,
@@ -17,6 +18,9 @@ import type {
   ProjectId,
   ScheduledTask,
   ScheduledTaskId,
+  ScheduledTaskNotifyPolicy,
+  ScheduledTaskRunOutcome,
+  ScheduledTaskRunRecord,
   ScheduledTaskSchedule,
   ScheduledTaskUpsertInput,
   ScheduledTaskWebhookDeliveryOutcome,
@@ -138,6 +142,7 @@ const EMPTY_DRAFT: DraftState = {
   cronExpression: "0 9 * * 1-5",
   cronUntil: "",
   timeZone: browserTimeZone(),
+  notify: "all",
   projectId: "",
   threadId: "",
   workspaceMode: "worktree",
@@ -432,6 +437,7 @@ function ScheduledTaskRow({
   );
   const [busy, setBusy] = useState(false);
   const [deliveriesOpen, setDeliveriesOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const isWebhook = task.schedule.type === "webhook";
   const toggle = useAtomCommand(serverEnvironment.setScheduledTaskEnabled, {
     label: "scheduled task enabled",
@@ -521,6 +527,10 @@ function ScheduledTaskRow({
                   Run now
                 </MenuItem>
               )}
+              <MenuItem onClick={() => setHistoryOpen(true)}>
+                <HistoryIcon />
+                Run history
+              </MenuItem>
               <MenuSeparator />
               <MenuItem onClick={() => void act("delete")}>
                 <Trash2Icon />
@@ -528,6 +538,13 @@ function ScheduledTaskRow({
               </MenuItem>
             </MenuPopup>
           </Menu>
+          {historyOpen ? (
+            <RunHistoryDialog
+              environmentId={environmentId}
+              task={task}
+              onClose={() => setHistoryOpen(false)}
+            />
+          ) : null}
           {deliveriesOpen ? (
             <WebhookDeliveriesDialog
               environmentId={environmentId}
@@ -538,6 +555,108 @@ function ScheduledTaskRow({
         </div>
       }
     />
+  );
+}
+
+const NOTIFY_POLICY_LABELS: Record<ScheduledTaskNotifyPolicy, string> = {
+  all: "After every run",
+  failures: "Only when a run fails",
+  never: "Never",
+};
+
+const RUN_OUTCOME_LABELS: Record<ScheduledTaskRunOutcome, string> = {
+  working: "Working",
+  succeeded: "Succeeded",
+  failed: "Failed",
+  cancelled: "Cancelled",
+};
+const RUN_TRIGGER_LABELS: Record<ScheduledTaskRunRecord["trigger"], string> = {
+  scheduled: "On schedule",
+  manual: "Run now",
+  webhook: "Webhook",
+};
+
+function runOutcomeVariant(status: ScheduledTaskRunOutcome) {
+  if (status === "failed") return "error";
+  if (status === "succeeded") return "success";
+  if (status === "working") return "info";
+  return "outline";
+}
+
+/** Every run of a task: when and why it started, how the agent's turn ended, and its thread. */
+function RunHistoryDialog({
+  environmentId,
+  task,
+  onClose,
+}: {
+  readonly environmentId: EnvironmentId;
+  readonly task: ScheduledTask;
+  readonly onClose: () => void;
+}) {
+  const runsQuery = useEnvironmentQuery(
+    serverEnvironment.scheduledTaskRuns({ environmentId, input: { id: task.id } }),
+  );
+  const runs = runsQuery.data?.runs ?? null;
+  return (
+    <Dialog
+      open
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DialogPopup className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Run history · {task.title}</DialogTitle>
+          <DialogDescription>
+            Each run, how the agent's turn ended, and its thread.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogPanel>
+          {runsQuery.error ? <p className="text-sm text-destructive">{runsQuery.error}</p> : null}
+          {runs === null ? (
+            <p className="text-sm text-muted-foreground" role="status">
+              Loading runs…
+            </p>
+          ) : runs.length === 0 ? (
+            <p className="text-sm text-muted-foreground">This task has not run yet.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {runs.map((run) => (
+                <li key={run.id} className="flex flex-wrap items-center gap-2 py-2 text-sm">
+                  <Badge variant={runOutcomeVariant(run.status)}>
+                    {RUN_OUTCOME_LABELS[run.status]}
+                  </Badge>
+                  <span>{RUN_TRIGGER_LABELS[run.trigger]}</span>
+                  <span className="text-muted-foreground">{relativeLabel(run.startedAt)}</span>
+                  {run.threadId !== null ? (
+                    <Link
+                      to="/$environmentId/$threadId"
+                      params={{ environmentId, threadId: run.threadId }}
+                      className="text-primary underline-offset-2 hover:underline"
+                      onClick={onClose}
+                    >
+                      Open thread
+                    </Link>
+                  ) : null}
+                  {run.error ? <span className="w-full text-destructive">{run.error}</span> : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </DialogPanel>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={runsQuery.isPending}
+            onClick={runsQuery.refresh}
+          >
+            Refresh
+          </Button>
+          <DialogClose render={<Button size="sm" />}>Done</DialogClose>
+        </DialogFooter>
+      </DialogPopup>
+    </Dialog>
   );
 }
 
@@ -964,6 +1083,7 @@ function ScheduledTaskEditorDialog({
       runtimeMode: draft.runtimeMode,
       interactionMode: draft.interactionMode,
       creationSource: "web",
+      notify: draft.notify,
     };
     // Lock before React renders, and keep successful creates locked until the form closes.
     submissionPending.current = true;
@@ -1380,6 +1500,39 @@ function ScheduledTaskEditorDialog({
                   <span className="text-xs text-muted-foreground">minutes</span>
                 </div>
               )}
+            </div>
+
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0 space-y-1">
+                <Label htmlFor="scheduled-task-notify">Notify me</Label>
+                <p className="text-sm text-muted-foreground">
+                  When a run's agent finishes, on this device.
+                </p>
+              </div>
+              <Select
+                value={draft.notify}
+                onValueChange={(value) => {
+                  if (value === "all" || value === "failures" || value === "never") {
+                    setDraft((current) => ({ ...current, notify: value }));
+                  }
+                }}
+              >
+                <SelectTrigger
+                  id="scheduled-task-notify"
+                  size="sm"
+                  className="w-44"
+                  aria-label="Notify me"
+                >
+                  <SelectValue>{NOTIFY_POLICY_LABELS[draft.notify]}</SelectValue>
+                </SelectTrigger>
+                <SelectPopup align="end">
+                  {(["all", "failures", "never"] as const).map((policy) => (
+                    <SelectItem key={policy} value={policy}>
+                      {NOTIFY_POLICY_LABELS[policy]}
+                    </SelectItem>
+                  ))}
+                </SelectPopup>
+              </Select>
             </div>
 
             <div className="flex items-center justify-between gap-4">

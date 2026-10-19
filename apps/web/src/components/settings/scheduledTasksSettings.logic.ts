@@ -3,6 +3,7 @@ import {
   type ProjectId,
   ScheduledTaskId,
   type ScheduledTask,
+  type ScheduledTaskNotifyPolicy,
   type ScheduledTaskUpsertSchedule,
   type ModelSelection,
   type RuntimeMode,
@@ -67,6 +68,8 @@ export interface DraftState {
   readonly cronUntil: string;
   /** IANA zone for one-off and cron schedules. */
   readonly timeZone: string;
+  /** When runs notify: every run, failures only, or never. */
+  readonly notify: ScheduledTaskNotifyPolicy;
   readonly projectId: string;
   readonly threadId: string;
   readonly workspaceMode: WorkspaceMode;
@@ -167,6 +170,7 @@ export function taskToDraft(task: ScheduledTask): DraftState {
         : "",
     timeZone:
       schedule.type === "once" || schedule.type === "cron" ? schedule.timeZone : browserTimeZone(),
+    notify: task.notify ?? "all",
     projectId: task.projectId,
     threadId: task.threadId ?? "",
     workspaceMode: task.workspaceStrategy.type,
@@ -212,7 +216,7 @@ export function defaultOnceAt(now: Date = new Date()): string {
 }
 
 /** The last instant of a local date in a time zone, as an ISO string. */
-export function endOfLocalDay(date: string, timeZone: string): string | null {
+function endOfLocalDay(date: string, timeZone: string): string | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
   const zone = DateTime.zoneMakeNamed(timeZone);
   if (match === null || Option.isNone(zone)) return null;
@@ -229,7 +233,7 @@ export function endOfLocalDay(date: string, timeZone: string): string | null {
 }
 
 /** The local "YYYY-MM-DD" date of an instant in a time zone. */
-export function localDate(iso: string, timeZone: string): string {
+function localDate(iso: string, timeZone: string): string {
   const zone = DateTime.zoneMakeNamed(timeZone);
   const instant = DateTime.makeUnsafe(iso);
   const parts = DateTime.toParts(

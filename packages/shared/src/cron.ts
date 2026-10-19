@@ -52,7 +52,7 @@ const FIELDS: ReadonlyArray<FieldSpec> = [
   { name: "day of week", min: 0, max: 7, names: DAY_NAMES, nameOffset: 0 },
 ];
 
-export class CronParseError extends Error {}
+class CronParseError extends Error {}
 
 function parseValue(raw: string, spec: FieldSpec): number {
   const upper = raw.toUpperCase();

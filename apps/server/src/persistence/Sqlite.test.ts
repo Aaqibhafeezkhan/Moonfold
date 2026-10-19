@@ -89,7 +89,11 @@ it.effect("collects planner statistics for an existing database on open", () => 
       const rows = yield* sql<{ readonly stat: string }>`
         SELECT stat FROM sqlite_stat1 WHERE idx = 'stats_probe_thread_idx'
       `;
-      assert.deepEqual([...rows], [{ stat: "1000 100" }]);
+      // optimize analyzes under a row limit, so the per-key figure is a sample (about 100).
+      assert.equal(rows.length, 1);
+      const [total, perKey] = (rows[0]?.stat ?? "").split(" ").map(Number);
+      assert.equal(total, 1000);
+      assert.isTrue(perKey !== undefined && perKey >= 90 && perKey <= 110);
     }).pipe(Effect.provide(persistence()));
   }).pipe(
     Effect.ensuring(Effect.sync(() => NodeFS.rmSync(tempDir, { recursive: true, force: true }))),

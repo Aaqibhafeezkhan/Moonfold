@@ -374,6 +374,8 @@ import {
   ScheduledTaskRotateWebhookTokenInput,
   ScheduledTaskListWebhookDeliveriesInput,
   ScheduledTaskListWebhookDeliveriesResult,
+  ScheduledTaskListRunsInput,
+  ScheduledTaskListRunsResult,
   ScheduledTaskGetWebhookDeliveryInput,
   ScheduledTaskGetWebhookDeliveryResult,
   ScheduledTaskRunNowResult,
@@ -570,6 +572,7 @@ export const WS_METHODS = {
   scheduledTasksRotateWebhookToken: "scheduledTasks.rotateWebhookToken",
   secretsAnswerRequest: "secrets.answerRequest",
   scheduledTasksListWebhookDeliveries: "scheduledTasks.listWebhookDeliveries",
+  scheduledTasksListRuns: "scheduledTasks.listRuns",
   scheduledTasksGetWebhookDelivery: "scheduledTasks.getWebhookDelivery",
 
   // Cloud environment methods
@@ -1974,6 +1977,12 @@ const WsScheduledTasksListWebhookDeliveriesRpc = Rpc.make(
   },
 );
 
+const WsScheduledTasksListRunsRpc = Rpc.make(WS_METHODS.scheduledTasksListRuns, {
+  payload: ScheduledTaskListRunsInput,
+  success: ScheduledTaskListRunsResult,
+  error: Schema.Union([ScheduledTaskError, EnvironmentAuthorizationError]),
+});
+
 const WsScheduledTasksGetWebhookDeliveryRpc = Rpc.make(
   WS_METHODS.scheduledTasksGetWebhookDelivery,
   {
@@ -2189,6 +2198,7 @@ export const WsRpcGroupPart4 = RpcGroup.make(
   WsThreadsAskSideQuestionRpc,
   WsThreadsMoveToWorktreeRpc,
   WsThreadsReturnToProjectRpc,
+  WsScheduledTasksListRunsRpc,
   WsTerminalObserveRpc,
   WsTerminalWriteRpc,
   WsTerminalResizeRpc,

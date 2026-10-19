@@ -16,7 +16,7 @@ export function parseTimeOfDay(value: string): { hour: number; minute: number } 
 }
 
 /** The instant a one-off schedule names, or null when its time zone is unknown. */
-export function onceRunAt(
+function onceRunAt(
   schedule: Extract<ScheduledTaskSchedule, { type: "once" }>,
 ): DateTime.Utc | null {
   const zone = DateTime.zoneMakeNamed(schedule.timeZone);

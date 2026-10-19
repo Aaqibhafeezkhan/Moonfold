@@ -23,3 +23,16 @@ name such as `Europe/Berlin` or `Asia/Kolkata`.
 
 A run that is more than ten minutes late, for example because the computer was asleep, is skipped
 and the task waits for its next time. Interval tasks catch up with a single run instead.
+
+## See what each run did
+
+Choose **Run history** from a task's menu. Each run shows what started it (its schedule, **Run
+now**, or a webhook), whether the agent's turn succeeded, failed or was cancelled, and a link to
+its thread. A run whose prompt could not be sent shows why. The last 100 runs are kept.
+
+## Choose when you hear about runs
+
+**Notify me** in the task form decides which runs notify you when their agent finishes: after
+every run, only when a run fails, or never. Requests for input or approval always notify, since
+the agent waits for them. Notifications appear on devices where Moonfold is open, following your
+notification settings.

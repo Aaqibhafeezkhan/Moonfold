@@ -13,7 +13,7 @@ import {
   MessageCircleQuestionIcon,
   ShieldQuestionIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { getClientSettings, useClientSettings } from "../hooks/useSettings";
 import { useEnvironmentIds } from "../state/environments";
@@ -26,6 +26,12 @@ import {
   unlockNotificationAudio,
 } from "../threadNotifications";
 import { resolveSidebarThreadStatus } from "./Sidebar.logic";
+import {
+  scheduledRunAllowsNotification,
+  scheduledRunNotifyPolicies,
+} from "../scheduledRunNotifications";
+import { useEnvironmentQuery } from "../state/query";
+import { serverEnvironment } from "../state/server";
 import { toastManager } from "./ui/toast";
 
 export function ThreadNotificationCoordinator() {
@@ -120,6 +126,14 @@ function EnvironmentNotifications({
     strict: false,
   });
   const previous = useRef(new Map<ThreadId, NotificationState>());
+  // Scheduled tasks choose whether their runs notify.
+  const scheduledTasks = useEnvironmentQuery(
+    serverEnvironment.scheduledTasksLive({ environmentId, input: {} }),
+  ).data?.tasks;
+  const scheduledRunPolicies = useMemo(
+    () => scheduledRunNotifyPolicies(scheduledTasks ?? []),
+    [scheduledTasks],
+  );
 
   useEffect(() => {
     if (threads === null) {
@@ -162,6 +176,8 @@ function EnvironmentNotifications({
             ? "completion"
             : null;
       if (!kind) continue;
+      const runPolicy = scheduledRunPolicies.get(thread.latestRun?.runId ?? "");
+      if (!scheduledRunAllowsNotification(runPolicy, kind, status)) continue;
       const title =
         kind === "completion"
           ? "Thread completed"
@@ -248,6 +264,7 @@ function EnvironmentNotifications({
     mode,
     navigate,
     onNotification,
+    scheduledRunPolicies,
     threads,
   ]);
 

@@ -5,6 +5,7 @@ import {
   ForwardCompatibleArray,
   IsoDateTime,
   ProjectId,
+  RunId,
   ScheduledTaskId,
   SecretRef,
   ThreadId,
@@ -203,6 +204,10 @@ export const ScheduledTaskWebhookEndpoint = Schema.Struct({
 });
 export type ScheduledTaskWebhookEndpoint = typeof ScheduledTaskWebhookEndpoint.Type;
 
+/** When a task's runs notify: every run, failures only, or never. */
+export const ScheduledTaskNotifyPolicy = Schema.Literals(["all", "failures", "never"]);
+export type ScheduledTaskNotifyPolicy = typeof ScheduledTaskNotifyPolicy.Type;
+
 export const ScheduledTask = Schema.Struct({
   id: ScheduledTaskId,
   title: TrimmedNonEmptyString,
@@ -225,6 +230,10 @@ export const ScheduledTask = Schema.Struct({
   lastRunError: Schema.NullOr(Schema.String),
   runCount: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
   webhook: Schema.optional(ScheduledTaskWebhookEndpoint),
+  /** When runs notify; absent on older servers, which notify for every run. */
+  notify: Schema.optional(ScheduledTaskNotifyPolicy),
+  /** Orchestration runs this task started in the last week, so clients apply `notify` to them. */
+  recentRunIds: Schema.optional(Schema.Array(RunId)),
 });
 export type ScheduledTask = typeof ScheduledTask.Type;
 
@@ -256,6 +265,10 @@ export const ScheduledTaskUpsertInput = Schema.Struct({
   interactionMode: ProviderInteractionMode,
   createdBy: Schema.optional(OrchestrationV2Actor),
   creationSource: Schema.optional(OrchestrationV2CreationSource),
+  notify: Schema.optional(ScheduledTaskNotifyPolicy).annotate({
+    description:
+      "When runs notify the user: all, failures or never. Omit to keep the current policy.",
+  }),
 });
 export type ScheduledTaskUpsertInput = typeof ScheduledTaskUpsertInput.Type;
 
@@ -361,6 +374,43 @@ export const ScheduledTaskRunNowResult = Schema.Struct({
   task: ScheduledTask,
 });
 export type ScheduledTaskRunNowResult = typeof ScheduledTaskRunNowResult.Type;
+
+/** What started a run. */
+export const ScheduledTaskRunTrigger = Schema.Literals(["scheduled", "manual", "webhook"]);
+export type ScheduledTaskRunTrigger = typeof ScheduledTaskRunTrigger.Type;
+
+/** A run's outcome: the agent is still working, or how its turn ended. */
+export const ScheduledTaskRunOutcome = Schema.Literals([
+  "working",
+  "succeeded",
+  "failed",
+  "cancelled",
+]);
+export type ScheduledTaskRunOutcome = typeof ScheduledTaskRunOutcome.Type;
+
+/** One run of a task, newest first in a listing. */
+export const ScheduledTaskRunRecord = Schema.Struct({
+  id: TrimmedNonEmptyString,
+  taskId: ScheduledTaskId,
+  trigger: ScheduledTaskRunTrigger,
+  startedAt: IsoDateTime,
+  finishedAt: Schema.NullOr(IsoDateTime),
+  status: ScheduledTaskRunOutcome,
+  /** The thread the run started or continued; null when the prompt never went out. */
+  threadId: Schema.NullOr(ThreadId),
+  error: Schema.NullOr(Schema.String),
+});
+export type ScheduledTaskRunRecord = typeof ScheduledTaskRunRecord.Type;
+
+export const ScheduledTaskListRunsInput = Schema.Struct({
+  id: ScheduledTaskId,
+});
+export type ScheduledTaskListRunsInput = typeof ScheduledTaskListRunsInput.Type;
+
+export const ScheduledTaskListRunsResult = Schema.Struct({
+  runs: ForwardCompatibleArray(ScheduledTaskRunRecord),
+});
+export type ScheduledTaskListRunsResult = typeof ScheduledTaskListRunsResult.Type;
 
 export class ScheduledTaskError extends Schema.TaggedError<ScheduledTaskError>()(
   "ScheduledTaskError",
