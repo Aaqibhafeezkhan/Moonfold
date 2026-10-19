@@ -26,7 +26,7 @@ const APPROVAL =
 
 const ListAppsTool = Tool.make("computer_list_apps", {
   description: `List the open app windows on the user's computer that computer use can reach: window id, app (its executable), title, size, whether it is minimized, and whether this thread may already use it. Computer use must be turned on by the user. ${APPROVAL}`,
-  parameters: Schema.Struct({}),
+  // No `parameters`: the default EmptyParams serializes as an object schema, which MCP requires.
   success: Schema.Struct({
     apps: Schema.Array(
       Schema.Struct({

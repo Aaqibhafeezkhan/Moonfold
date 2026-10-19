@@ -149,6 +149,18 @@ it.effect("production mcp layer lists worktree tools over http", () =>
       // than replacing them.
       expect(toolNames).toContain("preview_status");
       expect(toolNames).toContain("delegate_task");
+      // Every Moonfold-owned toolkit registers; a bad input schema rejects the whole server.
+      for (const name of [
+        "remember",
+        "computer_list_apps",
+        "computer_screenshot",
+        "computer_click",
+      ]) {
+        expect(toolNames).toContain(name);
+      }
+      expect(tools.find((tool) => tool.name === "computer_list_apps")?.inputSchema.type).toBe(
+        "object",
+      );
 
       // The handoff tool mutates thread state, reaches the network (origin
       // fetch), and runs project setup scripts, so its MCP hints must not
