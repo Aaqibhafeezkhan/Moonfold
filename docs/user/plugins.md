@@ -31,6 +31,9 @@ Enabled plugins reach new Codex and Claude Code turns. A skill is available to t
 its own skills; a plugin's MCP tools ask for approval under the thread's permission mode. Other
 providers do not load plugins yet.
 
+Turning a plugin on or off applies from the next turn. In a Codex thread that is already running,
+a plugin's MCP servers change when the thread's session next starts.
+
 Claude Code starts a plugin's MCP servers in the project folder. A server written for Claude Code
 refers to its own files through `${CLAUDE_PLUGIN_ROOT}`, which works. A server that expects to
 start inside the plugin's folder works with Codex but may not with Claude Code.

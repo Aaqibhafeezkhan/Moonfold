@@ -462,8 +462,9 @@ function InstallPluginDialog({
         if (!next && !installing) onClose();
       }}
     >
-      <DialogPopup className="max-w-lg">
+      <DialogPopup className="sm:max-w-lg">
         <form
+          className="flex min-h-0 flex-col"
           onSubmit={(event) => {
             event.preventDefault();
             void submit();
