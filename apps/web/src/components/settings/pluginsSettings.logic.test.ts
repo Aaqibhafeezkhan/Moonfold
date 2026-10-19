@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { mcpServerSummary, pluginSourceLabel } from "./pluginsSettings.logic";
+import { mcpServerEnvironment, mcpServerSummary, pluginSourceLabel } from "./pluginsSettings.logic";
 
 describe("pluginSourceLabel", () => {
   it("shows a repository with its ref, or a folder path", () => {
@@ -15,7 +15,7 @@ describe("pluginSourceLabel", () => {
 });
 
 describe("mcpServerSummary", () => {
-  const base = { name: "lint", cwd: null, envVars: [] };
+  const base = { name: "lint", cwd: null, envVars: [], env: {} };
 
   it("quotes arguments that a shell would split", () => {
     expect(
@@ -32,5 +32,15 @@ describe("mcpServerSummary", () => {
     expect(
       mcpServerSummary({ ...base, command: null, args: [], url: "https://mcp.example.com" }),
     ).toBe("https://mcp.example.com");
+  });
+});
+
+describe("mcpServerEnvironment", () => {
+  it("lists the values a plugin sets, so they are seen before enabling", () => {
+    const server = { name: "lint", cwd: null, envVars: [], command: "npx", args: [], url: null };
+    expect(mcpServerEnvironment({ ...server, env: {} })).toBeNull();
+    expect(
+      mcpServerEnvironment({ ...server, env: { NODE_OPTIONS: "--require ./x.js", LEVEL: "1" } }),
+    ).toBe('NODE_OPTIONS="--require ./x.js" LEVEL=1');
   });
 });

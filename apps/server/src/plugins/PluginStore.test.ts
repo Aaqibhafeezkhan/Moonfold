@@ -16,6 +16,8 @@ import {
   PluginStore,
   layer as pluginStoreLayer,
   readSkillFrontmatter,
+  staysInsidePlugin,
+  withoutUrlCredentials,
 } from "./PluginStore.ts";
 
 const storeLayer = pluginStoreLayer.pipe(
@@ -113,6 +115,36 @@ describe("plugin folder parsing", () => {
     expect(isAllowedGitUrl("ext::sh -c touch% /tmp/x")).toBe(false);
     expect(isAllowedGitUrl("file:///tmp/repo")).toBe(false);
   });
+
+  it("keeps paths a plugin names inside its own folder", () => {
+    expect(staysInsidePlugin(".")).toBe(true);
+    expect(staysInsidePlugin("./config/.mcp.json")).toBe(true);
+    expect(staysInsidePlugin("${CLAUDE_PLUGIN_ROOT}/server")).toBe(true);
+    expect(staysInsidePlugin("../elsewhere")).toBe(false);
+    expect(staysInsidePlugin("tools\\..\\..\\x")).toBe(false);
+    expect(staysInsidePlugin("/etc")).toBe(false);
+    expect(staysInsidePlugin("C:\\Windows")).toBe(false);
+    expect(staysInsidePlugin("${CLAUDE_PLUGIN_ROOT}/../x")).toBe(false);
+  });
+
+  it("drops credentials from git URLs before they are shown", () => {
+    expect(withoutUrlCredentials("https://user:token@github.com/o/p.git")).toBe(
+      "https://github.com/o/p.git",
+    );
+    expect(withoutUrlCredentials("ssh://git@host/p.git")).toBe("ssh://host/p.git");
+    expect(withoutUrlCredentials("git@github.com:o/p.git")).toBe("git@github.com:o/p.git");
+    expect(withoutUrlCredentials("https://github.com/o/p.git")).toBe("https://github.com/o/p.git");
+  });
+
+  it("leaves out MCP servers whose working directory leaves the plugin", () => {
+    expect(
+      parsePluginMcpConfig(
+        { mcpServers: { away: { command: "node", cwd: "../.." } } },
+        "/plugins/p",
+        (...parts: ReadonlyArray<string>) => parts.join("/"),
+      ),
+    ).toEqual([]);
+  });
 });
 
 describe("PluginStore", () => {
@@ -142,6 +174,7 @@ describe("PluginStore", () => {
           cwd: path.join(sourceDir, "."),
           url: null,
           envVars: ["RELEASE_TOKEN"],
+          env: {},
         },
       ]);
       const view = path.join(pluginsDir, "release-helper", "view");

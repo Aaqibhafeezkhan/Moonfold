@@ -43,7 +43,7 @@ import { stackedThreadToast, toastManager } from "../ui/toast";
 import { Toggle, ToggleGroup } from "../ui/toggle-group";
 import { SettingsPageContainer, SettingsRow, SettingsSection } from "./settingsLayout";
 import { useSettingsScope } from "./SettingsScopeContext";
-import { mcpServerSummary, pluginSourceLabel } from "./pluginsSettings.logic";
+import { mcpServerEnvironment, mcpServerSummary, pluginSourceLabel } from "./pluginsSettings.logic";
 
 const FORMAT_LABELS: Record<InstalledPlugin["formats"][number], string> = {
   skills: "Skills folder",
@@ -221,7 +221,10 @@ function PluginRow({
     if (busy) return;
     if (!plugin.enabled && plugin.mcpServers.length > 0) {
       const message = `Enable ${plugin.name}?\nAgents can start these programs on this machine:\n${plugin.mcpServers
-        .map((server) => `• ${server.name}: ${mcpServerSummary(server)}`)
+        .map((server) => {
+          const environment = mcpServerEnvironment(server);
+          return `• ${server.name}: ${mcpServerSummary(server)}${environment ? `\n  with ${environment}` : ""}`;
+        })
         .join("\n")}`;
       const confirmed = (await requestConfirmDialog(message)) ?? window.confirm(message);
       if (!confirmed) return;
@@ -393,6 +396,11 @@ function PluginDetailsDialog({
                       <code className="block break-all text-xs text-muted-foreground">
                         {mcpServerSummary(server)}
                       </code>
+                      {mcpServerEnvironment(server) ? (
+                        <code className="block break-all text-xs text-muted-foreground">
+                          Environment: {mcpServerEnvironment(server)}
+                        </code>
+                      ) : null}
                       {server.envVars.length > 0 ? (
                         <p className="text-xs text-muted-foreground">
                           Reads environment variables: {server.envVars.join(", ")}

@@ -13,6 +13,14 @@ export function mcpServerSummary(server: PluginMcpServer): string {
   return [server.command ?? "", ...server.args.map(quoteArg)].join(" ").trim();
 }
 
+/** The values a server's environment is given, as `NAME=value` pairs, or null when none. */
+export function mcpServerEnvironment(server: PluginMcpServer): string | null {
+  const entries = Object.entries(server.env);
+  return entries.length === 0
+    ? null
+    : entries.map(([name, value]) => `${name}=${quoteArg(value)}`).join(" ");
+}
+
 function quoteArg(arg: string): string {
   return /^[\w@%+=:,./\\-]+$/.test(arg) ? arg : JSON.stringify(arg);
 }

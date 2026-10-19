@@ -49,7 +49,7 @@ interface PluginScan {
   readonly formats: ReadonlyArray<PluginFormat>;
   /** Absolute folder of each skill (the folder holding its SKILL.md). */
   readonly skillDirs: ReadonlyArray<{ readonly dir: string; readonly skill: PluginSkill }>;
-  readonly mcpServers: ReadonlyArray<PluginMcpServer & { readonly env: Record<string, string> }>;
+  readonly mcpServers: ReadonlyArray<PluginMcpServer>;
 }
 
 const RegistryEntry = Schema.Struct({
@@ -69,15 +69,26 @@ const decodeJson = Schema.decodeUnknownEffect(Schema.fromJsonString(Schema.Unkno
 const encodeJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown));
 const isPluginError = Schema.is(PluginError);
 
-/** Whether an update kept every MCP server the same: same programs, arguments and places. */
+/**
+ * Whether an update kept every MCP server the same: same programs, arguments, places and
+ * environment, so nothing runs that the user did not see when enabling the plugin.
+ */
 function sameMcpServers(
   left: ReadonlyArray<PluginMcpServer>,
   right: ReadonlyArray<PluginMcpServer>,
 ): boolean {
   const key = (server: PluginMcpServer) =>
-    [server.name, server.command, ...server.args, server.cwd, server.url, ...server.envVars].join(
-      "\u0000",
-    );
+    [
+      server.name,
+      server.command,
+      ...server.args,
+      server.cwd,
+      server.url,
+      ...server.envVars,
+      ...Object.entries(server.env ?? {})
+        .toSorted(([a], [b]) => a.localeCompare(b))
+        .flat(),
+    ].join("\u0000");
   return (
     left.length === right.length &&
     left.every((server, index) => key(server) === key(right[index]!))
@@ -110,15 +121,31 @@ export function pluginIdFrom(name: string): string {
   return slug.length > 0 ? slug : "plugin";
 }
 
+const PLUGIN_ROOT_TOKEN = "${CLAUDE_PLUGIN_ROOT}";
+
+/** A path a plugin names that stays inside its own folder: relative, with no `..` step. */
+export function staysInsidePlugin(value: string): boolean {
+  const relative = value.startsWith(PLUGIN_ROOT_TOKEN)
+    ? value.slice(PLUGIN_ROOT_TOKEN.length).replace(/^[\\/]+/, "")
+    : value;
+  return !/^([a-zA-Z]:|[\\/])/.test(relative) && !relative.split(/[\\/]/).includes("..");
+}
+
+/** A git URL with any user name, password or token removed, for showing and messages. */
+export function withoutUrlCredentials(url: string): string {
+  return url.replace(/^([a-z][a-z0-9+.-]*:\/\/)[^/@]*@/i, "$1");
+}
+
 /**
  * Reads the MCP servers a plugin's `.mcp.json` declares, in either Codex's or Claude Code's
  * form, resolving working directories and `${CLAUDE_PLUGIN_ROOT}` against the plugin folder.
+ * A server whose working directory leaves the plugin folder is left out.
  */
 export function parsePluginMcpConfig(
   json: unknown,
   pluginRoot: string,
   join: (...parts: ReadonlyArray<string>) => string,
-): ReadonlyArray<PluginMcpServer & { readonly env: Record<string, string> }> {
+): ReadonlyArray<PluginMcpServer> {
   if (json === null || typeof json !== "object") return [];
   const record = json as Record<string, unknown>;
   const servers = (
@@ -134,6 +161,7 @@ export function parsePluginMcpConfig(
     const command = typeof server.command === "string" ? resolveRoot(server.command) : null;
     const url = typeof server.url === "string" ? server.url : null;
     if (command === null && url === null) return [];
+    if (typeof server.cwd === "string" && !staysInsidePlugin(server.cwd)) return [];
     const env =
       server.env && typeof server.env === "object"
         ? Object.fromEntries(
@@ -247,8 +275,9 @@ const make = Effect.gen(function* () {
         }),
       ),
     );
+    // A manifest may name its MCP config, but only one inside the plugin folder.
     const mcpConfigPath =
-      typeof manifest.mcpServers === "string"
+      typeof manifest.mcpServers === "string" && staysInsidePlugin(manifest.mcpServers)
         ? path.join(root, manifest.mcpServers)
         : path.join(root, ".mcp.json");
     const mcpServers = parsePluginMcpConfig(yield* readJson(mcpConfigPath), root, (...parts) =>
@@ -289,6 +318,13 @@ const make = Effect.gen(function* () {
   const toInstalled = (entry: RegistryEntry): InstalledPlugin =>
     ({
       ...(entry.plugin as Omit<InstalledPlugin, "enabled" | "installedAt" | "updatedAt">),
+      // Registries written before env was shown keep it beside the plugin.
+      mcpServers: (entry.plugin as Pick<InstalledPlugin, "mcpServers">).mcpServers.map(
+        (server) => ({
+          ...server,
+          env: server.env ?? entry.env?.[server.name] ?? {},
+        }),
+      ),
       enabled: entry.enabled,
       installedAt: entry.installedAt,
       updatedAt: entry.updatedAt,
@@ -328,10 +364,10 @@ const make = Effect.gen(function* () {
     name: pluginScan.name,
     version: pluginScan.version,
     description: pluginScan.description,
-    source,
+    source: source.type === "git" ? { ...source, url: withoutUrlCredentials(source.url) } : source,
     formats: [...pluginScan.formats],
     skills: pluginScan.skillDirs.map(({ skill }) => skill),
-    mcpServers: pluginScan.mcpServers.map(({ env: _env, ...server }) => server),
+    mcpServers: [...pluginScan.mcpServers],
   });
 
   /** Fetches a source into `target`: a shallow clone, or a copy of a local folder. */
@@ -361,7 +397,7 @@ const make = Effect.gen(function* () {
           ],
           timeoutMs: 120_000,
         })
-        .pipe(Effect.mapError(fail(`Could not clone ${source.url}.`)));
+        .pipe(Effect.mapError(fail(`Could not clone ${withoutUrlCredentials(source.url)}.`)));
       return;
     }
     const from = path.resolve(source.path);

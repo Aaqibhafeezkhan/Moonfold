@@ -46,6 +46,8 @@ export const PluginMcpServer = Schema.Struct({
   url: Schema.NullOr(Schema.String),
   /** Environment variables passed through from the server's environment by name. */
   envVars: Schema.Array(Schema.String),
+  /** Values the plugin sets in the server's environment; shown before the plugin is enabled. */
+  env: Schema.Record(Schema.String, Schema.String),
 });
 export type PluginMcpServer = typeof PluginMcpServer.Type;
 
