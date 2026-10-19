@@ -35,6 +35,7 @@ import { DesktopUpdateLaunchNotice } from "../components/sidebar/updateEverythin
 import { LegacyThreadMigrationToast } from "../components/LegacyThreadMigrationToast";
 import { ThreadNotificationCoordinator } from "../components/ThreadNotificationCoordinator";
 import { BrowserSitePermissionPrompts } from "../components/BrowserSitePermissionPrompts";
+import { ComputerUseCoordinator } from "../components/ComputerUseCoordinator";
 import { ReopenClosedViewShortcut } from "../components/ReopenClosedViewShortcut";
 import { ProjectCloneToastCoordinator } from "../components/ProjectCloneToastCoordinator";
 import { PullRequestGuideRunCoordinator } from "../components/pullRequest/guide/PullRequestGuideRunCoordinator";
@@ -264,6 +265,9 @@ function RootRouteView() {
           {isThreadPopoutWindow ? null : <ThreadNotificationCoordinator />}
           {primaryEnvironmentAuthenticated && !isThreadPopoutWindow ? (
             <BrowserSitePermissionPrompts />
+          ) : null}
+          {primaryEnvironmentAuthenticated && !isThreadPopoutWindow ? (
+            <ComputerUseCoordinator />
           ) : null}
           <ReopenClosedViewShortcut />
           <ConfirmDialogHost />

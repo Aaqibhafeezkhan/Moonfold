@@ -1185,6 +1185,20 @@ export function createServerEnvironmentAtoms<R, E>(
       label: "environment-data:server:browser-sites:policy",
       tag: WS_METHODS.browserSitesGetPolicy,
     }),
+    computerUseState: createEnvironmentRpcQueryAtomFamily(runtime, {
+      label: "environment-data:server:computer-use:state",
+      tag: WS_METHODS.computerUseGetState,
+    }),
+    /** Agents waiting for an app approval: snapshot, then each change. */
+    computerUsePending: createEnvironmentRpcSubscriptionAtomFamily(runtime, {
+      label: "environment-data:server:computer-use:pending",
+      tag: WS_METHODS.computerUseSubscribePending,
+    }),
+    /** Threads that used an app in the last half minute, for the in-use indicator. */
+    computerUseActivity: createEnvironmentRpcSubscriptionAtomFamily(runtime, {
+      label: "environment-data:server:computer-use:activity",
+      tag: WS_METHODS.computerUseSubscribeActivity,
+    }),
     /** Agents waiting for the user to allow or block a site: snapshot, then each change. */
     browserSitePending: createEnvironmentRpcSubscriptionAtomFamily(runtime, {
       label: "environment-data:server:browser-sites:pending",
@@ -1417,6 +1431,33 @@ export function createServerEnvironmentAtoms<R, E>(
       tag: WS_METHODS.scheduledTasksDelete,
       scheduler: configScheduler,
       concurrency: configConcurrency,
+    }),
+    setComputerUseEnabled: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:computer-use:set-enabled",
+      tag: WS_METHODS.computerUseSetEnabled,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    removeComputerUseApp: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:computer-use:remove-app",
+      tag: WS_METHODS.computerUseRemoveApp,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    clearComputerUseLog: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:computer-use:clear-log",
+      tag: WS_METHODS.computerUseClearLog,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    // An agent waits on an answer, and Stop must never queue behind settings writes.
+    answerComputerUseRequest: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:computer-use:answer",
+      tag: WS_METHODS.computerUseAnswer,
+    }),
+    stopComputerUse: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:computer-use:stop",
+      tag: WS_METHODS.computerUseStop,
     }),
     setBrowserSiteRule: createEnvironmentRpcCommand(runtime, {
       label: "environment-data:server:browser-sites:set-rule",

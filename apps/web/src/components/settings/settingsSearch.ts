@@ -25,6 +25,7 @@ export type SettingsPath =
   | "/settings/integrations"
   | "/settings/plugins"
   | "/settings/memories"
+  | "/settings/computer-use"
   | "/settings/scheduled-tasks"
   | "/settings/source-control"
   | "/settings/storage"
@@ -107,6 +108,7 @@ export const SETTINGS_SECTION_LABELS: Readonly<Record<SettingsPath, string>> = {
   "/settings/integrations": "Integrations",
   "/settings/plugins": "Plugins",
   "/settings/memories": "Memories",
+  "/settings/computer-use": "Computer Use",
   "/settings/scheduled-tasks": "Scheduled Tasks",
   "/settings/source-control": "Source Control",
   "/settings/storage": "Storage",
@@ -1055,6 +1057,12 @@ export const SETTINGS_SEARCH_ITEMS = [
     searchTerms: ["remember preferences notes personalization context agent"],
   },
   {
+    id: "computer-use",
+    title: "Computer use",
+    to: "/settings/computer-use",
+    searchTerms: ["desktop apps click type automation windows screen control agents"],
+  },
+  {
     id: "archive",
     title: "Archived threads",
     to: "/settings/archived",
@@ -1087,6 +1095,8 @@ const SETTINGS_CATEGORY_SCOPES: Readonly<Record<SettingsPath, SettingsSearchScop
   "/settings/plugins": null,
   // Picks its own environment; memories live in the environment's database.
   "/settings/memories": null,
+  // Picks its own environment; computer use runs on the environment's machine.
+  "/settings/computer-use": null,
   "/settings/archived": "project-defaults",
 };
 
