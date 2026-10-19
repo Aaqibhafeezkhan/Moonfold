@@ -159,6 +159,7 @@ export function nextCronOccurrence(
   const fromMillis = DateTime.toEpochMillis(from);
   for (let offset = 0; offset <= MAX_DAYS_AHEAD; offset += 1) {
     // Calendar arithmetic in UTC keeps day steps exact across daylight-saving changes.
+    // @effect-diagnostics-next-line globalDate:off -- a pure calendar step, not a clock read.
     const date = new Date(Date.UTC(today.year, today.month - 1, today.day + offset));
     const year = date.getUTCFullYear();
     const month = date.getUTCMonth() + 1;
