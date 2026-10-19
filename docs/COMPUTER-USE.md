@@ -70,6 +70,14 @@ Moonfold builds. It is written from OS documentation and our own testing on Wind
 - **Log.** A table keeps each action (thread, app, action, short detail, result, time); settings
   shows the newest entries and can clear them.
 
+## Provider-native computer use
+
+Some providers ship their own computer use (a Codex install can carry a computer-use plugin).
+When a provider uses its own tools, Moonfold's approvals, log and Stop do not apply to them: they
+run under that provider's own settings. Moonfold's tools are the `computer_` tools of the
+`moonfold` MCP server; turn a provider's own computer use off in its configuration if you want
+Moonfold's controls to be the only way in.
+
 ## Not in this phase
 
 - macOS and Linux helpers (see above).

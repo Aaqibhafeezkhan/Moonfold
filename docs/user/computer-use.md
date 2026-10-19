@@ -35,3 +35,9 @@ again in settings when you want.
 
 Settings lists every read and action with its thread, app, time and result. Typed text is never
 stored, only how many characters were typed. **Clear** empties the log.
+
+## Providers with their own computer use
+
+If a provider has its own computer-use feature turned on (some Codex installs do), an agent may
+use it instead of Moonfold's, and then Moonfold's approvals, log and Stop don't apply. Turn the
+provider's own feature off in its settings if you want Moonfold's controls on everything.
