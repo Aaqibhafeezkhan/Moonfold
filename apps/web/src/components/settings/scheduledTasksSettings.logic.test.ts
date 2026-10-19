@@ -364,6 +364,14 @@ describe("one-off and repeating scheduled tasks", () => {
       "Pick a time in the future.",
     );
     expect(calendarScheduleProblem({ ...once, onceAt: "2026-10-19T11:00" }, now)).toBeNull();
+    // A one-off that already ran can still be edited without picking a new time.
+    expect(
+      calendarScheduleProblem({ ...once, onceAt: "2026-10-19T09:00" }, now, {
+        type: "once",
+        at: "2026-10-19T09:00",
+        timeZone: "UTC",
+      }),
+    ).toBeNull();
     expect(calendarScheduleProblem({ ...once, timeZone: "Nowhere/Here" }, now)).toMatch(
       /Unknown time zone/,
     );

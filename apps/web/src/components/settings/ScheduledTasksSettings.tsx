@@ -1073,7 +1073,7 @@ function ScheduledTaskEditorDialog({
       reportFailure("Scheduled task is incomplete", "Add a title, prompt, project, and model.");
       return;
     }
-    const calendarProblem = calendarScheduleProblem(draft);
+    const calendarProblem = calendarScheduleProblem(draft, new Date(), task?.schedule ?? null);
     if (calendarProblem !== null) {
       reportFailure("Schedule is not valid", calendarProblem);
       return;

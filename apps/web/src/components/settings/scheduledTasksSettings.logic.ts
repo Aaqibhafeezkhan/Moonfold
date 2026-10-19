@@ -342,15 +342,24 @@ function localInstantMillis(at: string, timeZone: string): number | null {
   );
 }
 
-/** Why a one-off or repeating draft cannot be saved, or null when it can. */
-export function calendarScheduleProblem(draft: DraftState, now: Date = new Date()): string | null {
+/**
+ * Why a one-off or repeating draft cannot be saved, or null when it can. A one-off whose time is
+ * unchanged from the saved task may lie in the past (it already ran), so other edits still save.
+ */
+export function calendarScheduleProblem(
+  draft: DraftState,
+  now: Date = new Date(),
+  saved: ScheduledTask["schedule"] | null = null,
+): string | null {
   if (draft.scheduleMode !== "once" && draft.scheduleMode !== "cron") return null;
   const timeZone = draft.timeZone.trim();
   if (!isValidTimeZone(timeZone)) return `Unknown time zone "${timeZone}".`;
   if (draft.scheduleMode === "once") {
     const at = localInstantMillis(draft.onceAt, timeZone);
     if (at === null) return "Pick a date and time to run.";
-    return at <= now.getTime() ? "Pick a time in the future." : null;
+    const unchanged =
+      saved?.type === "once" && saved.at === draft.onceAt && saved.timeZone === timeZone;
+    return at <= now.getTime() && !unchanged ? "Pick a time in the future." : null;
   }
   const expressionProblem = cronError(draft.cronExpression);
   if (expressionProblem !== null) return expressionProblem;
