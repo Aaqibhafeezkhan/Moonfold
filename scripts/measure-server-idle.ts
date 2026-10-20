@@ -18,6 +18,8 @@ const home =
   process.env.MEASURE_HOME ??
   NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "moonfold-measure-"));
 const port = 13900 + Math.floor(Math.random() * 90);
+// oxlint-disable-next-line moonfold/no-global-process-runtime -- Measures the actual host; this script has no Effect runtime.
+const hostPlatform = `${NodeOS.platform()}-${NodeOS.arch()}`;
 
 const started = performance.now();
 const child = NodeChildProcess.spawn(
@@ -55,7 +57,7 @@ const listening = new Promise<number>((resolve, reject) => {
 
 /** CPU seconds and RSS of one process, read through the OS (Windows: PowerShell; else ps). */
 const sample = (): { cpuSeconds: number; rssMb: number } => {
-  if (process.platform === "win32") {
+  if (hostPlatform.startsWith("win32-")) {
     const out = NodeChildProcess.execFileSync(
       "powershell.exe",
       [
@@ -92,7 +94,7 @@ try {
         idleSeconds,
         idleCpuPercentOfOneCore: Number(idleCpuPercent.toFixed(2)),
         rssMb: Math.round(after.rssMb),
-        platform: `${process.platform}-${process.arch}`,
+        platform: hostPlatform,
         node: process.version,
       },
       null,

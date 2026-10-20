@@ -1,5 +1,48 @@
 # Progress
 
+## Phase 6: hardening (complete with one open item, 2026-10-20)
+
+Plan: docs/plans/phase-6.md. Report: docs/QA-REPORT.md. REA gate: docs/REA-PHASE6.md. Decisions:
+DECISIONS D-39 to D-44.
+
+### Done
+
+- Security review by a reviewer subagent; both highs and all three mediums fixed: IPC answers only
+  the app's frame, usage hubs removed (rule 7), the Claude token read is opt-in, the CSP uses
+  script hashes and no T3 sign-in origin, T3 keys gone from `.env.example`. Lows: Secure cookies
+  over HTTPS, a permission allowlist, a pinned webview preload, no pairing URL in logs.
+- Dependency audit: patched overrides and sharp 0.35.5; no critical advisories; what remains is
+  in relay deploy tooling or unbundled build tooling (QA-REPORT).
+- Secret scan of real logs with the brief's scanner (`scripts/scan-logs-for-secrets.ts`): none.
+- Accessibility review of Moonfold's own UI: 4 mediums and 9 lows fixed. The welcome wizard no
+  longer claims usage data is collected by default.
+- Performance: splash on every local start, one Windows environment read, parallel Codex probes;
+  measurement scripts for server idle (`scripts/measure-server-idle.ts`).
+- Remote-access threat model and crash-recovery evidence in QA-REPORT.
+
+### Verification (real output, Windows 11, 2026-10-20)
+
+- Typechecks exit 0 (server, desktop, web). Lint: no new warnings in changed files.
+- Tests: desktop 1450 passed, 32 failed, all in the known Windows-only files (CLI shim, symlinked
+  settings, Linux snap-shot hosts), identical to the baseline run; os-jank 8/8; recovery suites
+  32 passed, 1 skipped; persistence 44/44; web settings and onboarding 645/645. CodexInstallation
+  tests use POSIX shell fakes and fail on Windows before and after the change; CI runs them.
+- Measured: server idle 0.26 % of one core, 232 MB RSS; scrolling a 5,220-item thread 60.6 to
+  63.3 fps at wheel speed; desktop splash 0.94 s, usable window 4.29 s.
+
+### Not verified / open
+
+- QA-REPORT P-1 (medium): cold start to a usable window is 4.3 s against the 3 s budget. This is
+  the one item that keeps the Phase 6 gate from being fully met.
+- P-2 (low): long frames when a large markdown message mounts while scrolling.
+- Packaged-build fuses and installers are Phase 7.
+
+### Next step
+
+Phase 7: release workflows for macOS, Windows and Linux, update feed from our GitHub Releases,
+checksums and SBOM, signing docs, install path, Homebrew and winget manifests, REA on artifacts,
+v0.1.0-beta.1 pre-release.
+
 ## Phase 5: more providers (complete, 2026-10-20)
 
 Plan: docs/plans/phase-5.md. REA gate: docs/REA-PHASE5.md. Decisions: DECISIONS D-36 to D-38.

@@ -322,3 +322,44 @@ install, sign-in, models, turn, limit signal, handoff). `node scripts/provider-m
 the README table, and a test fails when the README drifts. A provider is "Verified" only when every
 live check passed; adapters inherited from upstream that were not run here are listed as not
 verified rather than hidden, so users see the real state.
+
+## D-39 Usage hubs are removed
+
+A usage hub (an external proxy that holds several provider logins and hands out quota) is exactly
+the login pooling CLAUDE.md rule 7 forbids, so Moonfold no longer adds, reads or refreshes hubs.
+Settings still lists hubs saved by an older build, with Remove only, so the stored management key
+can be deleted. Usage limits come from each provider's own CLI.
+
+## D-40 Reading Claude's stored login for banked resets is opt-in
+
+Showing Claude's banked reset credits needs the token Claude Code stores for the user. Reading it
+without being asked is too much for a convenience, so a switch in Settings → Usage turns it on and
+it is off by default. Nothing is sent anywhere except Claude's own API.
+
+## D-41 The desktop CSP allows inline scripts by hash only
+
+The app's HTML has a few inline bootstrap scripts. Instead of `unsafe-inline`, the custom protocol
+handler hashes each inline script in the HTML it serves and lists the sha256 values in
+`script-src`. Sign-in origins appear only when the build configures a self-hosted Clerk instance;
+T3's hosted values are gone from `.env.example`.
+
+## D-42 Desktop IPC answers only the app's own frame
+
+All IPC handlers go through one wrapper that checks the sender frame's URL is the app
+(`moonfold://app/`, or the dev scheme). Preview webviews, embedded pages and any other frame are
+refused. Doing it in the wrapper means a new channel cannot forget the check.
+
+## D-43 Faster local starts: one environment read, and a splash right away
+
+The desktop already reads the user's Windows environment (PATH and the rest) before it starts the
+backend and tells it so; the backend now trusts that instead of spawning PowerShell again. Every
+local start shows the "Starting Moonfold…" splash immediately, as WSL starts already did, so the
+window is never blank while the backend boots.
+
+## D-44 Cold-start budget: measured, not yet met
+
+The budget is read as time from launch to a window the user can work in. Measured warm on a
+Windows laptop: splash 0.94 s, usable window 4.3 s. The remaining time is evaluating the server
+bundle (about 1.2 s) and building its services (about 1.3 s), so meeting 3 s means starting to
+listen before providers and device support finish loading. That is a server startup change large
+enough to need its own work item; it is recorded as open (QA-REPORT P-1) rather than declared met.
