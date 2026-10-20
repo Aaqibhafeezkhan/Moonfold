@@ -8,7 +8,7 @@
 import * as NodeFS from "node:fs";
 import * as NodePath from "node:path";
 
-import { mergeSecretFindings, redactSecrets } from "../packages/shared/src/secretRedaction.ts";
+import { mergeSecretFindings, redactSecrets } from "@moonfold/shared/secretRedaction";
 
 const root = process.argv[2];
 if (root === undefined) {
