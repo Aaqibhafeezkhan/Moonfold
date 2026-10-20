@@ -9,6 +9,7 @@ import {
   runRanAfter,
   usageLimitBlockedRun,
 } from "@moonfold/shared/orchestrationV2ThreadError";
+import type { HandoffReason } from "@moonfold/contracts";
 import { threadPullRequestsOf } from "@moonfold/shared/threadPullRequests";
 import {
   normalizeThreadPullRequestKey,
@@ -137,6 +138,20 @@ import { planThreadDeletion } from "./ThreadDeletion.ts";
 import type * as ProviderAdapter from "@moonfold/provider-core/server/ProviderAdapter";
 import * as ServerSettings from "../serverSettings.ts";
 
+/**
+ * Why a thread is moving to another provider: what the dispatch says (a handoff the user or the
+ * fallback order started), else a run that stopped at its usage limit, else the user's switch.
+ */
+function providerHandoffReason(
+  explicit: HandoffReason | undefined,
+  sourceRun: OrchestrationV2Run,
+  items: ReadonlyArray<OrchestrationV2TurnItem>,
+): HandoffReason {
+  if (explicit !== undefined) return explicit;
+  return latestRootProviderFailure(sourceRun, items)?.class === "usage_limit"
+    ? "usage_limit"
+    : "manual";
+}
 export class OrchestratorDispatchError extends Schema.TaggedError<OrchestratorDispatchError>()(
   "OrchestratorDispatchError",
   {
@@ -1572,6 +1587,10 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
                 createdAt: now,
               })
               .pipe(
+                Effect.map((prepared) => ({
+                  ...prepared,
+                  reason: providerHandoffReason(undefined, latestHandoffRun, projection.turnItems),
+                })),
                 Effect.mapError(
                   (cause) =>
                     new OrchestratorDispatchError({
@@ -1747,6 +1766,7 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
               toModel: queuedRun.modelSelection.model,
               strategy: activeHandoff.strategy,
               summary: activeHandoff.summaryText,
+              ...(activeHandoff.reason === undefined ? {} : { reason: activeHandoff.reason }),
             };
       const checkpointEvents: ReadonlyArray<Omit<OrchestrationV2DomainEvent, "id">> =
         storedCheckpointScope === undefined
@@ -5951,6 +5971,14 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
                 createdAt: now,
               })
               .pipe(
+                Effect.map((prepared) => ({
+                  ...prepared,
+                  reason: providerHandoffReason(
+                    command.handoffReason,
+                    latestHandoffRun,
+                    projection.turnItems,
+                  ),
+                })),
                 Effect.mapError(
                   (cause) =>
                     new OrchestratorDispatchError({
@@ -6278,6 +6306,7 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
               toModel: modelSelection.model,
               strategy: activeHandoff.strategy,
               summary: activeHandoff.summaryText,
+              ...(activeHandoff.reason === undefined ? {} : { reason: activeHandoff.reason }),
             };
       const nativeForkResolution: OrchestrationV2ContextTransferResolution | null =
         !canResolveForkNatively || providerThread.nativeThreadRef === null

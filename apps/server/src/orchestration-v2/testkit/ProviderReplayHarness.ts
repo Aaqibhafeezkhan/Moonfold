@@ -20,6 +20,8 @@ import * as McpProviderSessions from "@moonfold/provider-core/server/McpProvider
 import * as McpSessionRegistryTestkit from "../../mcp/McpSessionRegistry.testkit.ts";
 import * as VcsDriverRegistry from "../../vcs/VcsDriverRegistry.ts";
 import * as VcsProcess from "../../vcs/VcsProcess.ts";
+import * as GitVcsDriver from "../../vcs/GitVcsDriver.ts";
+import * as HandoffBriefService from "../../handoff/HandoffBriefService.ts";
 import * as CheckpointCaptureService from "../CheckpointCaptureService.ts";
 import * as CheckpointService from "../CheckpointService.ts";
 import * as CheckpointRollbackService from "../CheckpointRollbackService.ts";
@@ -198,6 +200,8 @@ export function runOrchestratorV2ProviderReplayScenario<
     // as server startup does after a crash or restart.
     readonly recoverOnStartup?: boolean;
     readonly continueThreadsAfterServerUpdate?: boolean;
+    // Build provider handoff briefs at turn start, as the live server does.
+    readonly handoffBriefs?: boolean;
   } = {},
 ): Effect.Effect<
   OrchestratorV2ScenarioResult,
@@ -276,6 +280,8 @@ export function layerWithRegistry<Error>(
     // as server startup does after a crash or restart.
     readonly recoverOnStartup?: boolean;
     readonly continueThreadsAfterServerUpdate?: boolean;
+    // Build provider handoff briefs at turn start, as the live server does.
+    readonly handoffBriefs?: boolean;
   } = {},
 ): Layer.Layer<
   | Orchestrator.OrchestratorV2
@@ -397,6 +403,21 @@ export function layerWithRegistry<Error>(
         }),
         layerRunExecutionServiceProvided,
         layerRuntime,
+        options.handoffBriefs === true
+          ? HandoffBriefService.layer.pipe(
+              Layer.provide(
+                Layer.mergeAll(
+                  layerProvidedRegistry,
+                  GitVcsDriver.layer.pipe(
+                    Layer.provide(VcsProcess.layer),
+                    Layer.provide(layerServerConfig),
+                    Layer.provide(NodeServices.layer),
+                  ),
+                  NodeServices.layer,
+                ),
+              ),
+            )
+          : Layer.empty,
       ),
     ),
   );

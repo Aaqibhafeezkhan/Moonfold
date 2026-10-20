@@ -131,6 +131,23 @@ it.layer(NodeServices.layer)("server settings", (it) => {
       assert.deepEqual(settings.providerModelPreferences?.[provider]?.modelOrder, ["luna", "sol"]);
     }).pipe(Effect.provide(layerServerSettings())),
   );
+  it.effect("saves the handoff settings and reads them back", () =>
+    Effect.gen(function* () {
+      const service = yield* ServerSettingsModule.ServerSettingsService;
+      const codex = { instanceId: ProviderInstanceId.make("codex"), model: "gpt-6-luna" };
+      yield* service.updateSettings({
+        providerHandoff: {
+          mode: "auto",
+          fallbackOrder: [codex],
+          allowedProviders: null,
+          warnAtUsagePercent: 90,
+        },
+      });
+      const settings = yield* service.getSettings;
+      assert.deepEqual(settings.providerHandoff.fallbackOrder, [codex]);
+      assert.equal(settings.providerHandoff.mode, "auto");
+    }).pipe(Effect.provide(layerServerSettings())),
+  );
   it.effect("persists and broadcasts model preferences to other connected clients", () =>
     Effect.scoped(
       Effect.gen(function* () {

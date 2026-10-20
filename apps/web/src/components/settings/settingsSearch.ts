@@ -25,6 +25,7 @@ export type SettingsPath =
   | "/settings/integrations"
   | "/settings/plugins"
   | "/settings/memories"
+  | "/settings/handoff"
   | "/settings/computer-use"
   | "/settings/scheduled-tasks"
   | "/settings/source-control"
@@ -108,6 +109,7 @@ export const SETTINGS_SECTION_LABELS: Readonly<Record<SettingsPath, string>> = {
   "/settings/integrations": "Integrations",
   "/settings/plugins": "Plugins",
   "/settings/memories": "Memories",
+  "/settings/handoff": "Handoff",
   "/settings/computer-use": "Computer Use",
   "/settings/scheduled-tasks": "Scheduled Tasks",
   "/settings/source-control": "Source Control",
@@ -172,6 +174,34 @@ const SOURCE_CONTROL_HOST_SEARCH_ITEMS = sourceControlClients.definitions.flatMa
  * that may not be mounted point at their nearest stable section instead.
  */
 export const SETTINGS_SEARCH_ITEMS = [
+  {
+    id: "handoff-mode",
+    title: "When an agent reaches its usage limit",
+    to: "/settings/handoff",
+    scope: "project-defaults",
+    searchTerms: ["handoff usage limit ask automatic switch agent provider continue"],
+  },
+  {
+    id: "handoff-fallback-order",
+    title: "Fallback order",
+    to: "/settings/handoff",
+    scope: "project-defaults",
+    searchTerms: ["handoff fallback order next agent provider limit continue"],
+  },
+  {
+    id: "handoff-allowed-providers",
+    title: "Agents that may receive a thread",
+    to: "/settings/handoff",
+    scope: "project-defaults",
+    searchTerms: ["handoff allowed providers allow list context send company"],
+  },
+  {
+    id: "handoff-usage-warning",
+    title: "Offer a handoff before the limit",
+    to: "/settings/handoff",
+    scope: "project-defaults",
+    searchTerms: ["handoff usage warning threshold percent rate limit window"],
+  },
   {
     id: "storage-worktree-keep-when",
     targetId: "storage-worktrees",
@@ -1057,6 +1087,12 @@ export const SETTINGS_SEARCH_ITEMS = [
     searchTerms: ["remember preferences notes personalization context agent"],
   },
   {
+    id: "handoff",
+    title: "Handoff",
+    to: "/settings/handoff",
+    searchTerms: ["switch agent provider usage limit fallback continue another agent brief"],
+  },
+  {
     id: "computer-use",
     title: "Computer use",
     to: "/settings/computer-use",
@@ -1095,6 +1131,7 @@ const SETTINGS_CATEGORY_SCOPES: Readonly<Record<SettingsPath, SettingsSearchScop
   "/settings/plugins": null,
   // Picks its own environment; memories live in the environment's database.
   "/settings/memories": null,
+  "/settings/handoff": "project-defaults",
   // Picks its own environment; computer use runs on the environment's machine.
   "/settings/computer-use": null,
   "/settings/archived": "project-defaults",

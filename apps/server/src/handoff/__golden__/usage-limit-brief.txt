@@ -1,0 +1,54 @@
+# Handoff brief
+Codex (gpt-5.6-luna) reached its usage limit, so the user moved the task to you. You are Claude Code (claude-sonnet-5-5). Moonfold built this brief from the thread's history; the earlier conversation follows it.
+
+## Objective
+The user's first request in this thread:
+```
+Add a --json flag to the report command and cover it with tests.
+```
+
+## Plan
+`[x]` done, `[~]` in progress, `[ ]` not started.
+- [x] Parse the --json flag
+- [~] Print the report as JSON
+- [ ] Add tests
+
+## What the user said since
+Newest first. Constraints and decisions here still apply.
+- Keep the text output exactly as it is. Our deploy token is DEPLOY_TOKEN=[REDACTED:secret_assignment].
+
+## Files changed in this thread
+- src/cli.ts (+15 -3)
+- src/report.ts
+
+## Workspace now
+`git status --short`:
+```
+ M src/cli.ts
+ M src/report.ts
+```
+`git diff --stat`:
+```
+ src/cli.ts    | 16 +++++++++++-----
+ src/report.ts |  4 ++++
+ 2 files changed, 15 insertions(+), 3 deletions(-)
+```
+
+## Open problems
+- The last failing command (exit 1): `npm test`
+  End of its output:
+```
+FAIL test/report.test.ts
+  expected '{}' to equal '{"rows":[]}'
+Tests: 1 failed, 11 passed
+```
+- The previous agent stopped with: You've hit your usage limit. Try again at 14:05.
+- One approval or question was still open; ask the user again if you need it.
+
+## Project instructions (AGENTS.md)
+```
+Run `npm test` before you finish.
+```
+
+## How to continue
+Check the workspace against this brief before changing anything, then continue with the first unfinished step. Do not redo finished work, and tell the user briefly where you are picking up.

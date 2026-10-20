@@ -223,7 +223,7 @@ export function projectTurnItemForDetail(item: OrchestrationV2TurnItem): Orchest
 export function projectContextHandoffForWire(
   handoff: OrchestrationV2ContextHandoff,
 ): OrchestrationV2ContextHandoff {
-  const { history: _history, delivery: _delivery, ...projected } = handoff;
+  const { history: _history, delivery: _delivery, brief: _brief, ...projected } = handoff;
   return { ...projected, summaryText: "" };
 }
 

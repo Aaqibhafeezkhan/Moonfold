@@ -13,6 +13,7 @@ import {
 } from "./chat/threadContextDrag";
 import { discardComposerDraft } from "../lib/discardComposerDraft";
 import { requestCustomSnooze } from "./CustomSnoozeDialog";
+import { requestHandoff } from "./HandoffDialog";
 import { useSupportsMultiplePullRequests } from "~/hooks/useSupportsMultiplePullRequests";
 import { resolveThreadCurrentPullRequestLink } from "@moonfold/shared/threadPullRequests";
 import { useAtomValue } from "@effect/atom-react";
@@ -4844,6 +4845,15 @@ export default function Sidebar() {
                 threadId: threadRef.threadId,
                 projectId: thread.projectId,
               },
+            });
+            return;
+          case "hand-off":
+            requestHandoff({
+              environmentId: threadRef.environmentId,
+              threadId: threadRef.threadId,
+              projectId: thread.projectId,
+              current: thread.modelSelection,
+              reason: thread.runtime?.lastErrorClass === "usage_limit" ? "usage_limit" : "manual",
             });
             return;
           case "move-to-worktree":

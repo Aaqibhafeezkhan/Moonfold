@@ -254,3 +254,45 @@ refused when another window covers the point, and password fields are detected b
 and by the edit control's password style. The log never stores typed text. macOS and Linux are
 documented but not built: they cannot be verified on this machine. A provider's own computer use
 (some Codex installs carry one) runs outside these controls; the guide says so.
+
+## D-31 Provider handoff builds on the existing provider switch
+
+Upstream already moves a thread between providers: `message.dispatch` with another model
+selection starts a new native session and `ContextHandoffService` sends a budgeted selection of
+the history (Codex as injected items, others inline). Phase 4 adds what that path lacked instead of
+a second mechanism: a reason on every provider handoff (`usage_limit`, `automatic`, `manual`), a
+deterministic brief ahead of the history, secret redaction of everything sent, a preview, the
+allow list, and the triggers. A handoff is one `message.dispatch` carrying `handoffReason`, so
+receipts make it idempotent and every entry point (dialog, banner, fallback worker) shares it.
+
+## D-32 The brief is built from the log, sent once, and kept on the handoff record
+
+The brief is a pure function of the thread's turn items, the workspace's `git status --short` and
+`git diff --stat`, and AGENTS.md or CLAUDE.md, with no model call (`handoff/handoffBrief.ts`,
+golden-tested). The turn that delivers a provider handoff builds it, prepends it to the prompt and
+stores the exact text on the context-handoff record; a retry reuses the stored text. The record's
+brief is stripped from the wire projection (it can be several kilobytes) and read on demand for the
+divider's "View brief". The preview builds the same brief from the same state, so what the user
+reviews is what is sent unless the thread or workspace changes in between.
+
+## D-33 Redaction is one scanner, applied to everything that leaves for another provider
+
+`@moonfold/shared/secretRedaction` replaces provider keys, tokens, private keys, JWTs, bearer and
+basic credentials, URL credentials and literal secret assignments with `[REDACTED:<kind>]`. It
+errs toward redacting. It runs on the brief and on every history message of a provider handoff;
+same-provider handoffs (restarts, retries) are unchanged.
+
+## D-34 The allow list defaults to every enabled provider and is enforced at dispatch
+
+`providerHandoff.allowedProviders: null` keeps upstream's behavior (any enabled provider may
+receive a thread). A project that lists providers is enforced in `ThreadManagementService`'s
+dispatch chokepoint: a turn on a provider other than the thread's last run is refused when that
+provider is not listed, whatever started it (dialog, model picker, scheduled task, agent).
+
+## D-35 Automatic handoff runs on the scheduler, once per stopped run
+
+`auto` mode is opt-in. The `provider-handoff` sweep reads persisted state only, skips projects in
+`ask` mode before loading a thread, picks the first fallback that is allowed, enabled and not
+itself stopped at a limit whose reset is still ahead, and dispatches with command id
+`handoff-auto:<runId>`, so restarts and repeated sweeps never move a thread twice for one stop.
+Agents get no handoff tool: sending a thread's context to another company is the user's choice.

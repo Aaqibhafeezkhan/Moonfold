@@ -1,3 +1,4 @@
+import { HandoffReason, HandoffSentBrief } from "./handoff.ts";
 import { OrchestrationMessageContext } from "./composerContext.ts";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
@@ -1047,6 +1048,10 @@ export const OrchestrationV2ContextHandoff = Schema.Struct({
     }),
   ),
   detailInTurnItem: Schema.optional(Schema.Literal(true)),
+  /** Why the thread moved provider, for provider handoffs. */
+  reason: Schema.optional(HandoffReason),
+  /** The brief the next provider received, recorded when it was sent; kept off the wire. */
+  brief: Schema.optional(HandoffSentBrief),
   createdByProviderInstanceId: Schema.NullOr(ProviderInstanceId),
   createdAt: Schema.DateTimeUtc,
   updatedAt: Schema.DateTimeUtc,
@@ -1615,6 +1620,8 @@ export const OrchestrationV2TurnItem = Schema.Union([
       "manual_context",
     ]),
     summary: Schema.optional(Schema.String),
+    /** Why the thread moved provider; absent on other handoffs and older items. */
+    reason: Schema.optional(HandoffReason),
   }),
   Schema.Struct({
     ...OrchestrationV2TurnItemBaseFields,
@@ -2404,6 +2411,8 @@ export const OrchestrationV2TurnItemJson = Schema.Union([
       "manual_context",
     ]),
     summary: Schema.optional(Schema.String),
+    /** Why the thread moved provider; absent on other handoffs and older items. */
+    reason: Schema.optional(HandoffReason),
   }),
   Schema.Struct({
     ...OrchestrationV2TurnItemJsonBaseFields,
@@ -2964,6 +2973,8 @@ export const OrchestrationV2Command = Schema.Union([
     usageLimitContinuationOfRunId: Schema.optional(RunId),
     manualContinuationOfRunId: Schema.optional(RunId),
     usageLimitRecoveryRequestId: Schema.optional(CommandId),
+    /** Set when this message moves the thread to another provider through a handoff. */
+    handoffReason: Schema.optional(HandoffReason),
     /** Resolve untargeted delivery against the server's serialized thread state. */
     deliveryIntent: Schema.optional(Schema.Literals(["auto", "steer", "restart"])),
     delegatedCompletion: Schema.optional(

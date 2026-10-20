@@ -15,6 +15,8 @@ type RecoveryProps = {
   snoozedUntil: string | null;
   recovery: OrchestrationV2LimitRecovery | null;
   onChange: (recovery: OrchestrationV2LimitRecoveryUpdate) => Promise<void>;
+  /** Opens the handoff preview; its label names the first fallback when there is one. */
+  handoff?: { readonly label: string; readonly open: () => void } | undefined;
 };
 
 export function usageLimitRecoveryBannerItem(props: RecoveryProps): ComposerBannerStackItem {
@@ -29,7 +31,17 @@ export function usageLimitRecoveryBannerItem(props: RecoveryProps): ComposerBann
     description: resetAt
       ? `Resets ${new Date(resetAt).toLocaleString()}`
       : "Reset time unavailable; retry manually",
-    actions: canSchedule ? <RecoveryActions key={`${runId}:${resetAt}`} {...props} /> : null,
+    actions:
+      canSchedule || props.handoff !== undefined ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {props.handoff !== undefined ? (
+            <Button size="xs" variant="ghost" onClick={props.handoff.open}>
+              {props.handoff.label}
+            </Button>
+          ) : null}
+          {canSchedule ? <RecoveryActions key={`${runId}:${resetAt}`} {...props} /> : null}
+        </div>
+      ) : null,
   };
 }
 

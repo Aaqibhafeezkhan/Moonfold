@@ -73,12 +73,14 @@ import {
   MoonIcon,
   PaletteIcon,
   RotateCcwIcon,
+  ArrowRightLeftIcon,
   SettingsIcon,
   SquarePenIcon,
   SunIcon,
   TextSearchIcon,
 } from "lucide-react";
 import { requestThreadFindOpen } from "./chat/threadFindActionBus";
+import { requestHandoff } from "./HandoffDialog";
 import {
   useCallback,
   useDeferredValue,
@@ -1966,6 +1968,22 @@ function OpenCommandPaletteDialog(props: {
 
   if (activeThread !== null) {
     const thread = activeThread;
+    actionItems.push({
+      kind: "action",
+      value: "action:hand-off-thread",
+      searchTerms: ["hand off", "handoff", "switch agent", "another agent", "provider", "limit"],
+      title: "Hand off to another agent…",
+      icon: <ArrowRightLeftIcon className={ITEM_ICON_CLASS} />,
+      run: async () => {
+        requestHandoff({
+          environmentId: thread.environmentId,
+          threadId: thread.id,
+          projectId: thread.projectId,
+          current: thread.modelSelection,
+          reason: thread.runtime?.lastErrorClass === "usage_limit" ? "usage_limit" : "manual",
+        });
+      },
+    });
     actionItems.push({
       kind: "action",
       value: "action:restart-agent-session",

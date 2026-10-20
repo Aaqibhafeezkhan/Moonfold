@@ -1,5 +1,51 @@
 # Progress
 
+## Phase 4: provider handoff (complete, 2026-10-20)
+
+Plan: docs/plans/phase-4.md. Gate: docs/QA-PHASE4.md. Decisions: DECISIONS D-31 to D-35. Limit
+signals: docs/HANDOFF-SIGNALS.md. Owner smoke script: docs/SMOKE-HANDOFF.md.
+
+### Done
+
+- Built on upstream's provider switch (history selection, Codex history injection): every provider
+  handoff now records its reason (usage limit, automatic fallback, by the user).
+- A deterministic brief (objective, plan, what the user said, files changed, `git status` and
+  `git diff --stat`, failing command, open requests, AGENTS.md or CLAUDE.md) opens the new
+  provider's first turn; the exact text is kept on the handoff record and shown by "View brief".
+- One secret scanner redacts the brief and every history message sent to another provider.
+- Preview before sending ("Hand off to…" from the limit notice, thread menu, sidebar menu and
+  command palette); a usage-warning offer before a provider stops.
+- Settings → Handoff per environment or project: ask or automatic, fallback order, allowed
+  agents (enforced at the dispatch chokepoint), usage warning.
+- Automatic mode: a scheduler sweep moves a limited thread to the first available fallback, once
+  per stopped run, never back to a provider still limited.
+- Codex limit stops now carry a reset time even when Codex refuses the turn before sending
+  rate limits.
+
+### Verification (real output, Windows 11, 2026-10-20)
+
+- Typechecks exit 0 (contracts, shared, client-runtime, server, web, desktop); `vp run knip:check`
+  clean; `vp check` errors only in the untracked `moonfold-website/`.
+- Tests: web 6895/6895, contracts 670/670, client-runtime 2088/2088; server orchestration, MCP,
+  auth, settings and handoff suites 2569 passed with only baseline Windows failures; shared fails
+  only its known Windows cases (symlink, sqlite reader, installer lock).
+- Live (QA-PHASE4): a thread stopped at Claude's real limit, previewed and sent to Codex; Codex
+  received the brief and then stopped at its own real limit, and Moonfold offered no fallback.
+
+### Not verified / open
+
+- A task finished by the second provider live: both accounts on this machine are at their limits
+  (Claude until 1 November, Codex until 17 November). The fake-adapter end-to-end test covers it;
+  docs/SMOKE-HANDOFF.md is the owner's script.
+- Automatic mode and the usage warning were not exercised live.
+- Cursor, OpenCode and other ACP agents report limits as ordinary errors (manual handoff only).
+
+### Next step
+
+Phase 5 (BUILD-PLAN): Gemini CLI adapter (evaluate ACP first), verify the Cursor, OpenCode, Grok
+and Antigravity adapters, an OpenAI-compatible endpoint provider if clean; limit signals per
+provider into docs/HANDOFF-SIGNALS.md. Gemini CLI 0.43.0 is installed on this machine.
+
 ## Phase 3: Codex-parity layer B (complete, 2026-10-20)
 
 Plan: docs/plans/phase-3.md. Gate: docs/QA-PHASE3.md. REA gate: docs/REA-PHASE3.md. Decisions:

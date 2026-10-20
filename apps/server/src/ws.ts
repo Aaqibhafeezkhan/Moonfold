@@ -215,6 +215,7 @@ import * as AgentInstructions from "./project/AgentInstructions.ts";
 import * as ThreadSideQuestions from "./orchestration-v2/ThreadSideQuestions.ts";
 import * as WorktreeMcpService from "./mcp/WorktreeMcpService.ts";
 import * as PluginStore from "./plugins/PluginStore.ts";
+import * as HandoffService from "./handoff/HandoffService.ts";
 import * as MemoryStore from "./memories/MemoryStore.ts";
 import * as BrowserSitePermissions from "./browser/BrowserSitePermissions.ts";
 import * as ComputerUseService from "./computerUse/ComputerUseService.ts";
@@ -1311,6 +1312,7 @@ const buildWsRpcHandlers = (
     const worktreeTransfers = yield* WorktreeMcpService.WorktreeMcpService;
     const plugins = yield* PluginStore.PluginStore;
     const memories = yield* MemoryStore.MemoryStore;
+    const handoffs = yield* HandoffService.HandoffService;
     const browserSites = yield* BrowserSitePermissions.BrowserSitePermissions;
     const computerUse = yield* ComputerUseService.ComputerUseService;
     const providerInstallation = yield* makeProviderInstallation();
@@ -2124,6 +2126,9 @@ const buildWsRpcHandlers = (
       [WS_METHODS.memoriesSetEnabled]: (input) => memories.setEnabled(input.enabled),
       [WS_METHODS.memoriesThreadStatus]: (input) => memories.threadStatus(input.threadId),
       [WS_METHODS.memoriesSetThreadOptOut]: (input) => memories.setThreadOptOut(input),
+      [WS_METHODS.handoffPreview]: (input) => handoffs.preview(input),
+      [WS_METHODS.handoffStart]: (input) => handoffs.start(input),
+      [WS_METHODS.handoffBrief]: (input) => handoffs.sentBrief(input),
       [WS_METHODS.browserSitesGetPolicy]: () => browserSites.policy,
       [WS_METHODS.browserSitesSetRule]: (input) => browserSites.setRule(input),
       [WS_METHODS.browserSitesRemoveRule]: (input) => browserSites.removeRule(input.site),

@@ -498,6 +498,8 @@ const ATOMIC_SETTINGS_KEYS: ReadonlySet<string> = new Set([
   "reviewGuideModelSelection",
   "textGenerationModelSelection",
   "pullRequestMergeMethod",
+  // Its fields only make sense together, and its schema needs every one of them.
+  "providerHandoff",
 ]);
 
 function stripDefaultServerSettings(current: unknown, defaults: unknown): unknown | undefined {

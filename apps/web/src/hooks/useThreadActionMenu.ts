@@ -1,5 +1,6 @@
 import { scopeProjectRef } from "@moonfold/client-runtime/environment";
 import { requestCustomSnooze } from "../components/CustomSnoozeDialog";
+import { requestHandoff } from "../components/HandoffDialog";
 import {
   type AtomCommandResult,
   isAtomCommandInterrupted,
@@ -324,6 +325,15 @@ export function useThreadActionMenu(input: {
                 threadId: threadRef.threadId,
                 projectId: thread.projectId,
               },
+            });
+            return;
+          case "hand-off":
+            requestHandoff({
+              environmentId: threadRef.environmentId,
+              threadId: threadRef.threadId,
+              projectId: thread.projectId,
+              current: thread.modelSelection,
+              reason: thread.runtime?.lastErrorClass === "usage_limit" ? "usage_limit" : "manual",
             });
             return;
           case "move-to-worktree":

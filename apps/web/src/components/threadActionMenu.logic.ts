@@ -32,6 +32,7 @@ export type ThreadActionMenuId =
   | "copy-thread-id"
   | "open-in-window"
   | "schedule-follow-up"
+  | "hand-off"
   | "move-to-worktree"
   | "return-to-project"
   | "archive"
@@ -272,6 +273,13 @@ export function buildThreadActionMenuItems(
           },
         ]),
     { id: "schedule-follow-up", label: "Schedule a follow-up…", icon: "clock" },
+    // A turn in flight keeps its provider; the handoff starts once it ends.
+    {
+      id: "hand-off",
+      label: "Hand off to…",
+      icon: "arrow-right-left",
+      disabled: state.isRunning,
+    },
     {
       id: "copy",
       label: "Copy",

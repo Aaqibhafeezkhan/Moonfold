@@ -10,6 +10,12 @@ const ICON_PATHS: Record<string, ReadonlyArray<{ tag: string; attrs: Record<stri
     { tag: "path", attrs: { d: "M2 8h20" } },
     { tag: "path", attrs: { d: "M6 4v4" } },
   ],
+  "arrow-right-left": [
+    { tag: "path", attrs: { d: "m16 3 4 4-4 4" } },
+    { tag: "path", attrs: { d: "M20 7H4" } },
+    { tag: "path", attrs: { d: "m8 21-4-4 4-4" } },
+    { tag: "path", attrs: { d: "M4 17h16" } },
+  ],
   archive: [
     { tag: "rect", attrs: { width: "20", height: "5", x: "2", y: "3", rx: "1" } },
     { tag: "path", attrs: { d: "M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" } },

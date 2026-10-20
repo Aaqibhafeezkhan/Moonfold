@@ -30,11 +30,13 @@ import {
   PROVIDER_SEND_TURN_MAX_FILE_BYTES,
   ProviderInstanceId,
   resolveProjectProviderInstanceEnabled,
+  handoffAllowsProvider,
   RunId,
   type ScheduledTaskId,
   ThreadId,
   type TurnItemId,
 } from "@moonfold/contracts";
+import { resolveProjectSettings } from "@moonfold/shared/projectSettings";
 import { threadTranscriptHeader } from "@moonfold/shared/threadTranscript";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
@@ -289,10 +291,14 @@ export class ThreadManagementProviderInstanceDisabledError extends Schema.Tagged
   {
     projectId: ProjectId,
     instanceId: ProviderInstanceId,
+    /** Set when the instance is on but the project does not hand threads to it. */
+    reason: Schema.optional(Schema.Literal("handoff_not_allowed")),
   },
 ) {
   override get message(): string {
-    return `Provider instance "${this.instanceId}" is disabled for project ${this.projectId}.`;
+    return this.reason === "handoff_not_allowed"
+      ? `This project does not send its threads to "${this.instanceId}". Change it in Settings → Handoff.`
+      : `Provider instance "${this.instanceId}" is disabled for project ${this.projectId}.`;
   }
 }
 
@@ -576,6 +582,40 @@ const make = Effect.gen(function* () {
         ),
       );
 
+  // A turn on another provider than the thread's last run sends it the thread's history, so the
+  // project's handoff allow list decides; a thread that has not run yet sends nothing.
+  const assertHandoffAllowed = (input: {
+    readonly projectId: ProjectId;
+    readonly commandId: CommandId;
+    readonly instanceId: ProviderInstanceId;
+    readonly runs: ReadonlyArray<OrchestrationV2Run>;
+  }) => {
+    const latest = input.runs.toSorted((left, right) => right.ordinal - left.ordinal)[0];
+    if (latest === undefined || latest.providerInstanceId === input.instanceId) return Effect.void;
+    return receipts.getByCommandId(input.commandId).pipe(
+      Effect.orElseSucceed(() => Option.none()),
+      Effect.flatMap((receipt) =>
+        Option.isSome(receipt)
+          ? Effect.void
+          : serverSettings.getSettings.pipe(
+              Effect.orDie,
+              Effect.flatMap((current) =>
+                handoffAllowsProvider(
+                  resolveProjectSettings(current, input.projectId).settings.providerHandoff,
+                  input.instanceId,
+                )
+                  ? Effect.void
+                  : new ThreadManagementProviderInstanceDisabledError({
+                      projectId: input.projectId,
+                      instanceId: input.instanceId,
+                      reason: "handoff_not_allowed",
+                    }),
+              ),
+            ),
+      ),
+    );
+  };
+
   const isProviderInstanceEnabledForProject: ThreadManagementServiceShape["isProviderInstanceEnabledForProject"] =
     (input) =>
       serverSettings.getSettings.pipe(
@@ -688,14 +728,25 @@ const make = Effect.gen(function* () {
   const assertDispatchTargetEnabled = (command: OrchestrationV2ServerCommand) => {
     switch (command.type) {
       case "message.dispatch":
-        return orchestrator.getThreadRecords(command.threadId, []).pipe(
-          Effect.flatMap((projection) =>
-            assertProviderInstanceEnabled({
+        return orchestrator.getThreadRecords(command.threadId, ["runs"]).pipe(
+          Effect.flatMap((projection) => {
+            const instanceId = (command.modelSelection ?? projection.thread.modelSelection)
+              .instanceId;
+            return assertProviderInstanceEnabled({
               projectId: projection.thread.projectId,
               commandId: command.commandId,
-              instanceId: (command.modelSelection ?? projection.thread.modelSelection).instanceId,
-            }),
-          ),
+              instanceId,
+            }).pipe(
+              Effect.andThen(
+                assertHandoffAllowed({
+                  projectId: projection.thread.projectId,
+                  commandId: command.commandId,
+                  instanceId,
+                  runs: projection.runs,
+                }),
+              ),
+            );
+          }),
         );
       case "delegated_task.request":
         return orchestrator.getThreadRecords(command.parentThreadId, []).pipe(
