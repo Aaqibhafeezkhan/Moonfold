@@ -28,7 +28,7 @@ import { videoMimeType } from "@moonfold/shared/video";
 export { videoMimeType } from "@moonfold/shared/video";
 
 export type SessionPhase = "disconnected" | "connecting" | "ready" | "running";
-export const DEFAULT_RUNTIME_MODE: RuntimeMode = "full-access";
+export { DEFAULT_RUNTIME_MODE } from "@moonfold/contracts";
 
 export const DEFAULT_INTERACTION_MODE: ProviderInteractionMode = "default";
 export const DEFAULT_THREAD_TERMINAL_HEIGHT = 280;
