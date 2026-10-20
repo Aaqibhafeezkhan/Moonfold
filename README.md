@@ -19,7 +19,8 @@ See [NOTICE](./NOTICE) for attribution.
 
 ## Status
 
-Moonfold is pre-release. There are no published installers yet; build it from source.
+Moonfold is in beta. [v0.1.0-beta.1](https://github.com/Mr-Dark-debug/Moonfold/releases/tag/v0.1.0-beta.1)
+has installers for macOS, Windows and Linux; they are not code-signed yet.
 
 | Area                                                  | State                          |
 | ----------------------------------------------------- | ------------------------------ |
@@ -27,7 +28,26 @@ Moonfold is pre-release. There are no published installers yet; build it from so
 | Rebrand, local-first defaults, no hosted services     | Done                           |
 | Codex-app parity features (goals, review, hooks, ...) | Works                          |
 | Provider handoff on usage limits                      | Works                          |
-| Signed installers for macOS, Windows and Linux        | Planned                        |
+| Installers for macOS, Windows and Linux               | Beta, unsigned                 |
+
+## Install
+
+Download the desktop app for your system from
+[Releases](https://github.com/Mr-Dark-debug/Moonfold/releases): `.dmg` for macOS, `.exe` for
+Windows, `.AppImage` or `.deb` for Linux. Because the beta is unsigned, the first launch needs one
+extra step; [Install and first run](./docs/user/install.md#opening-an-unsigned-build) shows how.
+
+Or install the `moonfold` command, which serves the same app to your browser:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Mr-Dark-debug/Moonfold/main/scripts/install.sh | sh
+```
+
+On Windows, in PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/Mr-Dark-debug/Moonfold/main/scripts/install.ps1 | iex
+```
 
 ## Requirements
 
