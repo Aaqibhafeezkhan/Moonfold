@@ -1,7 +1,8 @@
 /**
  * DesktopQuickWindow - the global hotkey that opens the quick window, a small always-on-top
  * window for starting a thread from anywhere. The hotkey comes from client settings and is
- * off until the user records one.
+ * off until the user records one. It also applies the background-mode setting, the other
+ * window preference client settings carry.
  *
  * @module window/DesktopQuickWindow
  */
@@ -79,6 +80,11 @@ const make = Effect.gen(function* () {
   }).pipe(Effect.flatMap((status) => Ref.set(statusRef, status)));
 
   const configure: DesktopQuickWindow["Service"]["configure"] = (settings) =>
+    desktopWindow
+      .setRunInBackground(settings.desktopRunInBackground)
+      .pipe(Effect.andThen(configureShortcut(settings)));
+
+  const configureShortcut = (settings: ClientSettings) =>
     Effect.suspend(() => {
       const next = settings.quickWindowShortcut;
       const unchanged =

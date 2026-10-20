@@ -31,6 +31,7 @@ import * as FileSystem from "effect/FileSystem";
 import { Tool, Toolkit } from "effect/ai";
 
 import * as McpInvocationContext from "../../McpInvocationContext.ts";
+import * as BrowserSitePermissions from "../../../browser/BrowserSitePermissions.ts";
 import * as PreviewAutomationBroker from "../../PreviewAutomationBroker.ts";
 import * as ServerConfig from "../../../config.ts";
 import * as ThreadManagementService from "../../../orchestration-v2/ThreadManagementService.ts";
@@ -39,6 +40,7 @@ const dependencies = [
   McpInvocationContext.McpInvocationContext,
   ThreadManagementService.ThreadManagementService,
   PreviewAutomationBroker.PreviewAutomationBroker,
+  BrowserSitePermissions.BrowserSitePermissions,
 ];
 
 /** What a browser action fails with, including the access gate's refusal. */

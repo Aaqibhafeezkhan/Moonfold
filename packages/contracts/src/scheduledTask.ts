@@ -5,6 +5,7 @@ import {
   ForwardCompatibleArray,
   IsoDateTime,
   ProjectId,
+  RunId,
   ScheduledTaskId,
   SecretRef,
   ThreadId,
@@ -54,6 +55,34 @@ const ScheduledTaskFixedTimeSchedule = Schema.Struct({
   ),
 }).annotate({
   description: "Run at a fixed local wall-clock time on selected weekdays.",
+});
+
+const ScheduleTimeZone = TrimmedNonEmptyString.check(Schema.isMaxLength(64)).annotate({
+  description: "IANA time zone the wall-clock times are read in, such as Europe/Berlin.",
+});
+
+const ScheduledTaskOnceSchedule = Schema.Struct({
+  type: Schema.Literal("once").annotate({ description: "Select a single run." }),
+  at: TrimmedNonEmptyString.check(
+    Schema.isPattern(/^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$/),
+  ).annotate({ description: "Local date and time in YYYY-MM-DDTHH:MM form." }),
+  timeZone: ScheduleTimeZone,
+}).annotate({
+  description: "Run once at a local date and time, then turn the task off.",
+});
+
+const ScheduledTaskCronSchedule = Schema.Struct({
+  type: Schema.Literal("cron").annotate({ description: "Select a cron schedule." }),
+  expression: TrimmedNonEmptyString.check(Schema.isMaxLength(200)).annotate({
+    description:
+      "Five fields: minute, hour, day of month, month, day of week. For example '0 9 * * 1-5' runs at 09:00 on weekdays.",
+  }),
+  timeZone: ScheduleTimeZone,
+  until: Schema.optional(Schema.NullOr(IsoDateTime)).annotate({
+    description: "Optional end: no runs after this instant.",
+  }),
+}).annotate({
+  description: "Run whenever the cron expression matches, read in the given time zone.",
 });
 
 const ScheduledTaskWebhookSignatureFields = {
@@ -129,10 +158,12 @@ const ScheduledTaskUpsertWebhookSchedule = Schema.Struct({
 export const ScheduledTaskSchedule = Schema.Union([
   ScheduledTaskIntervalSchedule,
   ScheduledTaskFixedTimeSchedule,
+  ScheduledTaskOnceSchedule,
+  ScheduledTaskCronSchedule,
   ScheduledTaskWebhookSchedule,
 ]).annotate({
   description:
-    "Structured trigger. Pass an object with type 'interval', 'fixed_time' or 'webhook'.",
+    "Structured trigger. Pass an object with type 'interval', 'fixed_time', 'once', 'cron' or 'webhook'.",
 });
 export type ScheduledTaskSchedule = typeof ScheduledTaskSchedule.Type;
 
@@ -151,9 +182,12 @@ export const ScheduledTaskUpsertSchedule = Schema.Union([
     description: "Run repeatedly after a fixed number of milliseconds.",
   }),
   ScheduledTaskFixedTimeSchedule,
+  ScheduledTaskOnceSchedule,
+  ScheduledTaskCronSchedule,
   ScheduledTaskUpsertWebhookSchedule,
 ]).annotate({
-  description: "Writable trigger. Pass an object with type 'interval', 'fixed_time' or 'webhook'.",
+  description:
+    "Writable trigger. Pass an object with type 'interval', 'fixed_time', 'once', 'cron' or 'webhook'.",
 });
 export type ScheduledTaskUpsertSchedule = typeof ScheduledTaskUpsertSchedule.Type;
 
@@ -169,6 +203,10 @@ export const ScheduledTaskWebhookEndpoint = Schema.Struct({
   hasSecret: Schema.Boolean,
 });
 export type ScheduledTaskWebhookEndpoint = typeof ScheduledTaskWebhookEndpoint.Type;
+
+/** When a task's runs notify: every run, failures only, or never. */
+export const ScheduledTaskNotifyPolicy = Schema.Literals(["all", "failures", "never"]);
+export type ScheduledTaskNotifyPolicy = typeof ScheduledTaskNotifyPolicy.Type;
 
 export const ScheduledTask = Schema.Struct({
   id: ScheduledTaskId,
@@ -192,6 +230,10 @@ export const ScheduledTask = Schema.Struct({
   lastRunError: Schema.NullOr(Schema.String),
   runCount: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
   webhook: Schema.optional(ScheduledTaskWebhookEndpoint),
+  /** When runs notify; absent on older servers, which notify for every run. */
+  notify: Schema.optional(ScheduledTaskNotifyPolicy),
+  /** Orchestration runs this task started in the last week, so clients apply `notify` to them. */
+  recentRunIds: Schema.optional(Schema.Array(RunId)),
 });
 export type ScheduledTask = typeof ScheduledTask.Type;
 
@@ -223,6 +265,10 @@ export const ScheduledTaskUpsertInput = Schema.Struct({
   interactionMode: ProviderInteractionMode,
   createdBy: Schema.optional(OrchestrationV2Actor),
   creationSource: Schema.optional(OrchestrationV2CreationSource),
+  notify: Schema.optional(ScheduledTaskNotifyPolicy).annotate({
+    description:
+      "When runs notify the user: all, failures or never. Omit to keep the current policy.",
+  }),
 });
 export type ScheduledTaskUpsertInput = typeof ScheduledTaskUpsertInput.Type;
 
@@ -328,6 +374,43 @@ export const ScheduledTaskRunNowResult = Schema.Struct({
   task: ScheduledTask,
 });
 export type ScheduledTaskRunNowResult = typeof ScheduledTaskRunNowResult.Type;
+
+/** What started a run. */
+export const ScheduledTaskRunTrigger = Schema.Literals(["scheduled", "manual", "webhook"]);
+export type ScheduledTaskRunTrigger = typeof ScheduledTaskRunTrigger.Type;
+
+/** A run's outcome: the agent is still working, or how its turn ended. */
+export const ScheduledTaskRunOutcome = Schema.Literals([
+  "working",
+  "succeeded",
+  "failed",
+  "cancelled",
+]);
+export type ScheduledTaskRunOutcome = typeof ScheduledTaskRunOutcome.Type;
+
+/** One run of a task, newest first in a listing. */
+export const ScheduledTaskRunRecord = Schema.Struct({
+  id: TrimmedNonEmptyString,
+  taskId: ScheduledTaskId,
+  trigger: ScheduledTaskRunTrigger,
+  startedAt: IsoDateTime,
+  finishedAt: Schema.NullOr(IsoDateTime),
+  status: ScheduledTaskRunOutcome,
+  /** The thread the run started or continued; null when the prompt never went out. */
+  threadId: Schema.NullOr(ThreadId),
+  error: Schema.NullOr(Schema.String),
+});
+export type ScheduledTaskRunRecord = typeof ScheduledTaskRunRecord.Type;
+
+export const ScheduledTaskListRunsInput = Schema.Struct({
+  id: ScheduledTaskId,
+});
+export type ScheduledTaskListRunsInput = typeof ScheduledTaskListRunsInput.Type;
+
+export const ScheduledTaskListRunsResult = Schema.Struct({
+  runs: ForwardCompatibleArray(ScheduledTaskRunRecord),
+});
+export type ScheduledTaskListRunsResult = typeof ScheduledTaskListRunsResult.Type;
 
 export class ScheduledTaskError extends Schema.TaggedError<ScheduledTaskError>()(
   "ScheduledTaskError",

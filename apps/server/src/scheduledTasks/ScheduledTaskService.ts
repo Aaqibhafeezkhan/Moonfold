@@ -5,6 +5,7 @@ import {
   ScheduledTask,
   ScheduledTaskError,
   ScheduledTaskId,
+  RunId,
   ThreadId,
   ScheduledTaskWebhookDeliveryId,
   type ScheduledTaskDeleteInput,
@@ -12,6 +13,9 @@ import {
   type ScheduledTaskGetWebhookDeliveryInput,
   type ScheduledTaskGetWebhookDeliveryResult,
   type ScheduledTaskListWebhookDeliveriesInput,
+  type ScheduledTaskListRunsInput,
+  type ScheduledTaskListRunsResult,
+  type ScheduledTaskRunOutcome,
   type ScheduledTaskListWebhookDeliveriesResult,
   type ScheduledTaskRotateWebhookTokenInput,
   type ScheduledTaskWebhookDeliveryOutcome,
@@ -45,7 +49,12 @@ import * as Metrics from "../observability/Metrics.ts";
 import * as ThreadManagementService from "../orchestration-v2/ThreadManagementService.ts";
 import * as SecretRequests from "../secrets/SecretRequests.ts";
 import * as Scheduler from "../scheduling/Scheduler.ts";
-import { isMissedFixedTimeRun, isSameSchedule, nextScheduledRunAt } from "./Schedule.ts";
+import {
+  isMissedFixedTimeRun,
+  isSameSchedule,
+  nextScheduledRunAt,
+  scheduleProblem,
+} from "./Schedule.ts";
 import {
   redactHeaders,
   redactQuery,
@@ -197,7 +206,43 @@ interface ScheduledTaskRow {
   readonly run_count: number;
   readonly webhook_token: string | null;
   readonly webhook_secret: string | null;
+  readonly notify_policy?: string;
 }
+
+interface ScheduledTaskRunRow {
+  readonly run_id: string;
+  readonly task_id: string;
+  readonly trigger: string;
+  readonly started_at: string;
+  readonly finished_at: string | null;
+  readonly status: string;
+  readonly thread_id: string | null;
+  readonly message_id: string | null;
+  readonly orchestration_run_id: string | null;
+  readonly error: string | null;
+}
+
+/** How far back a task's runs count as recent for notification policy. */
+const RECENT_RUN_WINDOW_MS = 7 * 24 * 60 * 60_000;
+
+/** Runs kept per task; older ones are pruned when a new run starts. */
+const MAX_RUNS_PER_TASK = 100;
+
+/** How a thread's orchestration run status reads as a task run outcome. */
+function scheduledRunOutcome(status: string): ScheduledTaskRunOutcome {
+  if (status === "completed") return "succeeded";
+  if (status === "failed" || status === "interrupted") return "failed";
+  if (status === "cancelled" || status === "rolled_back") return "cancelled";
+  return "working";
+}
+
+const STORED_RUN_OUTCOMES: ReadonlySet<string> = new Set([
+  "working",
+  "succeeded",
+  "failed",
+  "cancelled",
+]);
+const STORED_RUN_TRIGGERS: ReadonlySet<string> = new Set(["scheduled", "manual", "webhook"]);
 
 interface WebhookDeliveryRow {
   readonly delivery_id: string;
@@ -239,6 +284,10 @@ export class ScheduledTaskService extends Context.Service<
     readonly rotateWebhookToken: (
       input: ScheduledTaskRotateWebhookTokenInput,
     ) => Effect.Effect<ScheduledTaskMutationResult, ScheduledTaskError>;
+    /** The task's runs, newest first, each with its thread and how the agent's turn ended. */
+    readonly listRuns: (
+      input: ScheduledTaskListRunsInput,
+    ) => Effect.Effect<ScheduledTaskListRunsResult, ScheduledTaskError>;
     readonly listWebhookDeliveries: (
       input: ScheduledTaskListWebhookDeliveriesInput,
     ) => Effect.Effect<ScheduledTaskListWebhookDeliveriesResult, ScheduledTaskError>;
@@ -338,6 +387,7 @@ const decodeRow = (row: ScheduledTaskRow, origin: WebhookOrigin | null = null) =
       lastRunError: row.last_run_error,
       runCount: row.run_count,
       ...(webhook === undefined ? {} : { webhook }),
+      notify: row.notify_policy ?? "all",
     });
   }).pipe(
     Effect.mapError((cause) => {
@@ -436,7 +486,8 @@ export const layer = Layer.effect(
         last_run_error,
         run_count,
         webhook_token,
-        webhook_secret
+        webhook_secret,
+        notify_policy
       FROM scheduled_tasks
       ORDER BY updated_at DESC, task_id ASC
     `;
@@ -471,7 +522,8 @@ export const layer = Layer.effect(
         last_run_error,
         run_count,
         webhook_token,
-        webhook_secret
+        webhook_secret,
+        notify_policy
       FROM scheduled_tasks
       WHERE task_id = ${id}
     `;
@@ -551,7 +603,8 @@ export const layer = Layer.effect(
           last_run_error,
           run_count,
           webhook_token,
-          webhook_secret
+          webhook_secret,
+          notify_policy
         )
         SELECT
           ${task.id},
@@ -575,7 +628,8 @@ export const layer = Layer.effect(
           ${task.lastRunError},
           ${task.runCount},
           ${webhook.token},
-          ${webhook.secret}
+          ${webhook.secret},
+          ${task.notify ?? "all"}
         WHERE ${requireExisting ? 0 : 1} = 1
            OR EXISTS (SELECT 1 FROM scheduled_tasks WHERE task_id = ${task.id})
         ON CONFLICT (task_id)
@@ -593,6 +647,7 @@ export const layer = Layer.effect(
           creation_source = excluded.creation_source,
           updated_at = excluded.updated_at,
           next_run_at = excluded.next_run_at,
+          notify_policy = excluded.notify_policy,
           -- Only rotate changes a live token, so a save racing a rotation
           -- cannot bring the old URL back.
           webhook_token = CASE
@@ -619,6 +674,7 @@ export const layer = Layer.effect(
       sql
         .withTransaction(
           sql`DELETE FROM scheduled_task_webhook_deliveries WHERE task_id = ${id}`.pipe(
+            Effect.andThen(sql`DELETE FROM scheduled_task_runs WHERE task_id = ${id}`),
             Effect.andThen(sql`DELETE FROM scheduled_tasks WHERE task_id = ${id}`),
           ),
         )
@@ -627,6 +683,141 @@ export const layer = Layer.effect(
             taskError("Could not delete schedule task.", { taskId: id, cause }),
           ),
         );
+
+    const recordRunStarted = (input: {
+      readonly runId: string;
+      readonly taskId: ScheduledTaskId;
+      readonly trigger: "scheduled" | "manual" | "webhook";
+      readonly startedAtIso: string;
+      readonly messageId: string;
+    }) =>
+      sql`
+        INSERT INTO scheduled_task_runs (run_id, task_id, trigger, started_at, status, message_id)
+        VALUES (
+          ${input.runId},
+          ${input.taskId},
+          ${input.trigger},
+          ${input.startedAtIso},
+          'working',
+          ${input.messageId}
+        )
+        ON CONFLICT (run_id) DO NOTHING
+      `.pipe(
+        Effect.andThen(
+          sql`
+            DELETE FROM scheduled_task_runs
+            WHERE task_id = ${input.taskId}
+              AND run_id NOT IN (
+                SELECT run_id FROM scheduled_task_runs
+                WHERE task_id = ${input.taskId}
+                ORDER BY started_at DESC
+                LIMIT ${MAX_RUNS_PER_TASK}
+              )
+          `,
+        ),
+        Effect.mapError((cause) =>
+          taskError("Could not record schedule task run.", { taskId: input.taskId, cause }),
+        ),
+      );
+
+    // A prompt that never went out ends the run now; one that did waits for the agent.
+    const recordRunDispatched = (input: {
+      readonly runId: string;
+      readonly threadId: string | null;
+      readonly error: string | null;
+      readonly finishedAtIso: string;
+    }) =>
+      (input.error === null
+        ? sql`UPDATE scheduled_task_runs SET thread_id = ${input.threadId} WHERE run_id = ${input.runId}`
+        : sql`
+            UPDATE scheduled_task_runs
+            SET status = 'failed', error = ${input.error}, finished_at = ${input.finishedAtIso}
+            WHERE run_id = ${input.runId}
+          `
+      ).pipe(
+        Effect.asVoid,
+        Effect.catchCause((cause) =>
+          Effect.logWarning("Could not record a scheduled task run's dispatch", { cause }),
+        ),
+      );
+
+    /**
+     * Follows each run whose prompt went out until the agent's turn for it settles. The thread's
+     * orchestration run is the one answering the run's message.
+     */
+    const reconcileRuns = Effect.gen(function* () {
+      const open = yield* sql<ScheduledTaskRunRow>`
+        SELECT * FROM scheduled_task_runs
+        WHERE status = 'working' AND thread_id IS NOT NULL AND message_id IS NOT NULL
+      `;
+      if (open.length === 0) return;
+      const now = iso(yield* localNow);
+      let changed = false;
+      for (const row of open) {
+        const records = yield* Effect.result(
+          threadManagement.getThreadRecords(ThreadId.make(row.thread_id!), ["runs"]),
+        );
+        let settled: { readonly status: ScheduledTaskRunOutcome; readonly error: string | null };
+        if (records._tag === "Failure") {
+          settled = { status: "cancelled", error: "The run's thread no longer exists." };
+        } else {
+          const run = records.success.runs.find(
+            (candidate) => candidate.userMessageId === row.message_id,
+          );
+          if (run === undefined) continue;
+          if (row.orchestration_run_id === null) {
+            yield* sql`
+              UPDATE scheduled_task_runs SET orchestration_run_id = ${run.id}
+              WHERE run_id = ${row.run_id}
+            `;
+            changed = true;
+          }
+          const status = scheduledRunOutcome(run.status);
+          if (status === "working") continue;
+          settled = {
+            status,
+            error: status === "failed" ? `The agent's turn ${run.status}.` : null,
+          };
+        }
+        yield* sql`
+          UPDATE scheduled_task_runs
+          SET status = ${settled.status}, error = ${settled.error}, finished_at = ${now}
+          WHERE run_id = ${row.run_id} AND status = 'working'
+        `;
+        changed = true;
+      }
+      if (changed) yield* notifyChanged;
+    });
+
+    const listRuns: ScheduledTaskService["Service"]["listRuns"] = (input) =>
+      sql<ScheduledTaskRunRow>`
+        SELECT * FROM scheduled_task_runs
+        WHERE task_id = ${input.id}
+        ORDER BY started_at DESC
+        LIMIT ${MAX_RUNS_PER_TASK}
+      `.pipe(
+        Effect.map((rows) => ({
+          runs: rows.flatMap((row) =>
+            STORED_RUN_OUTCOMES.has(row.status) && STORED_RUN_TRIGGERS.has(row.trigger)
+              ? [
+                  {
+                    id: row.run_id,
+                    taskId: input.id,
+                    trigger: row.trigger as "scheduled" | "manual" | "webhook",
+                    startedAt: row.started_at,
+                    finishedAt: row.finished_at,
+                    status: row.status as ScheduledTaskRunOutcome,
+                    threadId: row.thread_id === null ? null : ThreadId.make(row.thread_id),
+                    error: row.error,
+                  },
+                ]
+              : [],
+          ),
+        })),
+        Effect.mapError((cause) =>
+          taskError("Could not list schedule task runs.", { taskId: input.id, cause }),
+        ),
+      );
 
     // Run-state transitions use targeted UPDATEs (never the full-row upsert) so
     // a completing run cannot resurrect a deleted task or clobber concurrent
@@ -775,6 +966,9 @@ export const layer = Layer.effect(
 
         yield* markRunning(active.id, startedAtIso);
         yield* notifyChanged;
+        const runId = `scheduled-task-run:${active.id}:${DateTime.toEpochMillis(startedAt)}:${trigger}${
+          webhook === undefined ? "" : `:${webhook.deliveryId}`
+        }`;
 
         // A webhook run is keyed by its delivery so the same delivery can
         // never dispatch twice.
@@ -788,6 +982,13 @@ export const layer = Layer.effect(
         // after the poll read are honoured. A webhook prompt was rendered
         // from the row when the request arrived.
         const prompt = webhook?.prompt ?? active.prompt;
+        yield* recordRunStarted({
+          runId,
+          taskId: active.id,
+          trigger,
+          startedAtIso,
+          messageId,
+        });
 
         // Effect.exit (not Effect.result) so defects and interruptions in the
         // dispatch are also captured and recorded as a failed run instead of
@@ -832,6 +1033,17 @@ export const layer = Layer.effect(
 
         const completedAt = yield* localNow;
         const runSucceeded = result._tag === "Success";
+        yield* recordRunDispatched({
+          runId,
+          threadId:
+            result._tag === "Success"
+              ? "threadId" in result.value
+                ? result.value.threadId
+                : active.threadId
+              : null,
+          error: runSucceeded ? null : errorMessage(result.cause),
+          finishedAtIso: iso(completedAt),
+        });
         const lastRunStatus = runSucceeded ? ("succeeded" as const) : ("failed" as const);
         const lastRunError = runSucceeded ? null : errorMessage(result.cause);
         // Re-read the task so the next run is computed from the schedule as it
@@ -886,10 +1098,18 @@ export const layer = Layer.effect(
         missedRunAt: task.nextRunAt,
         rescheduledTo: next,
       });
+      // A missed one-off has no later occurrence, so say why it never ran.
+      const missedOnce = task.schedule.type === "once";
       yield* sql`
         UPDATE scheduled_tasks
         SET next_run_at = ${next},
-            updated_at = ${iso(now)}
+            updated_at = ${iso(now)},
+            last_run_status = ${missedOnce ? "failed" : task.lastRunStatus},
+            last_run_error = ${
+              missedOnce
+                ? "Missed: Moonfold was not running at the scheduled time."
+                : task.lastRunError
+            }
         WHERE task_id = ${task.id}
       `.pipe(
         Effect.mapError((cause) =>
@@ -900,6 +1120,11 @@ export const layer = Layer.effect(
     });
 
     const runDueTasks = Effect.fn("ScheduledTaskService.runDueTasks")(function* () {
+      yield* reconcileRuns.pipe(
+        Effect.catchCause((cause) =>
+          Effect.logWarning("Could not update scheduled task runs", { cause }),
+        ),
+      );
       const now = yield* localNow;
       const tasks = yield* listDueTasks(now).pipe(
         Effect.mapError((cause) => taskError("Could not list schedule tasks.", { cause })),
@@ -979,8 +1204,35 @@ export const layer = Layer.effect(
 
     yield* scheduler.register("scheduled-tasks", runDueTasks());
 
+    // Recent orchestration runs per task, attached so clients can apply each task's notify policy.
+    const withRecentRunIds = (tasks: ReadonlyArray<ScheduledTask>) =>
+      Effect.gen(function* () {
+        if (tasks.length === 0) return tasks;
+        const since = iso(
+          DateTime.subtract(yield* localNow, { milliseconds: RECENT_RUN_WINDOW_MS }),
+        );
+        const rows = yield* sql<{
+          readonly task_id: string;
+          readonly orchestration_run_id: string;
+        }>`
+          SELECT task_id, orchestration_run_id FROM scheduled_task_runs
+          WHERE orchestration_run_id IS NOT NULL AND started_at >= ${since}
+        `;
+        const byTask = new Map<string, Array<RunId>>();
+        for (const row of rows) {
+          const runs = byTask.get(row.task_id) ?? [];
+          runs.push(RunId.make(row.orchestration_run_id));
+          byTask.set(row.task_id, runs);
+        }
+        return tasks.map((task) => {
+          const recentRunIds = byTask.get(task.id);
+          return recentRunIds === undefined ? task : { ...task, recentRunIds };
+        });
+      });
+
     const list: ScheduledTaskService["Service"]["list"] = () =>
       listRows().pipe(
+        Effect.flatMap(withRecentRunIds),
         Effect.map((tasks) => ({ tasks })),
         Effect.mapError((cause) => taskError("Could not list schedule tasks.", { cause })),
       );
@@ -1000,6 +1252,8 @@ export const layer = Layer.effect(
 
     const upsert: ScheduledTaskService["Service"]["upsert"] = (input) =>
       Effect.gen(function* () {
+        const problem = scheduleProblem(input.schedule);
+        if (problem !== null) return yield* taskError(problem, {});
         const now = yield* localNow;
         const uuid =
           input.commandId === undefined
@@ -1103,6 +1357,7 @@ export const layer = Layer.effect(
           lastRunStatus: existingTask?.lastRunStatus ?? "never",
           lastRunError: existingTask?.lastRunError ?? null,
           runCount: existingTask?.runCount ?? 0,
+          notify: input.notify ?? existingTask?.notify ?? "all",
         };
         yield* saveTask(task, input.requireExisting === true, webhook);
         yield* notifyChanged;
@@ -1673,6 +1928,7 @@ export const layer = Layer.effect(
       delete: deleteTask,
       runNow,
       rotateWebhookToken,
+      listRuns,
       listWebhookDeliveries,
       getWebhookDelivery,
       triggerWebhook,

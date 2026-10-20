@@ -23,6 +23,9 @@ export type SettingsPath =
   | "/settings/snap-shot"
   | "/settings/providers"
   | "/settings/integrations"
+  | "/settings/plugins"
+  | "/settings/memories"
+  | "/settings/computer-use"
   | "/settings/scheduled-tasks"
   | "/settings/source-control"
   | "/settings/storage"
@@ -103,6 +106,9 @@ export const SETTINGS_SECTION_LABELS: Readonly<Record<SettingsPath, string>> = {
   "/settings/snap-shot": "SnapShots",
   "/settings/providers": "Providers",
   "/settings/integrations": "Integrations",
+  "/settings/plugins": "Plugins",
+  "/settings/memories": "Memories",
+  "/settings/computer-use": "Computer Use",
   "/settings/scheduled-tasks": "Scheduled Tasks",
   "/settings/source-control": "Source Control",
   "/settings/storage": "Storage",
@@ -543,6 +549,13 @@ export const SETTINGS_SEARCH_ITEMS = [
     title: "Quit shortcut",
     to: "/settings/general",
     searchTerms: ["confirmation desktop app exit direct hold double click press twice"],
+    desktopOnly: true,
+  },
+  {
+    id: "run-in-background",
+    title: "Keep running in the background",
+    to: "/settings/general",
+    searchTerms: ["tray system close window scheduled tasks keep alive quit windows linux"],
     desktopOnly: true,
   },
   {
@@ -1032,6 +1045,24 @@ export const SETTINGS_SEARCH_ITEMS = [
     ],
   },
   {
+    id: "plugins",
+    title: "Plugins",
+    to: "/settings/plugins",
+    searchTerms: ["skills mcp servers extensions install git repository codex claude marketplace"],
+  },
+  {
+    id: "memories",
+    title: "Memories",
+    to: "/settings/memories",
+    searchTerms: ["remember preferences notes personalization context agent"],
+  },
+  {
+    id: "computer-use",
+    title: "Computer use",
+    to: "/settings/computer-use",
+    searchTerms: ["desktop apps click type automation windows screen control agents"],
+  },
+  {
     id: "archive",
     title: "Archived threads",
     to: "/settings/archived",
@@ -1060,6 +1091,12 @@ const SETTINGS_CATEGORY_SCOPES: Readonly<Record<SettingsPath, SettingsSearchScop
   "/settings/storage": "project-defaults",
   "/settings/connections": "connections",
   "/settings/scheduled-tasks": null,
+  // Picks its own environment; plugins live on the environment's machine.
+  "/settings/plugins": null,
+  // Picks its own environment; memories live in the environment's database.
+  "/settings/memories": null,
+  // Picks its own environment; computer use runs on the environment's machine.
+  "/settings/computer-use": null,
   "/settings/archived": "project-defaults",
 };
 

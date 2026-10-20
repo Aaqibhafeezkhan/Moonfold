@@ -247,6 +247,8 @@ export const make = DesktopLifecycle.of({
           const app = yield* ElectronApp.ElectronApp;
           const state = yield* DesktopState.DesktopState;
           if (environment.platform !== "darwin" && !(yield* Ref.get(state.quitting))) {
+            // With background mode on, a tray icon keeps the app (and its scheduled tasks) alive.
+            if (yield* desktopWindow.enterBackground) return;
             yield* app.quit;
           }
         }).pipe(Effect.withSpan("desktop.lifecycle.windowAllClosed")),

@@ -149,6 +149,12 @@ import {
 } from "@moonfold/provider-core/server/mcpToolPresentation";
 import * as McpProviderSession from "@moonfold/provider-core/server/mcpSession";
 import * as McpProviderSessions from "@moonfold/provider-core/server/McpProviderSessions";
+import * as ProviderPlugins from "@moonfold/provider-core/server/ProviderPlugins";
+import {
+  agentMemoriesText,
+  type TurnMemories,
+  userMemoriesText,
+} from "@moonfold/provider-core/server/memoryInstructions";
 import * as IdAllocator from "@moonfold/provider-core/server/IdAllocator";
 import {
   makeProviderFailure,
@@ -1098,6 +1104,9 @@ export function makeClaudeQueryOptions(input: {
   readonly sdkSettings?: string | ClaudeSdkSettings;
   readonly environment?: NodeJS.ProcessEnv;
   readonly mcpServers?: ClaudeQueryOptions["mcpServers"];
+  /** The user's enabled Moonfold plugins: Claude Code plugin folders and their MCP servers. */
+  readonly plugins?: ClaudePluginQueryOverrides;
+  readonly memories?: TurnMemories;
   readonly tools?: ClaudeAgentSdkQueryTools;
   readonly allowedTools?: ReadonlyArray<string>;
   readonly disallowedTools?: ReadonlyArray<string>;
@@ -1184,13 +1193,17 @@ export function makeClaudeQueryOptions(input: {
       ? { pathToClaudeCodeExecutable: input.settings.binaryPath }
       : {}),
     ...(input.environment === undefined ? {} : { env: input.environment }),
-    ...(input.mcpServers === undefined ? {} : { mcpServers: input.mcpServers }),
+    ...(input.mcpServers === undefined && input.plugins?.mcpServers === undefined
+      ? {}
+      : { mcpServers: { ...input.plugins?.mcpServers, ...input.mcpServers } }),
+    ...(input.plugins?.plugins === undefined ? {} : { plugins: [...input.plugins.plugins] }),
     systemPrompt: {
       type: "preset" as const,
       preset: "claude_code" as const,
       append:
         buildRuntimeInstructions({ harness: "Claude Code" }) +
-        (input.mcpServers === undefined ? "" : MOONFOLD_ORCHESTRATION_INSTRUCTIONS),
+        (input.mcpServers === undefined ? "" : MOONFOLD_ORCHESTRATION_INSTRUCTIONS) +
+        claudeMemoryInstructions(input.memories),
     },
     ...(Object.keys(extraArgs).length === 0 ? {} : { extraArgs }),
   };
@@ -1273,6 +1286,49 @@ export function claudeMcpQueryOverrides(input: {
         timeout: CLAUDE_MOONFOLD_MCP_TOOL_TIMEOUT_MS,
       },
     },
+  };
+}
+
+/** The user's memories as system prompt blocks; notes an agent saved are marked as background. */
+export function claudeMemoryInstructions(memories: TurnMemories | undefined): string {
+  const user = userMemoriesText(memories);
+  const agent = agentMemoriesText(memories);
+  return (
+    (user === undefined ? "" : `\n\n<moonfold_memories>\n${user}\n</moonfold_memories>`) +
+    (agent === undefined ? "" : `\n\n<moonfold_memory_notes>\n${agent}\n</moonfold_memory_notes>`)
+  );
+}
+
+export interface ClaudePluginQueryOverrides {
+  readonly plugins?: ReadonlyArray<{ readonly type: "local"; readonly path: string }>;
+  readonly mcpServers?: ClaudeQueryOptions["mcpServers"];
+}
+
+/**
+ * The enabled plugins as Claude Code takes them: each plugin's folder (its skills) and its MCP
+ * servers. Plugin tools are not pre-approved; the session's permission mode decides them.
+ */
+export function claudePluginQueryOverrides(
+  bundle: ProviderPlugins.ProviderPluginBundle,
+): ClaudePluginQueryOverrides {
+  const mcpServers: NonNullable<ClaudeQueryOptions["mcpServers"]> = {};
+  for (const server of bundle.mcpServers) {
+    if (server.url !== null) {
+      mcpServers[server.name] = { type: "http", url: server.url };
+    } else if (server.command !== null) {
+      mcpServers[server.name] = {
+        type: "stdio",
+        command: server.command,
+        args: [...server.args],
+        ...(Object.keys(server.env).length === 0 ? {} : { env: { ...server.env } }),
+      };
+    }
+  }
+  return {
+    ...(bundle.claudePluginDirs.length === 0
+      ? {}
+      : { plugins: bundle.claudePluginDirs.map((path) => ({ type: "local" as const, path })) }),
+    ...(Object.keys(mcpServers).length === 0 ? {} : { mcpServers }),
   };
 }
 
@@ -1921,6 +1977,8 @@ export function claudeEffectiveQueryPolicyKey(
     readonly allowedTools?: ReadonlyArray<string>;
     readonly mcpServers?: ClaudeQueryOptions["mcpServers"];
   },
+  pluginOverrides: ClaudePluginQueryOverrides = {},
+  memories?: TurnMemories,
 ): string {
   return JSON.stringify({
     runtimePolicy: claudeRuntimeQueryPolicyKey({
@@ -1930,6 +1988,11 @@ export function claudeEffectiveQueryPolicyKey(
         : { allowedTools: mcpOverrides.allowedTools }),
     }),
     mcpServers: mcpOverrides.mcpServers,
+    ...(pluginOverrides.plugins === undefined && pluginOverrides.mcpServers === undefined
+      ? {}
+      : { plugins: pluginOverrides }),
+    // The system prompt carries memories, so a change reopens the query.
+    ...(memories === undefined ? {} : { memories }),
   });
 }
 
@@ -3490,6 +3553,7 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
   adapterOptions: ClaudeAdapterV2Options,
 ) {
   const mcpSessions = yield* McpProviderSessions.McpProviderSessions;
+  const readPlugins = yield* ProviderPlugins.capture;
   const { attachmentsDir, fileSystem, path, crypto, idAllocator, queryRunner } = adapterOptions;
   // Subagent model names and effort levels, including the instance's custom models.
   const subagentModelCatalog = scopeClaudeModelCatalog(
@@ -8476,7 +8540,13 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
               ? {}
               : { allowedTools: queryPolicy.allowedTools }),
           });
-          const queryPolicyKey = claudeEffectiveQueryPolicyKey(queryPolicy, mcpOverrides);
+          const pluginOverrides = claudePluginQueryOverrides(yield* readPlugins);
+          const queryPolicyKey = claudeEffectiveQueryPolicyKey(
+            queryPolicy,
+            mcpOverrides,
+            pluginOverrides,
+            turnInput.memories,
+          );
           const compiledSelection = compileClaudeModelSelection(turnInput.modelSelection);
           const resumeSessionAt = yield* getNativeConversationHeadId(turnInput.providerThread);
           const existing = yield* Ref.get(queryContext);
@@ -8586,6 +8656,8 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
             ...(mcpOverrides.mcpServers === undefined
               ? {}
               : { mcpServers: mcpOverrides.mcpServers }),
+            plugins: pluginOverrides,
+            ...(turnInput.memories === undefined ? {} : { memories: turnInput.memories }),
             permissionMode: queryPolicy.permissionMode,
             ...(queryPolicy.allowDangerouslySkipPermissions === undefined
               ? {}

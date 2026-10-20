@@ -34,6 +34,10 @@ import { guardHttpResponseWriteErrors } from "./httpResponseErrorGuard.ts";
 import { fixPath } from "./os-jank.ts";
 import * as Ws from "./ws.ts";
 import * as WorktreeMcpService from "./mcp/WorktreeMcpService.ts";
+import * as PluginStore from "./plugins/PluginStore.ts";
+import * as MemoryStore from "./memories/MemoryStore.ts";
+import * as BrowserSitePermissions from "./browser/BrowserSitePermissions.ts";
+import * as ComputerUseService from "./computerUse/ComputerUseService.ts";
 import * as AgentScopeLive from "./process/agentScope.ts";
 import * as ExternalLauncher from "./process/externalLauncher.ts";
 import * as NodePtyAdapter from "./terminal/NodePtyAdapter.ts";
@@ -601,6 +605,12 @@ const layerRuntimeCoreDependenciesBase = Layer.mergeAll(
 ).pipe(
   // Core Services
   Layer.provideMerge(layerOrchestrationApplication),
+  // Turns read memories through the reference; the RPCs and MCP tools use the same store.
+  Layer.provideMerge(MemoryStore.layerThreadMemories.pipe(Layer.provideMerge(MemoryStore.layer))),
+  // The browser tools and the RPCs share one instance, so an answer reaches the waiting tool.
+  Layer.provideMerge(BrowserSitePermissions.layer),
+  // The computer tools, the RPCs and the Stop button share one instance and one helper process.
+  Layer.provideMerge(ComputerUseService.layerLive),
   Layer.provideMerge(RuntimeLayer.layerEventInfrastructure),
   Layer.provideMerge(Layer.merge(ProjectStore.layer, ThreadSearch.layer)),
   Layer.provideMerge(layerServerSettings),
@@ -647,6 +657,11 @@ const layerRuntimeCoreDependencies = layerRuntimeCoreDependenciesBase.pipe(
       ResetCreditCoordinator.layer,
       ProviderLatestVersions.layer,
       McpProviderSessions.layer,
+      // Provider sessions read the user's enabled plugins from the same store the RPCs manage.
+      PluginStore.layerProviderPlugins.pipe(
+        Layer.provideMerge(PluginStore.layer),
+        Layer.provide(GitVcsDriver.layer),
+      ),
     ),
   ),
   // `OpenCodeDriver.create()` yields `OpenCodeRuntime`; previously the old

@@ -374,6 +374,8 @@ import {
   ScheduledTaskRotateWebhookTokenInput,
   ScheduledTaskListWebhookDeliveriesInput,
   ScheduledTaskListWebhookDeliveriesResult,
+  ScheduledTaskListRunsInput,
+  ScheduledTaskListRunsResult,
   ScheduledTaskGetWebhookDeliveryInput,
   ScheduledTaskGetWebhookDeliveryResult,
   ScheduledTaskRunNowResult,
@@ -381,6 +383,43 @@ import {
   ScheduledTaskUpsertInput,
   ScheduledTaskMutationResult,
 } from "./scheduledTask.ts";
+import {
+  PluginError,
+  PluginIdInput,
+  PluginInstallInput,
+  PluginListResult,
+  PluginMutationResult,
+  PluginSetEnabledInput,
+} from "./plugins.ts";
+import {
+  MemoryError,
+  MemoryIdInput,
+  MemoryListResult,
+  MemoryMutationResult,
+  MemorySetEnabledInput,
+  MemorySetThreadOptOutInput,
+  MemoryThreadInput,
+  MemoryThreadStatus,
+  MemoryUpsertInput,
+} from "./memories.ts";
+import {
+  BrowserSiteAnswerInput,
+  BrowserSiteDecisions,
+  BrowserSiteError,
+  BrowserSitePendingRequests,
+  BrowserSitePolicy,
+  BrowserSiteRemoveInput,
+  BrowserSiteRuleInput,
+} from "./browserSites.ts";
+import {
+  ComputerUseActivity,
+  ComputerUseAnswerInput,
+  ComputerUseAppInput,
+  ComputerUseError,
+  ComputerUsePendingRequests,
+  ComputerUseSetEnabledInput,
+  ComputerUseState,
+} from "./computerUse.ts";
 import { SecretRequestAnswerInput, SecretRequestError } from "./secretRequest.ts";
 import {
   ProjectCloneActionInput,
@@ -570,6 +609,32 @@ export const WS_METHODS = {
   scheduledTasksRotateWebhookToken: "scheduledTasks.rotateWebhookToken",
   secretsAnswerRequest: "secrets.answerRequest",
   scheduledTasksListWebhookDeliveries: "scheduledTasks.listWebhookDeliveries",
+  scheduledTasksListRuns: "scheduledTasks.listRuns",
+  pluginsList: "plugins.list",
+  pluginsInstall: "plugins.install",
+  pluginsUpdate: "plugins.update",
+  pluginsSetEnabled: "plugins.setEnabled",
+  pluginsRemove: "plugins.remove",
+  memoriesList: "memories.list",
+  memoriesUpsert: "memories.upsert",
+  memoriesDelete: "memories.delete",
+  memoriesSetEnabled: "memories.setEnabled",
+  memoriesThreadStatus: "memories.threadStatus",
+  memoriesSetThreadOptOut: "memories.setThreadOptOut",
+  browserSitesGetPolicy: "browserSites.getPolicy",
+  browserSitesSetRule: "browserSites.setRule",
+  browserSitesRemoveRule: "browserSites.removeRule",
+  browserSitesSetDefaults: "browserSites.setDefaults",
+  browserSitesSubscribePending: "browserSites.subscribePending",
+  browserSitesAnswer: "browserSites.answer",
+  computerUseGetState: "computerUse.getState",
+  computerUseSetEnabled: "computerUse.setEnabled",
+  computerUseRemoveApp: "computerUse.removeApp",
+  computerUseClearLog: "computerUse.clearLog",
+  computerUseSubscribePending: "computerUse.subscribePending",
+  computerUseAnswer: "computerUse.answer",
+  computerUseSubscribeActivity: "computerUse.subscribeActivity",
+  computerUseStop: "computerUse.stop",
   scheduledTasksGetWebhookDelivery: "scheduledTasks.getWebhookDelivery",
 
   // Cloud environment methods
@@ -1974,6 +2039,142 @@ const WsScheduledTasksListWebhookDeliveriesRpc = Rpc.make(
   },
 );
 
+const WsScheduledTasksListRunsRpc = Rpc.make(WS_METHODS.scheduledTasksListRuns, {
+  payload: ScheduledTaskListRunsInput,
+  success: ScheduledTaskListRunsResult,
+  error: Schema.Union([ScheduledTaskError, EnvironmentAuthorizationError]),
+});
+
+const WsPluginsListRpc = Rpc.make(WS_METHODS.pluginsList, {
+  payload: Schema.Struct({}),
+  success: PluginListResult,
+  error: Schema.Union([PluginError, EnvironmentAuthorizationError]),
+});
+const WsPluginsInstallRpc = Rpc.make(WS_METHODS.pluginsInstall, {
+  payload: PluginInstallInput,
+  success: PluginMutationResult,
+  error: Schema.Union([PluginError, EnvironmentAuthorizationError]),
+});
+const WsPluginsUpdateRpc = Rpc.make(WS_METHODS.pluginsUpdate, {
+  payload: PluginIdInput,
+  success: PluginMutationResult,
+  error: Schema.Union([PluginError, EnvironmentAuthorizationError]),
+});
+const WsPluginsSetEnabledRpc = Rpc.make(WS_METHODS.pluginsSetEnabled, {
+  payload: PluginSetEnabledInput,
+  success: PluginMutationResult,
+  error: Schema.Union([PluginError, EnvironmentAuthorizationError]),
+});
+const WsPluginsRemoveRpc = Rpc.make(WS_METHODS.pluginsRemove, {
+  payload: PluginIdInput,
+  error: Schema.Union([PluginError, EnvironmentAuthorizationError]),
+});
+
+const WsMemoriesListRpc = Rpc.make(WS_METHODS.memoriesList, {
+  payload: Schema.Struct({}),
+  success: MemoryListResult,
+  error: Schema.Union([MemoryError, EnvironmentAuthorizationError]),
+});
+const WsMemoriesUpsertRpc = Rpc.make(WS_METHODS.memoriesUpsert, {
+  payload: MemoryUpsertInput,
+  success: MemoryMutationResult,
+  error: Schema.Union([MemoryError, EnvironmentAuthorizationError]),
+});
+const WsMemoriesDeleteRpc = Rpc.make(WS_METHODS.memoriesDelete, {
+  payload: MemoryIdInput,
+  error: Schema.Union([MemoryError, EnvironmentAuthorizationError]),
+});
+const WsMemoriesSetEnabledRpc = Rpc.make(WS_METHODS.memoriesSetEnabled, {
+  payload: MemorySetEnabledInput,
+  error: Schema.Union([MemoryError, EnvironmentAuthorizationError]),
+});
+const WsMemoriesThreadStatusRpc = Rpc.make(WS_METHODS.memoriesThreadStatus, {
+  payload: MemoryThreadInput,
+  success: MemoryThreadStatus,
+  error: Schema.Union([MemoryError, EnvironmentAuthorizationError]),
+});
+const WsBrowserSitesGetPolicyRpc = Rpc.make(WS_METHODS.browserSitesGetPolicy, {
+  payload: Schema.Struct({}),
+  success: BrowserSitePolicy,
+  error: Schema.Union([BrowserSiteError, EnvironmentAuthorizationError]),
+});
+const WsBrowserSitesSetRuleRpc = Rpc.make(WS_METHODS.browserSitesSetRule, {
+  payload: BrowserSiteRuleInput,
+  success: BrowserSitePolicy,
+  error: Schema.Union([BrowserSiteError, EnvironmentAuthorizationError]),
+});
+const WsBrowserSitesRemoveRuleRpc = Rpc.make(WS_METHODS.browserSitesRemoveRule, {
+  payload: BrowserSiteRemoveInput,
+  success: BrowserSitePolicy,
+  error: Schema.Union([BrowserSiteError, EnvironmentAuthorizationError]),
+});
+const WsBrowserSitesSetDefaultsRpc = Rpc.make(WS_METHODS.browserSitesSetDefaults, {
+  payload: BrowserSiteDecisions,
+  success: BrowserSitePolicy,
+  error: Schema.Union([BrowserSiteError, EnvironmentAuthorizationError]),
+});
+/** Requests waiting for an answer: a snapshot on subscribe, then the list after each change. */
+const WsBrowserSitesSubscribePendingRpc = Rpc.make(WS_METHODS.browserSitesSubscribePending, {
+  payload: Schema.Struct({}),
+  success: BrowserSitePendingRequests,
+  error: Schema.Union([BrowserSiteError, EnvironmentAuthorizationError]),
+  stream: true,
+});
+const WsBrowserSitesAnswerRpc = Rpc.make(WS_METHODS.browserSitesAnswer, {
+  payload: BrowserSiteAnswerInput,
+  error: Schema.Union([BrowserSiteError, EnvironmentAuthorizationError]),
+});
+
+const ComputerUseRpcError = Schema.Union([ComputerUseError, EnvironmentAuthorizationError]);
+const WsComputerUseGetStateRpc = Rpc.make(WS_METHODS.computerUseGetState, {
+  payload: Schema.Struct({}),
+  success: ComputerUseState,
+  error: ComputerUseRpcError,
+});
+const WsComputerUseSetEnabledRpc = Rpc.make(WS_METHODS.computerUseSetEnabled, {
+  payload: ComputerUseSetEnabledInput,
+  success: ComputerUseState,
+  error: ComputerUseRpcError,
+});
+const WsComputerUseRemoveAppRpc = Rpc.make(WS_METHODS.computerUseRemoveApp, {
+  payload: ComputerUseAppInput,
+  success: ComputerUseState,
+  error: ComputerUseRpcError,
+});
+const WsComputerUseClearLogRpc = Rpc.make(WS_METHODS.computerUseClearLog, {
+  payload: Schema.Struct({}),
+  success: ComputerUseState,
+  error: ComputerUseRpcError,
+});
+/** Agents waiting for an app approval: a snapshot on subscribe, then the list after each change. */
+const WsComputerUseSubscribePendingRpc = Rpc.make(WS_METHODS.computerUseSubscribePending, {
+  payload: Schema.Struct({}),
+  success: ComputerUsePendingRequests,
+  error: ComputerUseRpcError,
+  stream: true,
+});
+const WsComputerUseAnswerRpc = Rpc.make(WS_METHODS.computerUseAnswer, {
+  payload: ComputerUseAnswerInput,
+  error: ComputerUseRpcError,
+});
+const WsComputerUseSubscribeActivityRpc = Rpc.make(WS_METHODS.computerUseSubscribeActivity, {
+  payload: Schema.Struct({}),
+  success: ComputerUseActivity,
+  error: ComputerUseRpcError,
+  stream: true,
+});
+/** Turns computer use off at once and stops the helper; answers every waiting request with no. */
+const WsComputerUseStopRpc = Rpc.make(WS_METHODS.computerUseStop, {
+  payload: Schema.Struct({}),
+  error: ComputerUseRpcError,
+});
+
+const WsMemoriesSetThreadOptOutRpc = Rpc.make(WS_METHODS.memoriesSetThreadOptOut, {
+  payload: MemorySetThreadOptOutInput,
+  success: MemoryThreadStatus,
+  error: Schema.Union([MemoryError, EnvironmentAuthorizationError]),
+});
+
 const WsScheduledTasksGetWebhookDeliveryRpc = Rpc.make(
   WS_METHODS.scheduledTasksGetWebhookDelivery,
   {
@@ -2186,9 +2387,6 @@ export const WsRpcGroupPart3 = RpcGroup.make(
 ).middleware(RpcScopeAuthorization);
 
 export const WsRpcGroupPart4 = RpcGroup.make(
-  WsThreadsAskSideQuestionRpc,
-  WsThreadsMoveToWorktreeRpc,
-  WsThreadsReturnToProjectRpc,
   WsTerminalObserveRpc,
   WsTerminalWriteRpc,
   WsTerminalResizeRpc,
@@ -2240,4 +2438,41 @@ export const WsRpcGroupPart4 = RpcGroup.make(
   WsOrchestrationV2SubscribeThreadRpc,
 ).middleware(RpcScopeAuthorization);
 
-export const WsRpcGroup = WsRpcGroupPart1.merge(WsRpcGroupPart2, WsRpcGroupPart3, WsRpcGroupPart4);
+export const WsRpcGroupPart5 = RpcGroup.make(
+  WsThreadsAskSideQuestionRpc,
+  WsThreadsMoveToWorktreeRpc,
+  WsThreadsReturnToProjectRpc,
+  WsScheduledTasksListRunsRpc,
+  WsPluginsListRpc,
+  WsPluginsInstallRpc,
+  WsPluginsUpdateRpc,
+  WsPluginsSetEnabledRpc,
+  WsPluginsRemoveRpc,
+  WsMemoriesListRpc,
+  WsMemoriesUpsertRpc,
+  WsMemoriesDeleteRpc,
+  WsMemoriesSetEnabledRpc,
+  WsMemoriesThreadStatusRpc,
+  WsMemoriesSetThreadOptOutRpc,
+  WsBrowserSitesGetPolicyRpc,
+  WsBrowserSitesSetRuleRpc,
+  WsBrowserSitesRemoveRuleRpc,
+  WsBrowserSitesSetDefaultsRpc,
+  WsBrowserSitesSubscribePendingRpc,
+  WsBrowserSitesAnswerRpc,
+  WsComputerUseGetStateRpc,
+  WsComputerUseSetEnabledRpc,
+  WsComputerUseRemoveAppRpc,
+  WsComputerUseClearLogRpc,
+  WsComputerUseSubscribePendingRpc,
+  WsComputerUseAnswerRpc,
+  WsComputerUseSubscribeActivityRpc,
+  WsComputerUseStopRpc,
+).middleware(RpcScopeAuthorization);
+
+export const WsRpcGroup = WsRpcGroupPart1.merge(
+  WsRpcGroupPart2,
+  WsRpcGroupPart3,
+  WsRpcGroupPart4,
+  WsRpcGroupPart5,
+);

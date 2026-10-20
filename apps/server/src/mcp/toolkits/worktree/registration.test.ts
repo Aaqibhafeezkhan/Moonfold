@@ -27,6 +27,9 @@ import * as ServerSecretStore from "../../../auth/ServerSecretStore.ts";
 import * as ManagedProjectFolders from "../../../project/ManagedProjectFolders.ts";
 import * as ThreadLaunchService from "../../../orchestration-v2/ThreadLaunchService.ts";
 import * as ThreadSearch from "../../../orchestration-v2/ThreadSearch.ts";
+import * as MemoryStore from "../../../memories/MemoryStore.ts";
+import * as BrowserSitePermissions from "../../../browser/BrowserSitePermissions.ts";
+import * as ComputerUseService from "../../../computerUse/ComputerUseService.ts";
 import * as PreviewManager from "../../../preview/Manager.ts";
 import * as SourceControlRepositoryService from "../../../sourceControl/SourceControlRepositoryService.ts";
 import * as GitVcsDriver from "../../../vcs/GitVcsDriver.ts";
@@ -57,6 +60,9 @@ const layerStubServices = Layer.mergeAll(
   Layer.mock(SourceControlRepositoryService.SourceControlRepositoryService)({}),
   Layer.mock(ThreadLaunchService.ThreadLaunchService)({}),
   Layer.mock(ThreadSearch.ThreadSearch)({}),
+  Layer.mock(MemoryStore.MemoryStore)({}),
+  Layer.mock(BrowserSitePermissions.BrowserSitePermissions)({}),
+  Layer.mock(ComputerUseService.ComputerUseService)({}),
 );
 
 const ToolsListPayload = Schema.fromJsonString(
@@ -143,6 +149,18 @@ it.effect("production mcp layer lists worktree tools over http", () =>
       // than replacing them.
       expect(toolNames).toContain("preview_status");
       expect(toolNames).toContain("delegate_task");
+      // Every Moonfold-owned toolkit registers; a bad input schema rejects the whole server.
+      for (const name of [
+        "remember",
+        "computer_list_apps",
+        "computer_screenshot",
+        "computer_click",
+      ]) {
+        expect(toolNames).toContain(name);
+      }
+      expect(tools.find((tool) => tool.name === "computer_list_apps")?.inputSchema.type).toBe(
+        "object",
+      );
 
       // The handoff tool mutates thread state, reaches the network (origin
       // fetch), and runs project setup scripts, so its MCP hints must not

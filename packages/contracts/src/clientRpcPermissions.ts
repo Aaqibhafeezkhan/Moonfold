@@ -2,6 +2,7 @@ import * as Schema from "effect/Schema";
 import { GitPreparePullRequestThreadInput } from "./git.ts";
 import {
   AuthOrchestrationOperateScope,
+  AuthProvidersManageScope,
   AuthSettingsWriteScope,
   AuthSourceControlWriteScope,
   type AuthEnvironmentScope,
@@ -54,6 +55,27 @@ export const CLIENT_GUARDED_RPC_SCOPES = {
   [WS_METHODS.scheduledTasksRunNow]: AuthOrchestrationOperateScope,
   [WS_METHODS.scheduledTasksRotateWebhookToken]: AuthOrchestrationOperateScope,
   [ORCHESTRATION_V2_WS_METHODS.stopWorkflow]: AuthOrchestrationOperateScope,
+  // Plugins bring skills and MCP servers that run programs on the environment's machine.
+  [WS_METHODS.pluginsInstall]: AuthProvidersManageScope,
+  [WS_METHODS.pluginsUpdate]: AuthProvidersManageScope,
+  [WS_METHODS.pluginsSetEnabled]: AuthProvidersManageScope,
+  [WS_METHODS.pluginsRemove]: AuthProvidersManageScope,
+  // Memories steer every agent run, like instruction files.
+  [WS_METHODS.memoriesUpsert]: AuthSettingsWriteScope,
+  [WS_METHODS.memoriesDelete]: AuthSettingsWriteScope,
+  [WS_METHODS.memoriesSetEnabled]: AuthSettingsWriteScope,
+  [WS_METHODS.memoriesSetThreadOptOut]: AuthOrchestrationOperateScope,
+  // Site rules decide what agents may do on the web.
+  [WS_METHODS.browserSitesSetRule]: AuthSettingsWriteScope,
+  [WS_METHODS.browserSitesRemoveRule]: AuthSettingsWriteScope,
+  [WS_METHODS.browserSitesSetDefaults]: AuthSettingsWriteScope,
+  [WS_METHODS.browserSitesAnswer]: AuthOrchestrationOperateScope,
+  // Computer use operates this machine's apps.
+  [WS_METHODS.computerUseSetEnabled]: AuthSettingsWriteScope,
+  [WS_METHODS.computerUseRemoveApp]: AuthSettingsWriteScope,
+  [WS_METHODS.computerUseClearLog]: AuthSettingsWriteScope,
+  [WS_METHODS.computerUseAnswer]: AuthOrchestrationOperateScope,
+  [WS_METHODS.computerUseStop]: AuthOrchestrationOperateScope,
 } as const;
 export type ClientGuardedRpcTag = keyof typeof CLIENT_GUARDED_RPC_SCOPES;
 
@@ -63,6 +85,17 @@ export function clientRpcRequiredScopes(
   method: string,
   input: unknown,
 ): readonly AuthEnvironmentScope[] {
+  // An "always" answer saves a lasting rule, which is a settings change; answering once is not.
+  if (
+    (method === WS_METHODS.computerUseAnswer || method === WS_METHODS.browserSitesAnswer) &&
+    typeof input === "object" &&
+    input !== null &&
+    "answer" in input &&
+    typeof input.answer === "string" &&
+    input.answer.startsWith("always_")
+  ) {
+    return [AuthOrchestrationOperateScope, AuthSettingsWriteScope];
+  }
   if (method === WS_METHODS.gitPreparePullRequestThread && input !== undefined) {
     const payload = decodePrepareThread(input);
     if (payload.mode === "worktree" && payload.threadId !== undefined)

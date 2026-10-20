@@ -92,6 +92,7 @@ describe("buildThreadActionMenuItems", () => {
             "rename",
             "regenerate-title",
             "auto-settle",
+            "schedule-follow-up",
             "archive",
             "delete",
           ]
@@ -102,6 +103,7 @@ describe("buildThreadActionMenuItems", () => {
             "rename",
             "regenerate-title",
             "auto-settle",
+            "schedule-follow-up",
             "archive",
             "delete",
           ];
@@ -137,7 +139,15 @@ describe("buildThreadActionMenuItems", () => {
           titleRegeneration: false,
         },
       }),
-    ).toEqual(["rename", "mark-unread", "copy", "project-settings", "archive", "delete"]);
+    ).toEqual([
+      "rename",
+      "mark-unread",
+      "schedule-follow-up",
+      "copy",
+      "project-settings",
+      "archive",
+      "delete",
+    ]);
   });
 
   it("groups project settings with utility actions before archive", () => {
@@ -170,6 +180,19 @@ describe("buildThreadActionMenuItems", () => {
     expect(items[filterIndex]).toMatchObject({ label: "Show all projects", icon: "folder-tree" });
     expect(items[filterIndex - 1]?.id).toBe("mark-unread");
     expect(items[filterIndex + 1]?.id).toBe("auto-settle");
+  });
+
+  it("shows the thread's memory choice, and hides it when the environment did not answer", () => {
+    const optedIn = buildThreadActionMenuItems({ ...baseState, memoriesOptedOut: false });
+    expect(optedIn.find((item) => item.id === "memories")?.children).toEqual([
+      { id: "memories:on", label: "Use memories", checked: true },
+      { id: "memories:off", label: "Don't use memories", checked: false },
+    ]);
+    const optedOut = buildThreadActionMenuItems({ ...baseState, memoriesOptedOut: true });
+    expect(
+      optedOut.find((item) => item.id === "memories")?.children?.find((child) => child.checked)?.id,
+    ).toBe("memories:off");
+    expect(ids({ ...baseState, memoriesOptedOut: null })).not.toContain("memories");
   });
 
   it("includes branch items only for threads with a branch", () => {

@@ -2,6 +2,7 @@ import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Schema from "effect/Schema";
 import {
+  OrchestratorMcpFailure,
   PROVIDER_SEND_TURN_MAX_FILE_BYTES,
   PREVIEW_RECORDING_STOP_TIMEOUT_MS,
   PreviewAutomationRecordingTransferError,
@@ -18,6 +19,7 @@ import {
   type PreviewAutomationSnapshot,
   type PreviewAutomationStatus,
   type PreviewTabId,
+  type BrowserSiteCapability,
 } from "@moonfold/contracts";
 
 import {
@@ -28,6 +30,7 @@ import {
 } from "../../../attachmentStore.ts";
 import { resolveAttachmentRelativePath } from "../../../attachmentPaths.ts";
 import * as ServerConfig from "../../../config.ts";
+import * as BrowserSitePermissions from "../../../browser/BrowserSitePermissions.ts";
 import * as McpInvocationContext from "../../McpInvocationContext.ts";
 import * as McpToolAccess from "../../McpToolAccess.ts";
 import * as PreviewAutomationBroker from "../../PreviewAutomationBroker.ts";
@@ -115,6 +118,47 @@ const invokeTargeted = <A extends object>(
   );
 };
 
+/**
+ * Asks the user's site rules before an agent opens a page or hands a page files. Tab actions also
+ * check the page the tab is on, before acting and again after anything that can navigate, so a
+ * redirect, link or script cannot carry the agent onto a blocked site and keep working there.
+ */
+const checkSite = (capability: BrowserSiteCapability, url: string | null | undefined) =>
+  Effect.gen(function* () {
+    if (url === null || url === undefined) return;
+    const scope = yield* McpInvocationContext.McpInvocationContext;
+    if (scope.thread === undefined) return;
+    const sites = yield* BrowserSitePermissions.BrowserSitePermissions;
+    yield* sites
+      .check({ threadId: scope.thread.threadId, url, capability })
+      .pipe(
+        Effect.mapError(
+          (denied) =>
+            new OrchestratorMcpFailure({ code: "capability_denied", message: denied.message }),
+        ),
+      );
+  });
+
+/** The page the targeted tab shows now, or null when there is no tab yet. */
+const currentPage = (tabId: PreviewTabId | undefined) =>
+  invokeTargeted<PreviewAutomationStatus>("status", tabId === undefined ? {} : { tabId }).pipe(
+    Effect.map((status) => status.url),
+  );
+
+const checkCurrentPage = (tabId: PreviewTabId | undefined) =>
+  currentPage(tabId).pipe(Effect.flatMap((url) => checkSite("browse", url)));
+
+/** Runs a tab action only on an allowed page; `navigates` checks where the tab ended up too. */
+const onAllowedPage = <A, E, R>(
+  tabId: PreviewTabId | undefined,
+  action: Effect.Effect<A, E, R>,
+  navigates = false,
+) =>
+  checkCurrentPage(tabId).pipe(
+    Effect.andThen(action),
+    Effect.tap(() => (navigates ? checkCurrentPage(tabId) : Effect.void)),
+  );
+
 const UploadedRecordingArtifact = Schema.Struct({
   ...PreviewAutomationRecordingArtifact.fields,
   uploadedAttachmentId: Schema.optional(Schema.String),
@@ -196,11 +240,20 @@ const handlers = {
   preview_status: McpToolAccess.readsAsCaller((input) =>
     invokeTargeted<PreviewAutomationStatus>("status", input ?? {}),
   ),
+  // Both check the address asked for and, after redirects, the page the tab landed on.
   preview_open: McpToolAccess.actsAsCaller((input) =>
-    invokeTargeted<PreviewAutomationStatus>("open", normalizePreviewOpenInput(input)),
+    checkSite("browse", input.url).pipe(
+      Effect.andThen(
+        invokeTargeted<PreviewAutomationStatus>("open", normalizePreviewOpenInput(input)),
+      ),
+      Effect.tap((status) => checkSite("browse", status.url)),
+    ),
   ),
   preview_navigate: McpToolAccess.actsAsCaller((input) =>
-    invokeTargeted<PreviewAutomationStatus>("navigate", input, input.timeoutMs),
+    checkSite("browse", input.url).pipe(
+      Effect.andThen(invokeTargeted<PreviewAutomationStatus>("navigate", input, input.timeoutMs)),
+      Effect.tap((status) => checkSite("browse", status.url)),
+    ),
   ),
   preview_resize: McpToolAccess.actsAsCaller((input) =>
     invokeTargeted<PreviewAutomationResizeResult>("resize", input, input.timeoutMs),
@@ -211,38 +264,61 @@ const handlers = {
   preview_snapshot: McpToolAccess.readsAsCaller((input) => {
     // Output selection and saving are MCP-only; the browser still produces a complete snapshot.
     const { includeImage: _includeImage, save: _save, ...operationInput } = input ?? {};
-    return invokeTargeted<PreviewAutomationSnapshot>("snapshot", operationInput);
+    // A snapshot names the page it read, so it is checked without asking the tab first.
+    return invokeTargeted<PreviewAutomationSnapshot>("snapshot", operationInput).pipe(
+      Effect.tap((snapshot) => checkSite("browse", snapshot.url)),
+    );
   }),
   preview_click: McpToolAccess.actsAsCaller((input) =>
-    invokeTargeted<object>("click", input, input.timeoutMs),
+    onAllowedPage(input.tabId, invokeTargeted<object>("click", input, input.timeoutMs), true),
   ),
   preview_type: McpToolAccess.actsAsCaller((input) =>
-    invokeTargeted<object>("type", input, input.timeoutMs),
+    onAllowedPage(input.tabId, invokeTargeted<object>("type", input, input.timeoutMs), true),
   ),
   preview_hover: McpToolAccess.actsAsCaller((input) =>
-    invokeTargeted<object>("hover", input, input.timeoutMs),
+    onAllowedPage(input.tabId, invokeTargeted<object>("hover", input, input.timeoutMs)),
   ),
   preview_select: McpToolAccess.actsAsCaller((input) =>
-    invokeTargeted<PreviewAutomationSelectResult>("select", input, input.timeoutMs),
+    onAllowedPage(
+      input.tabId,
+      invokeTargeted<PreviewAutomationSelectResult>("select", input, input.timeoutMs),
+      true,
+    ),
   ),
   preview_drag: McpToolAccess.actsAsCaller((input) =>
-    invokeTargeted<object>("drag", input, input.timeoutMs),
+    onAllowedPage(input.tabId, invokeTargeted<object>("drag", input, input.timeoutMs), true),
   ),
   preview_upload: McpToolAccess.actsAsCaller((input) =>
-    invokeTargeted<object>("upload", input, input.timeoutMs),
+    Effect.gen(function* () {
+      // Cancelling a file picker hands the page nothing.
+      if (input.paths.length > 0) {
+        const url = yield* currentPage(input.tabId);
+        yield* checkSite("browse", url);
+        yield* checkSite("upload", url);
+      }
+      return yield* invokeTargeted<object>("upload", input, input.timeoutMs);
+    }),
   ),
-  preview_press: McpToolAccess.actsAsCaller((input) => invokeTargeted<object>("press", input)),
-  preview_scroll: McpToolAccess.actsAsCaller((input) => invokeTargeted<object>("scroll", input)),
+  preview_press: McpToolAccess.actsAsCaller((input) =>
+    onAllowedPage(input.tabId, invokeTargeted<object>("press", input), true),
+  ),
+  preview_scroll: McpToolAccess.actsAsCaller((input) =>
+    onAllowedPage(input.tabId, invokeTargeted<object>("scroll", input)),
+  ),
   preview_evaluate: McpToolAccess.actsAsCaller(({ tabId, ...input }) =>
-    invoke<unknown>("evaluate", input, undefined, tabId).pipe(
-      Effect.map(({ result, toolIcon }) => ({
-        value: result ?? null,
-        ...(toolIcon ? { toolIcon } : {}),
-      })),
+    onAllowedPage(
+      tabId,
+      invoke<unknown>("evaluate", input, undefined, tabId).pipe(
+        Effect.map(({ result, toolIcon }) => ({
+          value: result ?? null,
+          ...(toolIcon ? { toolIcon } : {}),
+        })),
+      ),
+      true,
     ),
   ),
   preview_wait_for: McpToolAccess.readsAsCaller((input) =>
-    invokeTargeted<object>("waitFor", input, input.timeoutMs),
+    onAllowedPage(input.tabId, invokeTargeted<object>("waitFor", input, input.timeoutMs), true),
   ),
   preview_recording_start: McpToolAccess.actsAsCaller((input) =>
     invokeTargeted<PreviewAutomationRecordingStatus>("recordingStart", input ?? {}),

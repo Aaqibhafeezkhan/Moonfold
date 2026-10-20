@@ -1169,6 +1169,41 @@ export function createServerEnvironmentAtoms<R, E>(
       label: "environment-data:server:scheduled-task:webhook-deliveries",
       tag: WS_METHODS.scheduledTasksListWebhookDeliveries,
     }),
+    scheduledTaskRuns: createEnvironmentRpcQueryAtomFamily(runtime, {
+      label: "environment-data:server:scheduled-task:runs",
+      tag: WS_METHODS.scheduledTasksListRuns,
+    }),
+    plugins: createEnvironmentRpcQueryAtomFamily(runtime, {
+      label: "environment-data:server:plugins",
+      tag: WS_METHODS.pluginsList,
+    }),
+    memories: createEnvironmentRpcQueryAtomFamily(runtime, {
+      label: "environment-data:server:memories",
+      tag: WS_METHODS.memoriesList,
+    }),
+    browserSitePolicy: createEnvironmentRpcQueryAtomFamily(runtime, {
+      label: "environment-data:server:browser-sites:policy",
+      tag: WS_METHODS.browserSitesGetPolicy,
+    }),
+    computerUseState: createEnvironmentRpcQueryAtomFamily(runtime, {
+      label: "environment-data:server:computer-use:state",
+      tag: WS_METHODS.computerUseGetState,
+    }),
+    /** Agents waiting for an app approval: snapshot, then each change. */
+    computerUsePending: createEnvironmentRpcSubscriptionAtomFamily(runtime, {
+      label: "environment-data:server:computer-use:pending",
+      tag: WS_METHODS.computerUseSubscribePending,
+    }),
+    /** Threads that used an app in the last half minute, for the in-use indicator. */
+    computerUseActivity: createEnvironmentRpcSubscriptionAtomFamily(runtime, {
+      label: "environment-data:server:computer-use:activity",
+      tag: WS_METHODS.computerUseSubscribeActivity,
+    }),
+    /** Agents waiting for the user to allow or block a site: snapshot, then each change. */
+    browserSitePending: createEnvironmentRpcSubscriptionAtomFamily(runtime, {
+      label: "environment-data:server:browser-sites:pending",
+      tag: WS_METHODS.browserSitesSubscribePending,
+    }),
     scheduledTaskWebhookDelivery: createEnvironmentRpcQueryAtomFamily(runtime, {
       label: "environment-data:server:scheduled-task:webhook-delivery",
       tag: WS_METHODS.scheduledTasksGetWebhookDelivery,
@@ -1394,6 +1429,104 @@ export function createServerEnvironmentAtoms<R, E>(
     deleteScheduledTask: createEnvironmentRpcCommand(runtime, {
       label: "environment-data:server:scheduled-task:delete",
       tag: WS_METHODS.scheduledTasksDelete,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    setComputerUseEnabled: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:computer-use:set-enabled",
+      tag: WS_METHODS.computerUseSetEnabled,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    removeComputerUseApp: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:computer-use:remove-app",
+      tag: WS_METHODS.computerUseRemoveApp,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    clearComputerUseLog: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:computer-use:clear-log",
+      tag: WS_METHODS.computerUseClearLog,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    // An agent waits on an answer, and Stop must never queue behind settings writes.
+    answerComputerUseRequest: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:computer-use:answer",
+      tag: WS_METHODS.computerUseAnswer,
+    }),
+    stopComputerUse: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:computer-use:stop",
+      tag: WS_METHODS.computerUseStop,
+    }),
+    setBrowserSiteRule: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:browser-sites:set-rule",
+      tag: WS_METHODS.browserSitesSetRule,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    removeBrowserSiteRule: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:browser-sites:remove-rule",
+      tag: WS_METHODS.browserSitesRemoveRule,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    setBrowserSiteDefaults: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:browser-sites:set-defaults",
+      tag: WS_METHODS.browserSitesSetDefaults,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    // An agent is waiting on this, so it never queues behind settings writes.
+    answerBrowserSiteRequest: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:browser-sites:answer",
+      tag: WS_METHODS.browserSitesAnswer,
+    }),
+    upsertMemory: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:memory:upsert",
+      tag: WS_METHODS.memoriesUpsert,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    deleteMemory: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:memory:delete",
+      tag: WS_METHODS.memoriesDelete,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    setMemoriesEnabled: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:memory:set-enabled",
+      tag: WS_METHODS.memoriesSetEnabled,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    // Read when a thread's menu opens, so the menu shows the thread's current choice.
+    readThreadMemoryStatus: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:memory:thread-status",
+      tag: WS_METHODS.memoriesThreadStatus,
+    }),
+    setThreadMemoryOptOut: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:memory:thread-opt-out",
+      tag: WS_METHODS.memoriesSetThreadOptOut,
+    }),
+    // Installing clones a repository, so it stays off the config lane like run-now.
+    installPlugin: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:plugin:install",
+      tag: WS_METHODS.pluginsInstall,
+    }),
+    updatePlugin: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:plugin:update",
+      tag: WS_METHODS.pluginsUpdate,
+    }),
+    setPluginEnabled: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:plugin:set-enabled",
+      tag: WS_METHODS.pluginsSetEnabled,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    removePlugin: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:plugin:remove",
+      tag: WS_METHODS.pluginsRemove,
       scheduler: configScheduler,
       concurrency: configConcurrency,
     }),

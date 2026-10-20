@@ -490,6 +490,28 @@ describe("CodexAdapterV2 runtime policy", () => {
     }),
   );
 
+  it.effect("sends the user's memories as developer context and agent notes as untrusted", () =>
+    Effect.gen(function* () {
+      const params = yield* CodexAdapterV2.buildCodexTurnStartParams({
+        nativeThreadId: "native-memories",
+        codexInput: [{ type: "text", text: "hello" }],
+        runtimePolicy: { runtimeMode: "full-access", interactionMode: "default", cwd: null },
+        modelSelection: { instanceId: ProviderInstanceId.make("codex"), model: "gpt-5.4" },
+        memories: { user: ["Run pnpm, not npm."], agent: ["The user's name is Sam."] },
+      });
+      assert.equal(params.additionalContext?.["moonfold_memories"]?.kind, "application");
+      assert.include(
+        params.additionalContext?.["moonfold_memories"]?.value,
+        "- Run pnpm, not npm.",
+      );
+      assert.equal(params.additionalContext?.["moonfold_memory_notes"]?.kind, "untrusted");
+      assert.include(
+        params.additionalContext?.["moonfold_memory_notes"]?.value,
+        '["The user\'s name is Sam."]',
+      );
+    }),
+  );
+
   it.effect(
     "adds default-mode developer instructions when the Moonfold MCP server is attached",
     () =>
@@ -682,6 +704,54 @@ describe("CodexAdapterV2 process spawning", () => {
           },
         },
       },
+    );
+  });
+
+  it("adds enabled plugins' MCP servers beside Moonfold's own", () => {
+    const params = CodexAdapterV2.codexThreadRuntimeParams({
+      mcpSession: undefined,
+      plugins: {
+        skillRoots: ["/home/user/.moonfold/plugins/review/view/skills"],
+        claudePluginDirs: ["/home/user/.moonfold/plugins/review/view"],
+        mcpServers: [
+          {
+            name: "review-lint",
+            command: "node",
+            args: ["/home/user/.moonfold/plugins/review/source/server.js"],
+            cwd: "/home/user/.moonfold/plugins/review/source",
+            url: null,
+            env: { LEVEL: "strict" },
+            envVars: ["GITHUB_TOKEN"],
+          },
+          {
+            name: "review-docs",
+            command: null,
+            args: [],
+            cwd: null,
+            url: "https://docs.example.com/mcp",
+            env: {},
+            envVars: [],
+          },
+        ],
+      },
+    });
+    assert.deepEqual(params.config.mcp_servers, {
+      "review-lint": {
+        command: "node",
+        args: ["/home/user/.moonfold/plugins/review/source/server.js"],
+        cwd: "/home/user/.moonfold/plugins/review/source",
+        env: { LEVEL: "strict" },
+        env_vars: ["GITHUB_TOKEN"],
+      },
+      "review-docs": { url: "https://docs.example.com/mcp" },
+    });
+    assert.equal(
+      "mcp_servers" in
+        CodexAdapterV2.codexThreadRuntimeParams({
+          mcpSession: undefined,
+          plugins: { skillRoots: [], claudePluginDirs: [], mcpServers: [] },
+        }).config,
+      false,
     );
   });
 

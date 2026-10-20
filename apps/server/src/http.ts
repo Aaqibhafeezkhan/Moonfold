@@ -646,6 +646,11 @@ const handleStaticAndDevRequest = Effect.fn("handleStaticAndDevRequest")(
       immutableBuildAssets.has(relativePath);
     const headers: Record<string, string> = {
       "Cache-Control": immutable ? "public, max-age=31536000, immutable" : "no-cache",
+      // The app is never framed: a page that framed it could get clicks on its own dialogs,
+      // such as an agent approving its own computer-use request.
+      ...(isHtml
+        ? { "Content-Security-Policy": "frame-ancestors 'none'", "X-Frame-Options": "DENY" }
+        : {}),
     };
     // Deployments can preserve HTML size and mtime while changing its bundle URLs.
     const modifiedAt = isHtml ? undefined : Option.getOrUndefined(fileInfo.mtime);

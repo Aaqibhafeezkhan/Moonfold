@@ -118,6 +118,11 @@ import { codexAppServerArgs, resolveCodexLaunchArgs } from "../../provider/codex
 import { mergeProviderInstanceEnvironment } from "@moonfold/provider-core/server/instanceEnvironment";
 import * as McpProviderSession from "@moonfold/provider-core/server/mcpSession";
 import * as McpProviderSessions from "@moonfold/provider-core/server/McpProviderSessions";
+import * as ProviderPlugins from "@moonfold/provider-core/server/ProviderPlugins";
+import {
+  agentMemoriesText,
+  userMemoriesText,
+} from "@moonfold/provider-core/server/memoryInstructions";
 import {
   MCP_APP_EXTENSION_ID,
   MCP_APP_MIME_TYPE,
@@ -730,6 +735,7 @@ export function buildCodexTurnStartParams(input: {
   readonly omitServiceTier?: boolean;
   /** What the thread's MCP Apps want the agent to know (`ui/update-model-context`). */
   readonly appContext?: ProviderAdapter.ProviderAdapterV2TurnInput["appContext"];
+  readonly memories?: ProviderAdapter.ProviderAdapterV2TurnInput["memories"];
 }) {
   return Effect.gen(function* () {
     const runtimeModeDefaults = codexRuntimeModeTurnDefaults(input.runtimePolicy.runtimeMode);
@@ -774,10 +780,23 @@ export function buildCodexTurnStartParams(input: {
             },
           )
         : undefined;
+    // The user's own memories go in as developer input; notes an agent saved stay untrusted.
+    const userMemories = userMemoriesText(input.memories);
+    const agentMemories = agentMemoriesText(input.memories);
+    const memoryContext = {
+      ...(userMemories === undefined
+        ? {}
+        : { moonfold_memories: { kind: "application" as const, value: userMemories } }),
+      ...(agentMemories === undefined
+        ? {}
+        : { moonfold_memory_notes: { kind: "untrusted" as const, value: agentMemories } }),
+    };
     const additionalContext =
-      moonfoldContext === undefined && Object.keys(appContext).length === 0
+      moonfoldContext === undefined &&
+      Object.keys(appContext).length === 0 &&
+      Object.keys(memoryContext).length === 0
         ? undefined
-        : { ...moonfoldContext, ...appContext };
+        : { ...moonfoldContext, ...memoryContext, ...appContext };
     const collaborationMode: CodexSchema.ClientRequest__CollaborationMode | undefined =
       input.runtimePolicy.interactionMode !== "plan" && developerInstructions === undefined
         ? undefined
@@ -1401,8 +1420,30 @@ export const CODEX_THREAD_CONFIG = {
 // that limit so the server's own wait timeout ends a long call.
 const CODEX_MOONFOLD_MCP_TOOL_TIMEOUT_SEC = 65 * 60;
 
+/** The MCP servers of the user's enabled plugins, as Codex `mcp_servers` entries. */
+function codexPluginMcpServers(
+  bundle: ProviderPlugins.ProviderPluginBundle,
+): Record<string, Schema.Json> {
+  const servers: Record<string, Schema.Json> = {};
+  for (const server of bundle.mcpServers) {
+    if (server.url !== null) {
+      servers[server.name] = { url: server.url };
+    } else if (server.command !== null) {
+      servers[server.name] = {
+        command: server.command,
+        args: [...server.args],
+        ...(server.cwd === null ? {} : { cwd: server.cwd }),
+        ...(Object.keys(server.env).length === 0 ? {} : { env: { ...server.env } }),
+        ...(server.envVars.length === 0 ? {} : { env_vars: [...server.envVars] }),
+      };
+    }
+  }
+  return servers;
+}
+
 export function codexThreadRuntimeParams(input: {
   readonly mcpSession: McpProviderSession.McpProviderSessionConfig | undefined;
+  readonly plugins?: ProviderPlugins.ProviderPluginBundle;
   readonly modelSelection?: { readonly model: string };
   readonly runtimePolicy?: ProviderAdapter.ProviderAdapterV2RuntimePolicy;
 }): {
@@ -1411,22 +1452,28 @@ export function codexThreadRuntimeParams(input: {
   readonly config: Readonly<Record<string, Schema.Json>>;
 } {
   const { mcpSession } = input;
+  const pluginServers = input.plugins === undefined ? {} : codexPluginMcpServers(input.plugins);
   return {
     ...(input.runtimePolicy?.cwd == null ? {} : { cwd: input.runtimePolicy.cwd }),
     ...(input.modelSelection === undefined ? {} : { model: input.modelSelection.model }),
     config: {
       ...CODEX_THREAD_CONFIG,
-      ...(mcpSession === undefined
+      ...(mcpSession === undefined && Object.keys(pluginServers).length === 0
         ? {}
         : {
             mcp_servers: {
-              moonfold: {
-                url: mcpSession.endpoint,
-                tool_timeout_sec: CODEX_MOONFOLD_MCP_TOOL_TIMEOUT_SEC,
-                http_headers: {
-                  Authorization: mcpSession.authorizationHeader,
-                },
-              },
+              ...pluginServers,
+              ...(mcpSession === undefined
+                ? {}
+                : {
+                    moonfold: {
+                      url: mcpSession.endpoint,
+                      tool_timeout_sec: CODEX_MOONFOLD_MCP_TOOL_TIMEOUT_SEC,
+                      http_headers: {
+                        Authorization: mcpSession.authorizationHeader,
+                      },
+                    },
+                  }),
             },
           }),
     },
@@ -1789,6 +1836,7 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
   adapterOptions: CodexAdapterV2Options,
 ) {
   const mcpSessions = yield* McpProviderSessions.McpProviderSessions;
+  const readPlugins = yield* ProviderPlugins.capture;
   const readMcpSession = (threadId: ThreadId | null) =>
     threadId === null ? Effect.succeed(undefined) : mcpSessions.read(threadId);
   const { clientFactory, crypto, fileSystem, idAllocator, serverConfig } = adapterOptions;
@@ -1872,6 +1920,24 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
         // starting their own; a failed handshake leaves the flag unset so the
         // next caller retries.
         const initializePermit = yield* Semaphore.make(1);
+        // Plugin skill folders apply to the whole app-server process; set them when they change.
+        const appliedSkillRoots = yield* Ref.make<ReadonlyArray<string>>([]);
+        const syncPluginSkillRoots = Effect.gen(function* () {
+          const { skillRoots } = yield* readPlugins;
+          const applied = yield* Ref.get(appliedSkillRoots);
+          if (
+            applied.length === skillRoots.length &&
+            applied.every((root, index) => root === skillRoots[index])
+          ) {
+            return;
+          }
+          yield* client.request("skills/extraRoots/set", { extraRoots: [...skillRoots] });
+          yield* Ref.set(appliedSkillRoots, skillRoots);
+        }).pipe(
+          Effect.catch((error) =>
+            Effect.logWarning("Could not give Codex the plugin skill folders", { error }),
+          ),
+        );
         const ensureInitialized = initializePermit.withPermit(
           Effect.gen(function* () {
             const alreadyInitialized = yield* Ref.get(initialized);
@@ -6504,6 +6570,7 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
           Effect.gen(function* () {
             const threadId = yield* getNativeThreadId(turnInput.providerThread);
             const mcpSession = yield* mcpSessions.read(turnInput.threadId);
+            yield* syncPluginSkillRoots;
             const turnStartParams = yield* buildCodexTurnStartParams({
               nativeThreadId: threadId,
               codexInput,
@@ -6514,6 +6581,7 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
               deviceToolsAvailable: mcpSession?.capabilities?.has("device") ?? false,
               omitServiceTier: adapterOptions.resolveRuntime !== undefined,
               ...(turnInput.appContext === undefined ? {} : { appContext: turnInput.appContext }),
+              ...(turnInput.memories === undefined ? {} : { memories: turnInput.memories }),
             });
             yield* Ref.update(pendingRootTurns, (current) => {
               const updated = new Map(current);
@@ -6797,12 +6865,13 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
             }),
           ensureThread: (threadInput) =>
             ensureInitialized.pipe(
-              Effect.andThen(mcpSessions.read(threadInput.threadId)),
-              Effect.flatMap((mcpSession) =>
+              Effect.andThen(Effect.zip(mcpSessions.read(threadInput.threadId), readPlugins)),
+              Effect.flatMap(([mcpSession, plugins]) =>
                 client.request(
                   "thread/start",
                   codexThreadRuntimeParams({
                     mcpSession,
+                    plugins,
                     modelSelection: threadInput.modelSelection,
                     runtimePolicy: threadInput.runtimePolicy,
                   }),
@@ -6838,6 +6907,7 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
                   mcpSession: yield* readMcpSession(
                     threadInput.threadId ?? threadInput.providerThread.appThreadId,
                   ),
+                  plugins: yield* readPlugins,
                   ...(threadInput.modelSelection === undefined
                     ? {}
                     : { modelSelection: threadInput.modelSelection }),
@@ -7576,6 +7646,7 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
                   excludeTurns: true,
                   ...codexThreadRuntimeParams({
                     mcpSession: yield* readMcpSession(threadInput.providerThread.appThreadId),
+                    plugins: yield* readPlugins,
                     modelSelection: input.modelSelection,
                     runtimePolicy: input.runtimePolicy,
                   }),
@@ -7625,6 +7696,7 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
                       : { lastTurnId: boundary.lastTurnId }),
                     ...codexThreadRuntimeParams({
                       mcpSession: yield* mcpSessions.read(threadInput.targetThreadId),
+                      plugins: yield* readPlugins,
                       ...(threadInput.modelSelection === undefined
                         ? {}
                         : { modelSelection: threadInput.modelSelection }),

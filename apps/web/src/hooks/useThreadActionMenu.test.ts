@@ -127,6 +127,9 @@ vi.mock("./useThreadWorkspaceTransfer", () => ({
     returnToProject: async () => recordEffect("return-to-project"),
   }),
 }));
+vi.mock("./useThreadMemoryChoice", () => ({
+  useThreadMemoryChoice: () => ({ read: async () => null, choose: async () => true }),
+}));
 vi.mock("./useThreadActions", () => ({
   useThreadActions: () =>
     Object.fromEntries(
@@ -171,32 +174,39 @@ beforeEach(() => {
   state.show.mockReset().mockResolvedValue(null);
 });
 
+/** Opens the menu and resolves with the items it shows, once it has read the memory choice. */
+const openAndReadItems = (menu: ReturnType<typeof createMenu>) => {
+  const items = new Promise<ReadonlyArray<ContextMenuItem<ThreadActionMenuId>>>((resolve) => {
+    state.show.mockImplementationOnce(async (shown) => {
+      resolve(shown);
+      return null;
+    });
+  });
+  menu.openMenu(position);
+  return items;
+};
+
 describe("thread menu permissions", () => {
-  it("disables mutations for a denied secondary environment", () => {
-    createMenu().openMenu(position);
-    const items = state.show.mock.calls[0]![0];
+  it("disables mutations for a denied secondary environment", async () => {
+    const items = await openAndReadItems(createMenu());
     expect(items.find((item) => item.id === "rename")?.disabled).toBe(true);
     expect(items.find((item) => item.id === "delete")?.disabled).toBe(true);
     expect(items.find((item) => item.id === "copy")?.disabled).not.toBe(true);
   });
 
-  it("allows the target grant even when the primary environment is denied", () => {
+  it("allows the target grant even when the primary environment is denied", async () => {
     state.granted = new Set(["secondary"]);
-    createMenu().openMenu(position);
-    expect(state.show.mock.calls[0]![0].find((item) => item.id === "rename")?.disabled).not.toBe(
-      true,
-    );
+    const items = await openAndReadItems(createMenu());
+    expect(items.find((item) => item.id === "rename")?.disabled).not.toBe(true);
   });
 
-  it("refreshes availability when a retained menu opener gains permission", () => {
+  it("refreshes availability when a retained menu opener gains permission", async () => {
     const menu = createMenu();
-    menu.openMenu(position);
-    expect(state.show.mock.calls[0]![0].find((item) => item.id === "rename")?.disabled).toBe(true);
+    const before = await openAndReadItems(menu);
+    expect(before.find((item) => item.id === "rename")?.disabled).toBe(true);
     state.granted.add("secondary");
-    menu.openMenu(position);
-    expect(state.show.mock.calls[1]![0].find((item) => item.id === "rename")?.disabled).not.toBe(
-      true,
-    );
+    const after = await openAndReadItems(menu);
+    expect(after.find((item) => item.id === "rename")?.disabled).not.toBe(true);
   });
 
   it.each([

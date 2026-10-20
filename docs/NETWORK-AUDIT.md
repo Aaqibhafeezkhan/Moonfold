@@ -42,6 +42,14 @@ Method: manual `git grep` of the tree at the T3 import (commit `65a3bc9f5`), cro
 - `apps/server/src/desktopUpdate/` and `docs/internals/server-updates.md`: **TODO** (server self-update path, npm `t3` package).
 - Desktop telemetry: `apps/desktop/src/telemetry/DesktopTelemetryPublisher.ts` **TODO**: confirm destination and default.
 
+## Phase 3 additions (2026-10-19)
+
+| Item                     | Outcome                                                                                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Plugin install from git  | `git clone` of a URL the user enters (https or ssh; option-like URLs refused), `apps/server/src/plugins/PluginStore.ts`. No default source.       |
+| `storage.googleapis.com` | Chrome for Testing download for the preview browser (`apps/server/src/preview/PreviewBrowser.ts`), on first agent browser use. TODO below closed. |
+| mammoth, office previews | No network (REA-PHASE3).                                                                                                                          |
+
 ## Third-party (expected, keep but document)
 
 - GitHub / GitLab / Bitbucket / Azure DevOps / Forgejo APIs through `packages/source-control-*` (user's own credentials).

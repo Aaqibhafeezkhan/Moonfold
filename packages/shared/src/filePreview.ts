@@ -122,6 +122,17 @@ const BROWSER_MIME_TYPE_BY_EXTENSION = new Map([
   [".pdf", "application/pdf"],
 ]);
 
+/**
+ * Word and Excel files the client reads from their bytes. Their types make a browser download
+ * them rather than run them, so serving them in place is safe.
+ */
+export const WORKSPACE_OFFICE_PREVIEW_EXTENSIONS = [".docx", ".xlsx"] as const;
+
+const OFFICE_MIME_TYPE_BY_EXTENSION = new Map([
+  [".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+  [".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+]);
+
 const AUDIO_MIME_TYPE_BY_EXTENSION = new Map([
   [".mp3", "audio/mpeg"],
   [".wav", "audio/wav"],
@@ -149,13 +160,14 @@ export function mediaMimeTypeFromExtension(extension: string): string | null {
   );
 }
 
-/** Files the server serves in place from anywhere on its host: media, audio and browser documents. */
+/** Files the server serves in place from anywhere on its host: media, audio and documents. */
 export function hostPreviewMimeTypeFromExtension(extension: string): string | null {
   if (!/^\.[a-z0-9]+$/i.test(extension)) return null;
   return (
     mediaMimeTypeFromExtension(extension) ??
     audioMimeTypeFromExtension(extension) ??
     BROWSER_MIME_TYPE_BY_EXTENSION.get(extension.toLowerCase()) ??
+    OFFICE_MIME_TYPE_BY_EXTENSION.get(extension.toLowerCase()) ??
     null
   );
 }
@@ -214,6 +226,14 @@ export function isWorkspaceAudioPreviewPath(path: string): boolean {
   return extensionIndex >= 0 && audioMimeTypeFromExtension(path.slice(extensionIndex)) !== null;
 }
 
+function isWorkspaceOfficePreviewPath(path: string): boolean {
+  return hasPreviewExtension(path, WORKSPACE_OFFICE_PREVIEW_EXTENSIONS);
+}
+
 export function isWorkspacePreviewEntryPath(path: string): boolean {
-  return isWorkspaceBrowserPreviewPath(path) || isWorkspaceImagePreviewPath(path);
+  return (
+    isWorkspaceBrowserPreviewPath(path) ||
+    isWorkspaceImagePreviewPath(path) ||
+    isWorkspaceOfficePreviewPath(path)
+  );
 }

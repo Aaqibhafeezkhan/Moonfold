@@ -61,6 +61,31 @@ export const RPC_REQUIRED_SCOPES = {
   [ORCHESTRATION_V2_WS_METHODS.subscribeThread]: AuthOrchestrationReadScope,
   [WS_METHODS.projectsMutate]: AuthOrchestrationOperateScope,
   [WS_METHODS.agentInstructionsList]: AuthOrchestrationReadScope,
+  // Memories steer every agent run, like instruction files, so changing them is a settings change.
+  [WS_METHODS.memoriesList]: AuthOrchestrationReadScope,
+  [WS_METHODS.memoriesUpsert]: AuthSettingsWriteScope,
+  [WS_METHODS.memoriesDelete]: AuthSettingsWriteScope,
+  [WS_METHODS.memoriesSetEnabled]: AuthSettingsWriteScope,
+  [WS_METHODS.memoriesThreadStatus]: AuthOrchestrationReadScope,
+  [WS_METHODS.memoriesSetThreadOptOut]: AuthOrchestrationOperateScope,
+  // Site rules decide what agents may do on the web, so changing them is a settings change;
+  // answering one agent's request is operating that thread.
+  [WS_METHODS.browserSitesGetPolicy]: AuthOrchestrationReadScope,
+  [WS_METHODS.browserSitesSetRule]: AuthSettingsWriteScope,
+  [WS_METHODS.browserSitesRemoveRule]: AuthSettingsWriteScope,
+  [WS_METHODS.browserSitesSetDefaults]: AuthSettingsWriteScope,
+  [WS_METHODS.browserSitesSubscribePending]: AuthOrchestrationReadScope,
+  [WS_METHODS.browserSitesAnswer]: AuthOrchestrationOperateScope,
+  // Turning computer use on lets agents operate this machine's apps: a settings change. Stopping
+  // it must stay possible for anyone who can operate threads.
+  [WS_METHODS.computerUseGetState]: AuthOrchestrationReadScope,
+  [WS_METHODS.computerUseSetEnabled]: AuthSettingsWriteScope,
+  [WS_METHODS.computerUseRemoveApp]: AuthSettingsWriteScope,
+  [WS_METHODS.computerUseClearLog]: AuthSettingsWriteScope,
+  [WS_METHODS.computerUseSubscribePending]: AuthOrchestrationReadScope,
+  [WS_METHODS.computerUseAnswer]: AuthOrchestrationOperateScope,
+  [WS_METHODS.computerUseSubscribeActivity]: AuthOrchestrationReadScope,
+  [WS_METHODS.computerUseStop]: AuthOrchestrationOperateScope,
   [WS_METHODS.serverProbe]: AuthOrchestrationReadScope,
   [WS_METHODS.serverGetConfig]: AuthOrchestrationReadScope,
   [WS_METHODS.serverRefreshProviders]: AuthOrchestrationReadScope,
@@ -69,6 +94,12 @@ export const RPC_REQUIRED_SCOPES = {
   [WS_METHODS.providerConsumeResetCredit]: AuthProvidersManageScope,
   // A provider's own config names servers, commands and file paths on this machine.
   [WS_METHODS.providerMcpServersList]: AuthProvidersManageScope,
+  // Plugins bring skills and MCP servers, which run programs on this machine.
+  [WS_METHODS.pluginsList]: AuthProvidersManageScope,
+  [WS_METHODS.pluginsInstall]: AuthProvidersManageScope,
+  [WS_METHODS.pluginsUpdate]: AuthProvidersManageScope,
+  [WS_METHODS.pluginsSetEnabled]: AuthProvidersManageScope,
+  [WS_METHODS.pluginsRemove]: AuthProvidersManageScope,
   [WS_METHODS.providerMcpServerLogin]: AuthProvidersManageScope,
   [WS_METHODS.providerMcpServersReload]: AuthProvidersManageScope,
   [WS_METHODS.providerSkillsList]: AuthProvidersManageScope,
@@ -127,6 +158,7 @@ export const RPC_REQUIRED_SCOPES = {
   [WS_METHODS.serverGetBackgroundPolicy]: AuthOrchestrationReadScope,
   [WS_METHODS.scheduledTasksList]: AuthOrchestrationReadScope,
   [WS_METHODS.scheduledTasksSubscribe]: AuthOrchestrationReadScope,
+  [WS_METHODS.scheduledTasksListRuns]: AuthOrchestrationReadScope,
   [WS_METHODS.secretsAnswerRequest]: AuthOrchestrationOperateScope,
   // Delivery logs hold request bodies, so they need the same scope as the URL.
   [WS_METHODS.scheduledTasksListWebhookDeliveries]: AuthOrchestrationOperateScope,

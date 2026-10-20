@@ -14,14 +14,29 @@ export function DelimitedTablePreview(props: {
     () => parseDelimitedPreview(props.text, props.delimiter),
     [props.text, props.delimiter],
   );
-  const [header, ...body] = table.rows;
+  return (
+    <PreviewTable
+      name={props.name}
+      rows={table.rows}
+      notice={
+        table.truncated
+          ? "Table limited to the first 100 rows and 30 columns. Switch to source for the rest."
+          : null
+      }
+    />
+  );
+}
+
+/** Rows of cells with the first row as a sticky header. */
+export function PreviewTable(props: {
+  readonly name: string;
+  readonly rows: ReadonlyArray<ReadonlyArray<string>>;
+  readonly notice: string | null;
+}) {
+  const [header, ...body] = props.rows;
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {table.truncated ? (
-        <FileSurfaceNotice>
-          Table limited to the first 100 rows and 30 columns. Switch to source for the rest.
-        </FileSurfaceNotice>
-      ) : null}
+      {props.notice ? <FileSurfaceNotice>{props.notice}</FileSurfaceNotice> : null}
       <div className="min-h-0 flex-1 overflow-auto">
         <table
           className="min-w-full border-separate border-spacing-0 text-xs"

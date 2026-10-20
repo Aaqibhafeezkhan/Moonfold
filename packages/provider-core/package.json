@@ -63,6 +63,10 @@
       "types": "./src/server/managedProvider.ts",
       "import": "./src/server/managedProvider.ts"
     },
+    "./server/ProviderPlugins": {
+      "types": "./src/server/ProviderPlugins.ts",
+      "import": "./src/server/ProviderPlugins.ts"
+    },
     "./server/McpProviderSessions": {
       "types": "./src/server/McpProviderSessions.ts",
       "import": "./src/server/McpProviderSessions.ts"
@@ -126,6 +130,10 @@
     "./server/randomUuid": {
       "types": "./src/server/randomUuid.ts",
       "import": "./src/server/randomUuid.ts"
+    },
+    "./server/memoryInstructions": {
+      "types": "./src/server/memoryInstructions.ts",
+      "import": "./src/server/memoryInstructions.ts"
     },
     "./server/runtimeInstructions": {
       "types": "./src/server/runtimeInstructions.ts",

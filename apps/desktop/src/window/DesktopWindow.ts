@@ -134,6 +134,13 @@ export class DesktopWindow extends Context.Service<
      * it is already in front.
      */
     readonly toggleQuickWindow: Effect.Effect<void, DesktopWindowError>;
+    /** Whether closing the last window keeps Moonfold running in the system tray (not macOS). */
+    readonly setRunInBackground: (enabled: boolean) => Effect.Effect<void>;
+    /**
+     * Called when the last window closes. True when Moonfold stays running with a tray icon, so
+     * scheduled tasks keep going; false when the app should quit.
+     */
+    readonly enterBackground: Effect.Effect<boolean>;
     /** Keeps a pop-out window above other windows. False when the sender is not a pop-out. */
     readonly setThreadWindowAlwaysOnTop: (input: {
       readonly webContentsId: number;
@@ -1106,8 +1113,45 @@ export const make = Effect.gen(function* () {
       return false;
     });
 
+  let runInBackground = false;
+  let tray: Electron.Tray | null = null;
+  const removeTray = () => {
+    tray?.destroy();
+    tray = null;
+  };
+  const setRunInBackground: DesktopWindow["Service"]["setRunInBackground"] = (enabled) =>
+    Effect.sync(() => {
+      runInBackground = enabled;
+      if (!enabled) removeTray();
+    });
+  const enterBackground = Effect.gen(function* () {
+    if (!runInBackground || environment.platform === "darwin") return false;
+    if (tray !== null) return true;
+    const iconPaths = yield* assets.iconPaths;
+    const icon = Option.getOrNull(environment.platform === "win32" ? iconPaths.ico : iconPaths.png);
+    if (icon === null) return false;
+    const reopen = () => {
+      removeTray();
+      void runPromise(createMainIfBackendReady).catch(() => undefined);
+    };
+    tray = new Electron.Tray(icon);
+    tray.setToolTip(`${environment.displayName} is running in the background`);
+    tray.on("click", reopen);
+    tray.setContextMenu(
+      Electron.Menu.buildFromTemplate([
+        { label: `Open ${environment.displayName}`, click: reopen },
+        { type: "separator" },
+        { label: `Quit ${environment.displayName}`, click: () => Electron.app.quit() },
+      ]),
+    );
+    yield* logWindowInfo("running in the background");
+    return true;
+  }).pipe(Effect.withSpan("desktop.window.enterBackground"));
+
   return DesktopWindow.of({
     openThreadWindow,
+    setRunInBackground,
+    enterBackground,
     toggleQuickWindow,
     setThreadWindowAlwaysOnTop,
     createMain,
