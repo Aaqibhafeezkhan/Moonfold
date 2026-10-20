@@ -148,7 +148,12 @@ footer{max-width:1180px;margin:0 auto;padding:16px;color:var(--muted);font-size:
 
 const MARK = `<svg viewBox="0 0 1024 1024" aria-hidden="true"><g transform="translate(581.68 498.81) rotate(-32)"><path d="M 103.4 -458.48 A 470 470 0 1 0 103.4 458.48 A 470 470 0 0 1 103.4 -458.48 Z" fill="#F4B740"/><path d="M 103.4 -458.48 A 470 470 0 0 0 103.4 458.48 Z" fill="#FFE2A3"/><path d="M 103.4 -458.48 L 103.4 458.48" stroke="#C8891C" stroke-width="11.75" stroke-linecap="round"/></g></svg>`;
 
-function page(input: { title: string; nav: string; body: string }): string {
+function page(input: {
+  title: string;
+  nav: string;
+  body: string;
+  editUrl?: string;
+}): string {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -164,7 +169,7 @@ function page(input: { title: string; nav: string; body: string }): string {
 <nav aria-label="Documentation">${input.nav}</nav>
 <main id="content">${input.body}</main>
 </div>
-<footer>Moonfold is open source under the MIT license. It is not affiliated with or endorsed by the makers of the agents it runs. <a href="${REPOSITORY_URL}/edit/main/docs/user">Edit these docs</a>.</footer>
+<footer>Moonfold is open source under the MIT license. It is not affiliated with or endorsed by the makers of the agents it runs. <a href="${input.editUrl ?? `${REPOSITORY_URL}/edit/main/docs/user`}">Edit this page</a>.</footer>
 </body>
 </html>
 `;
@@ -208,7 +213,12 @@ export function buildDocsSite(sourceDir: string, outputDir: string): number {
     const body = marked.parse(doc.markdown, { async: false });
     NodeFS.writeFileSync(
       NodePath.join(outputDir, `${doc.name}.html`),
-      page({ title: doc.title, nav: navigation(pages, doc.name), body }),
+  page({
+  title: doc.title,
+  nav: navigation(pages, doc.name),
+  body,
+  editUrl: `${REPOSITORY_URL}/edit/main/docs/user/${doc.name}.md`,
+}),
     );
   }
   slugCounts.clear();
