@@ -40,6 +40,27 @@ and marked below.
 - The helper returned a WinForms password box's text through its accessible name; password edits
   are now detected by their window style and return neither name nor value.
 
+## Security review
+
+A separate reviewer subagent read the computer-use, browser-permission, plugin and memory code.
+Every finding was fixed on this branch:
+
+- Computer use: keystrokes go only to the approved window and stop if focus moves; the Windows key
+  is refused; capture fails instead of returning a blank image; the shell, Settings, Store apps,
+  system tools, password managers and DevTools windows are always blocked; titles of unapproved
+  apps are hidden from agents; Stop is re-checked right before each action; single key presses are
+  logged as a count like typed text; the action log keeps the last 1000 rows.
+- Browser rules: addresses are read the way the browser reads them (no scheme, odd hosts, `data:`
+  and `javascript:` pages are refused or treated as invalid instead of slipping past a rule); tab
+  actions check the page the tab is on before acting and again after anything that can navigate;
+  snapshots check the page they read.
+- The web app refuses to be framed by other pages (`frame-ancestors 'none'`, `X-Frame-Options`).
+- Plugins: the values a plugin sets in an MCP server's environment are shown before enabling and
+  count as a change on update; working directories and the manifest's MCP config path must stay
+  inside the plugin; git credentials never reach clients.
+- Memories: an agent saves only to its thread's project; agent notes reach providers as quoted data
+  (a JSON list with angle brackets escaped; Codex also marks them untrusted).
+
 ## Incident
 
 An early computer-use helper test started Notepad, which reopened the owner's unsaved session tabs;
@@ -58,4 +79,7 @@ identified by a unique title and its own process id, and closed by that process.
 ## Checks
 
 Recorded in PROGRESS.md with the merge: targeted unit and integration tests for every new module,
-`vp run knip:check`, `vp check`, server/web/contracts typechecks, and main's CI.
+`vp run knip:check`, `vp check`, server/web/contracts typechecks, and main's CI. Two server cases
+fail on this Windows machine and pass on Linux CI: the snapshot-path test (a JSON-escaped Windows
+path) and the cross-provider delegation integration test, which needs about 59 s here against its
+60 s limit (12 s on CI).

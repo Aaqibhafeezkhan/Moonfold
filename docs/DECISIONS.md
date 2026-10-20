@@ -223,8 +223,9 @@ Memories live in the environment's database, for every project or one. Each Code
 receives them unless memories are off, as a whole or for the thread. What the user wrote is
 delivered as the user's own instruction (Codex developer context, Claude system prompt); what an
 agent saved through `remember` is delivered as background (Codex untrusted context, its own
-labelled block for Claude), so a misled agent cannot plant an instruction for later turns. Editing
-an agent's memory makes it the user's. Codex's own memory feature is not overridden: when a user
+labelled block for Claude, quoted as a JSON list with angle brackets escaped), so a misled agent
+cannot plant an instruction for later turns. An agent saves only to its thread's project; only the
+user widens a memory to every project. Editing an agent's memory makes it the user's. Codex's own memory feature is not overridden: when a user
 has it on, Codex may keep things there, and the guide says how to ask for Moonfold's.
 
 ## D-28 Office previews are read in the browser

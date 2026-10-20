@@ -1,5 +1,64 @@
 # Progress
 
+## Phase 3: Codex-parity layer B (complete, 2026-10-20)
+
+Plan: docs/plans/phase-3.md. Gate: docs/QA-PHASE3.md. REA gate: docs/REA-PHASE3.md. Decisions:
+DECISIONS D-25 to D-30.
+
+### Done
+
+- Scheduler: one-off and cron schedules in the task's own time zone; run history that follows the
+  agent's outcome; per-task completion notifications; tasks bound to a thread, with skills and a PR
+  template; the desktop app keeps running in the tray so tasks run with no window.
+- Plugins: install a plugin from a folder or git URL (Codex, Claude Code or plain SKILL.md
+  layouts), review its skills, MCP servers and their environment, enable, update, disable and
+  remove; enabled plugins reach Codex and Claude sessions. Plugins start disabled and an update
+  that changes what an MCP server runs turns the plugin off again.
+- Memories: local, user-visible and editable, per project or for all projects, delivered to every
+  Codex and Claude turn; off for the environment or per thread; agents save through the
+  `remember` tool into their thread's project only, and their notes reach providers as quoted data.
+- Artifacts: Word and Excel previews in the files panel; a thread's artifacts in its details panel.
+- Browser: per-site rules (browse, download, upload x ask, always, block) with questions in the
+  thread and Settings to edit them; tab actions check the page before acting and after navigating.
+- Computer use (Windows): off by default, per-app approval (this thread or always), in-use bar with
+  Stop, a full action log, password fields never read, Moonfold, shell, system and credential
+  windows always blocked. macOS and Linux are documented and not built (docs/COMPUTER-USE.md).
+- Image generation stays with the providers' own tools; there is no Moonfold-held image API key.
+- Security review by a separate reviewer subagent; every finding fixed (QA-PHASE3 lists them).
+
+### Verification (real output, Windows 11, 2026-10-20)
+
+- Typechecks exit 0 for server, web, contracts and provider-core; `vp run knip:check` clean; lint 0
+  errors in touched code; `vp fmt` applied by the commit hook.
+- Tests: web 6890/6890, contracts 668/668, client-runtime 2088/2088; desktop 34 failures, all in
+  files Phase 3 did not touch (Windows path and platform cases); server 93 failed / 6064 passed,
+  every failing case also failing in the Phase 1 baseline (94 there; four differ only by the
+  t3 → moonfold rename of their titles).
+- The 30 test files Phase 3 touched: 647/649. The two misses are Windows-only: the snapshot-path
+  test (a JSON-escaped Windows path, failing before Phase 3) and the cross-provider delegation
+  integration test, which runs near its 60 s limit here under load (12 s on Linux CI) and passed
+  in the full server run.
+- Live: every item in docs/QA-PHASE3.md against real Codex (0.161.0, GPT-5.6-Luna); Claude paths by
+  unit tests because the Claude account was at its usage limit.
+
+### Not verified / open
+
+- Claude delivery of plugins and memories was not run live (usage limit until 1 November).
+- Annotations on streamed browser tabs are deferred (DECISIONS).
+- Computer use on macOS and Linux is not built.
+- Upstream usage-limit code (`packages/shared/src/usageLimits.ts`, usage-limit sources) talks
+  about hubs, pooled accounts and routing cooldowns. Review it against CLAUDE.md rule 7 (never
+  pool or proxy logins) in Phase 6 and remove what does not fit.
+- `moonfold-website/` is still untracked and untouched.
+
+### Next step
+
+Phase 4 (BUILD-PLAN): provider handoff. Start in plan mode with docs/plans/phase-4.md. Existing
+pieces to build on: ContextHandoffService and ContextHandoffDelivery (history selection and Codex
+history injection), ProviderSwitchService (`create_with_handoff` transitions), the `handoff` turn
+item and its timeline row, usage-limit failure classes in the Codex, Claude, Grok and ACP adapters,
+UsageLimitRecoveryWorker and UsageLimitRecoveryBanner (resume at reset), docs/user/portable-handoffs.md.
+
 ## Phase 2: Codex-parity layer A (complete, 2026-10-17)
 
 Plan: docs/plans/phase-2.md. Gate: docs/QA-PHASE2.md. Decisions: DECISIONS D-17 to D-24.
