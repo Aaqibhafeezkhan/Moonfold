@@ -3,7 +3,7 @@ name: Release desktop build
 # One platform/arch build, called once per target from release.yml. It builds the JS bundle,
 # packages the desktop app, and, where `cli_archive` is set, the self-contained CLI archive that
 # scripts/install.sh and scripts/install.ps1 download. Signing runs only when the matching secrets
-# exist; without them the artifacts are unsigned (docs/operations/signing.md).
+# exist; without them the artifacts are unsigned (docs/operations/release.md#signing).
 
 on:
   workflow_call:
