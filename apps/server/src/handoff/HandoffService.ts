@@ -53,9 +53,7 @@ const providerName = (selection: ModelSelection) =>
   PROVIDER_DISPLAY_NAMES[selection.instanceId as never] ?? selection.instanceId;
 
 /** The selection the thread's latest run used, or the thread's own when it has not run. */
-export function currentSelection(
-  projection: Pick<OrchestrationV2ThreadProjection, "thread" | "runs">,
-) {
+function currentSelection(projection: Pick<OrchestrationV2ThreadProjection, "thread" | "runs">) {
   return (
     projection.runs.toSorted((a, b) => b.ordinal - a.ordinal)[0]?.modelSelection ??
     projection.thread.modelSelection
@@ -71,7 +69,7 @@ const ACTIVE_RUN_STATUSES: ReadonlySet<string> = new Set([
 ]);
 
 /** Why a handoff cannot go ahead now, or null when it can. */
-export function handoffBlockedReason(input: {
+function handoffBlockedReason(input: {
   readonly projection: Pick<OrchestrationV2ThreadProjection, "thread" | "runs">;
   readonly settings: ServerSettingsValue;
   readonly target: ModelSelection;
@@ -97,7 +95,7 @@ export function handoffBlockedReason(input: {
   return null;
 }
 
-export const make = Effect.gen(function* () {
+const make = Effect.gen(function* () {
   const projections = yield* ProjectionStore.ProjectionStoreV2;
   const runtimePolicy = yield* RuntimePolicy.RuntimePolicyV2;
   const settingsService = yield* ServerSettings.ServerSettingsService;

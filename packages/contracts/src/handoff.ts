@@ -13,8 +13,8 @@ import { ProviderInstanceId } from "./providerInstance.ts";
 export const ProviderHandoffMode = Schema.Literals(["ask", "auto"]);
 export type ProviderHandoffMode = typeof ProviderHandoffMode.Type;
 
-export const MIN_HANDOFF_WARN_PERCENT = 50;
-export const MAX_HANDOFF_WARN_PERCENT = 99;
+const MIN_HANDOFF_WARN_PERCENT = 50;
+const MAX_HANDOFF_WARN_PERCENT = 99;
 export const HandoffWarnPercent = Schema.Int.check(
   Schema.isBetween({ minimum: MIN_HANDOFF_WARN_PERCENT, maximum: MAX_HANDOFF_WARN_PERCENT }),
 );

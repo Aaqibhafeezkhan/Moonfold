@@ -125,27 +125,39 @@ function HandoffDialog({ request, onClose }: { request: HandoffRequest; onClose:
     reportFailure: false,
   });
   const startHandoff = useAtomCommand(serverEnvironment.startHandoff, { label: "handoff" });
-  const [preview, setPreview] = useState<HandoffPreview | null>(null);
-  const [previewError, setPreviewError] = useState<string | null>(null);
+  // The latest settled preview, keyed by the target it was built for, so a stale one never shows.
+  const [settled, setSettled] = useState<{
+    readonly key: string;
+    readonly preview: HandoffPreview | null;
+    readonly error: string | null;
+  } | null>(null);
   const [sending, setSending] = useState(false);
+  const targetKey = target === null ? null : `${target.instanceId}:${target.model}`;
+  const preview = settled !== null && settled.key === targetKey ? settled.preview : null;
+  const previewError = settled !== null && settled.key === targetKey ? settled.error : null;
 
   useEffect(() => {
-    if (target === null || target.model === "") return;
+    if (target === null || target.model === "" || targetKey === null) return;
     let current = true;
-    setPreview(null);
-    setPreviewError(null);
     void previewHandoff({
       environmentId: request.environmentId,
       input: { threadId: request.threadId, target, reason: request.reason },
     }).then((result) => {
       if (!current) return;
-      if (result._tag === "Success") setPreview(result.value);
-      else setPreviewError("The preview could not be built. Check the connection and try again.");
+      setSettled(
+        result._tag === "Success"
+          ? { key: targetKey, preview: result.value, error: null }
+          : {
+              key: targetKey,
+              preview: null,
+              error: "The preview could not be built. Check the connection and try again.",
+            },
+      );
     });
     return () => {
       current = false;
     };
-  }, [previewHandoff, request.environmentId, request.threadId, request.reason, target]);
+  }, [previewHandoff, request.environmentId, request.threadId, request.reason, target, targetKey]);
 
   const send = async () => {
     if (target === null || preview === null || preview.blockedReason !== null) return;

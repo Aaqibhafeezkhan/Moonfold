@@ -49,7 +49,7 @@ export class HandoffBriefService extends Context.Service<
   }
 >()("moonfold/handoff/HandoffBriefService") {}
 
-export const make = Effect.gen(function* () {
+const make = Effect.gen(function* () {
   const git = yield* GitVcsDriver.GitVcsDriver;
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;

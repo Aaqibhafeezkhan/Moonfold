@@ -617,7 +617,7 @@ export function HandoffRow(props: {
   );
 }
 
-export function handoffRowLabel(reason: HandoffReason | undefined): string {
+function handoffRowLabel(reason: HandoffReason | undefined): string {
   switch (reason) {
     case "usage_limit":
       return "Handed off after a usage limit";
