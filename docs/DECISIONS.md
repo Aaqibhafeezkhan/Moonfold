@@ -399,3 +399,11 @@ default, so `DEFAULT_RUNTIME_MODE` is now `approval-required` (Supervised): new 
 environments whose settings never chose a default, and new scheduled tasks ask before commands
 and file changes. Users opt into Auto-accept edits, Auto or Full access in the composer or in
 Settings → General → New threads → Permissions; threads and saved defaults keep what they had.
+
+## D-50 The docs site is built by a small script, not a site framework
+
+`scripts/build-docs-site.ts` renders `docs/user/*.md` with `marked` (MIT, already in the lockfile)
+into plain HTML with one stylesheet, and `pages.yml` deploys it. A site framework would add a
+toolchain and dependencies for 45 pages of Markdown; the script keeps the user guides as the one
+source, rewrites links between them, and links everything else to GitHub. Internal docs
+(`docs/internals`, plans, QA records) are not published there.

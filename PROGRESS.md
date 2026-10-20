@@ -1,5 +1,37 @@
 # Progress
 
+## Phase 8: launch assets (2026-10-20)
+
+Plan: docs/plans/phase-8.md. Decisions: D-49, D-50.
+
+### Done
+
+- README: handoff demo GIF at the top, value props, install one-liners, a handoff diagram, a
+  dated comparison, FAQ, and two more demos (browser pane plus scheduled tasks; plugins plus
+  memories). All recorded from the app over CDP in a scratch home and a throwaway repository;
+  hostnames and local paths blurred frame by frame.
+- 1280x640 social preview (`assets/brand/social-preview.png`, `vp run brand:social`).
+- Docs site from `docs/user` (`vp run docs:site`, deployed by `pages.yml`).
+- CHANGELOG, ROADMAP, Homebrew cask and winget manifests from the published checksums.
+- Fixes found while recording: new threads and scheduled tasks start Supervised (they started in
+  Full access, QA-REPORT S-15); after a handoff the composer follows the thread's new provider.
+- Live: a task handed from Codex to Claude was finished by Claude with all tests passing, which
+  closes Phase 4's open live item (QA-PHASE4 follow-up).
+
+### Verification (real output, 2026-10-20)
+
+- Tests: docs site 3/3 (every in-page anchor on the site resolves), package manifests 4/4,
+  ChatView logic 131/131, contracts settings and composer draft 313/313; the server test files
+  that use `runtimeMode` (90) fail exactly the same baseline Windows cases before and after the
+  default change. Typechecks clean; lint clean in changed files.
+
+### Not verified / open
+
+- The BUILD-PLAN gate's "a stranger goes from README to a first task in five minutes" needs a
+  person outside this session.
+- Owner actions: upload `assets/brand/social-preview.png` in Settings → Social preview; reserve
+  `moonfold` on npm; signing certificates.
+
 ## Phase 7: packaging and beta release (2026-10-20)
 
 Plan: docs/plans/phase-7.md. Process: docs/operations/release.md. REA gate: docs/REA-PHASE7.md.
@@ -41,9 +73,15 @@ Decisions: DECISIONS D-45 to D-48. Notes: docs/releases/v0.1.0-beta.1.md. CHANGE
   signed builds; submit the Homebrew and winget manifests after beta feedback.
 - QA-REPORT P-1: cold start to a usable window is still about 4 s.
 
+- Published: [v0.1.0-beta.1](https://github.com/Mr-Dark-debug/Moonfold/releases/tag/v0.1.0-beta.1)
+  (run 39457838858), a prerelease with 27 files: installers for all six targets, CLI archives,
+  update manifests, SBOM (2,654 components) and `SHA256SUMS`. `install.ps1` installed it from
+  GitHub with no version pinned. The first tag was withdrawn before publishing to include the
+  Supervised default (D-49).
+
 ### Next step
 
-Tag `v0.1.0-beta.1` on main to publish, then Phase 8 (launch assets).
+Phase 8 (launch assets).
 
 ## Phase 6: hardening (complete with one open item, 2026-10-20)
 

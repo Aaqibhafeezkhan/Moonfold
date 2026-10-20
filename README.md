@@ -4,6 +4,14 @@
 
 # Moonfold
 
+<p align="center">
+  <img src="docs/assets/demo-handoff.gif" width="960" alt="A task starts in Codex; the user hands it to Claude, previews the brief, and Claude fixes the bug with each command and edit approved">
+</p>
+
+<p align="center"><sub>Recorded in the app, sped up during agent work. Codex starts a bug fix; the user moves the
+thread to Claude, reads the brief, and Claude fixes it with every edit approved. When an agent hits its
+usage limit, Moonfold offers the same step on its own. <a href="docs/assets/demo-handoff.mp4">MP4</a></sub></p>
+
 Moonfold is an open-source workspace for the coding agents you already use. It runs Codex,
 Claude Code, Cursor, Grok Build, OpenCode, Antigravity and other agent CLIs on your own machine,
 with your own logins, and gives them one desktop and web interface: projects, parallel threads,
@@ -14,8 +22,39 @@ mid-task, the same task continues in another agent with the plan, the diff and t
 carried over. Moonfold builds a redacted brief of where the task stands, shows it to you, and sends
 it to the next agent; see [Provider handoff](./docs/user/provider-handoff.md).
 
+- **Keep going when an agent runs out.** Hand a task to another agent at its usage limit, with a
+  brief you can read before it is sent and secrets redacted.
+- **Your agents, your logins.** Moonfold runs each agent as your own local CLI. It never proxies,
+  pools or stores provider accounts, and collects no usage data by default.
+- **One place for parallel work.** Projects, threads in git worktrees, diff review, pull
+  requests, scheduled tasks and a browser pane, on the desktop or from a browser on another device.
+
 Moonfold is a fork of [T3 Code](https://github.com/pingdotgg/t3code) and keeps its MIT license.
 See [NOTICE](./NOTICE) for attribution.
+
+## How handoff works
+
+```mermaid
+flowchart LR
+  A[Agent A works on the task] -->|usage limit| B[Moonfold stops the turn]
+  B --> C[Brief: objective, plan, changed files,<br/>git status and diff stat, failing command]
+  C --> D[Secrets redacted]
+  D --> E{Ask or automatic}
+  E -->|you review and send| F[Agent B continues the thread]
+  E -->|first available fallback| F
+```
+
+The brief and the earlier conversation go to the next agent in its first turn; the thread shows a
+divider with the reason, and **View brief** shows exactly what was sent. Settings → Handoff sets
+the fallback order and which agents are allowed. Details: [Provider handoff](./docs/user/provider-handoff.md).
+
+## More demos
+
+Recorded in the app; hostnames and local paths are blurred.
+
+| Browser pane and scheduled tasks                                                                                                                                 | Plugins and memories                                                                                                                                      |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <img src="docs/assets/demo-browser-and-scheduled-tasks.gif" width="460" alt="The browser pane opens the release page, then a weekday scheduled task is created"> | <img src="docs/assets/demo-plugins-and-memories.gif" width="460" alt="A folder of skills is installed as a plugin and turned on, then a memory is added"> |
 
 ## Status
 
@@ -80,6 +119,36 @@ Generated from [docs/provider-checks.json](./docs/provider-checks.json), which r
 checks that ran on a real install. Notes for each provider are in that file.
 
 <!-- provider-matrix:end -->
+
+## How it compares
+
+As of October 2026, from each product's public documentation. Corrections are welcome in an issue.
+
+|                                                          | Moonfold     | [T3 Code](https://github.com/pingdotgg/t3code) | [Codex app](https://developers.openai.com/codex) | [Cursor](https://cursor.com)                 |
+| -------------------------------------------------------- | ------------ | ---------------------------------------------- | ------------------------------------------------ | -------------------------------------------- |
+| License                                                  | MIT          | MIT                                            | Proprietary app (the Codex CLI is Apache-2.0)    | Proprietary                                  |
+| Runs agents from different vendors                       | Yes, as CLIs | Yes, as CLIs                                   | Codex                                            | Several models, through Cursor's own service |
+| Uses your own provider logins                            | Yes          | Yes                                            | Your ChatGPT or OpenAI account                   | Your Cursor account                          |
+| Switch agent mid-thread                                  | Yes          | Yes                                            | No                                               | Switch model                                 |
+| Continue in another agent at a usage limit, with a brief | Yes          | No                                             | No                                               | No                                           |
+
+Moonfold exists because of T3 Code; if you do not need handoff, T3 Code is the original.
+
+## FAQ
+
+**Does Moonfold need its own account or API key?** No. Each agent signs in with its own CLI, as
+it would in a terminal.
+
+**Does it send my code anywhere?** Only to the agents you run, as those agents normally would.
+A handoff brief goes to the next agent you chose, after you see it (or after you turn on
+automatic mode).
+
+**Why are the installers unsigned?** Signing needs paid Apple and Windows certificates, which the
+beta does not have yet. [Install and first run](./docs/user/install.md#opening-an-unsigned-build)
+shows how to open them.
+
+**Which agents are verified?** See the provider table above; it is generated from checks that ran
+on real installs.
 
 ## Build from source
 
