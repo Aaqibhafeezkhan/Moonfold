@@ -1509,6 +1509,19 @@ export function createServerEnvironmentAtoms<R, E>(
       label: "environment-data:server:memory:thread-opt-out",
       tag: WS_METHODS.memoriesSetThreadOptOut,
     }),
+    // Builds what the next provider would receive; nothing is sent.
+    previewHandoff: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:handoff:preview",
+      tag: WS_METHODS.handoffPreview,
+    }),
+    startHandoff: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:handoff:start",
+      tag: WS_METHODS.handoffStart,
+    }),
+    readHandoffBrief: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:handoff:brief",
+      tag: WS_METHODS.handoffBrief,
+    }),
     // Installing clones a repository, so it stays off the config lane like run-now.
     installPlugin: createEnvironmentRpcCommand(runtime, {
       label: "environment-data:server:plugin:install",

@@ -93,6 +93,7 @@ describe("buildThreadActionMenuItems", () => {
             "regenerate-title",
             "auto-settle",
             "schedule-follow-up",
+            "hand-off",
             "archive",
             "delete",
           ]
@@ -104,6 +105,7 @@ describe("buildThreadActionMenuItems", () => {
             "regenerate-title",
             "auto-settle",
             "schedule-follow-up",
+            "hand-off",
             "archive",
             "delete",
           ];
@@ -143,6 +145,7 @@ describe("buildThreadActionMenuItems", () => {
       "rename",
       "mark-unread",
       "schedule-follow-up",
+      "hand-off",
       "copy",
       "project-settings",
       "archive",

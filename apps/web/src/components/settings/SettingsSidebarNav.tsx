@@ -11,6 +11,7 @@ import {
 } from "react";
 import {
   ArchiveIcon,
+  ArrowRightLeftIcon,
   BlocksIcon,
   BookmarkIcon,
   BotIcon,
@@ -92,6 +93,7 @@ const SETTINGS_SECTION_ICONS: Readonly<
   "/settings/integrations": BlocksIcon,
   "/settings/plugins": PuzzleIcon,
   "/settings/memories": BookmarkIcon,
+  "/settings/handoff": ArrowRightLeftIcon,
   "/settings/computer-use": MonitorIcon,
   "/settings/scheduled-tasks": CalendarClockIcon,
   "/settings/source-control": GitBranchIcon,

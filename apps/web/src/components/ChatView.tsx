@@ -316,6 +316,7 @@ import {
   ChevronDownIcon,
   DownloadIcon,
   GitBranchIcon,
+  ArrowRightLeftIcon,
   ShieldQuestionIcon,
   TargetIcon,
   WifiOffIcon,
@@ -432,7 +433,13 @@ import { resolveProviderSkillsForCwd } from "@moonfold/client-runtime/providerSk
 import { vcsEnvironment } from "../state/vcs";
 import { sourceControlEnvironment } from "../state/sourceControl";
 import { useProjectClone } from "../state/projectClones";
-import { projectCloneDisplayName, projectCloneProgressSummary } from "@moonfold/contracts";
+import {
+  nextHandoffTarget,
+  projectCloneDisplayName,
+  projectCloneProgressSummary,
+} from "@moonfold/contracts";
+import { requestHandoff } from "./HandoffDialog";
+import { handoffUsageWarning } from "./handoffDialog.logic";
 import { useEnvironments, usePrimaryEnvironment } from "../state/environments";
 import {
   resolveThreadDetailRef,
@@ -1887,6 +1894,8 @@ export default function ChatView(props: ChatViewProps) {
   const lastDispatchedVisitRef = useRef<string | null>(null);
   const lastVisitDispatchAtRef = useRef(0);
   const settings = useEnvironmentSettings(environmentId);
+  // The usage-warning offer the user dismissed, by provider window and reset.
+  const [dismissedUsageHandoff, setDismissedUsageHandoff] = useState<string | null>(null);
   const clientSettingsHydrated = useClientSettingsHydrated();
   const setStickyComposerModelSelection = useComposerDraftStore(
     (store) => store.setStickyModelSelection,
@@ -7731,6 +7740,72 @@ export default function ChatView(props: ChatViewProps) {
       }),
     [feedbackSubmissions, routeThreadKey],
   );
+  // The limit notice offers the first fallback that is on; the dialog previews before sending.
+  const limitHandoff = (() => {
+    if (activeThreadShell == null) return undefined;
+    const shell = activeThreadShell;
+    const target = nextHandoffTarget({
+      settings: resolveProjectSettings(settings, shell.projectId).settings.providerHandoff,
+      current: shell.modelSelection,
+      isAvailable: (selection) =>
+        providerStatuses.some(
+          (provider) => provider.instanceId === selection.instanceId && provider.enabled,
+        ),
+    });
+    const targetName =
+      target === null
+        ? null
+        : (providerStatuses.find((provider) => provider.instanceId === target.instanceId)
+            ?.displayName ?? target.instanceId);
+    const open = (reason: "usage_limit" | "manual") =>
+      requestHandoff({
+        environmentId,
+        threadId: shell.id,
+        projectId: shell.projectId,
+        current: shell.modelSelection,
+        reason,
+        ...(target === null ? {} : { target }),
+      });
+    return {
+      label: targetName === null ? "Hand off to…" : `Continue in ${targetName}…`,
+      open: () => open("usage_limit"),
+      openEarly: () => open("manual"),
+      warnAtUsagePercent: resolveProjectSettings(settings, shell.projectId).settings.providerHandoff
+        .warnAtUsagePercent,
+    };
+  })();
+  const usageHandoffWindow =
+    limitHandoff === undefined || serverRuntime?.status === "failed"
+      ? null
+      : handoffUsageWarning(
+          activeProviderStatus?.usageLimits,
+          limitHandoff.warnAtUsagePercent,
+          Date.now(),
+        );
+  const usageHandoffKey =
+    usageHandoffWindow === null
+      ? null
+      : `${activeProviderStatus?.instanceId ?? ""}:${usageHandoffWindow.id}:${usageHandoffWindow.resetsAt ?? ""}`;
+  const usageHandoffBanner: ComposerBannerStackItem | null =
+    usageHandoffWindow === null ||
+    usageHandoffKey === null ||
+    limitHandoff === undefined ||
+    usageHandoffKey === dismissedUsageHandoff
+      ? null
+      : {
+          id: `usage-handoff:${usageHandoffKey}`,
+          variant: "warning",
+          icon: <ArrowRightLeftIcon />,
+          title: `${activeProviderStatus?.displayName ?? "This agent"} has used ${Math.round(usageHandoffWindow.usedPercent)}% of its ${usageHandoffWindow.label} limit`,
+          description: "Hand off now to keep the task going when it stops.",
+          actions: (
+            <Button size="xs" variant="ghost" onClick={limitHandoff.openEarly}>
+              {limitHandoff.label}
+            </Button>
+          ),
+          dismissLabel: "Dismiss usage warning",
+          onDismiss: () => setDismissedUsageHandoff(usageHandoffKey),
+        };
   const limitRecoveryBanner =
     serverRuntime?.status === "failed" &&
     serverRuntime.lastErrorClass === "usage_limit" &&
@@ -7741,6 +7816,7 @@ export default function ChatView(props: ChatViewProps) {
           stoppedAt: activeThreadShell.latestRun.completedAt ?? activeThreadShell.updatedAt,
           recovery: activeThreadShell.limitRecovery ?? null,
           snoozedUntil: activeThreadShell.snoozedUntil,
+          handoff: limitHandoff,
           onChange: async (limitRecovery) => {
             const result = await updateThreadMetadata({
               environmentId,
@@ -7751,7 +7827,10 @@ export default function ChatView(props: ChatViewProps) {
         })
       : null;
   const composerBannerItems = useMemo<ComposerBannerStackItem[]>(() => {
-    const limitRecoveryItems = limitRecoveryBanner === null ? [] : [limitRecoveryBanner];
+    const limitRecoveryItems = [
+      ...(limitRecoveryBanner === null ? [] : [limitRecoveryBanner]),
+      ...(usageHandoffBanner === null ? [] : [usageHandoffBanner]),
+    ];
     const backgroundWorkItems = [
       childInputBannerItem,
       goalBannerItem,
@@ -7824,6 +7903,7 @@ export default function ChatView(props: ChatViewProps) {
     canWriteSourceControl,
     feedbackBannerItems,
     limitRecoveryBanner,
+    usageHandoffBanner,
     handleRestoreThreadBranchStable,
     isRestoringThreadBranch,
     backgroundWorkBannerItem,

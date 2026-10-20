@@ -19,6 +19,7 @@ import { resolveServerBackedAppDisplayName } from "../branding.logic";
 import { AppSidebarLayout } from "../components/AppSidebarLayout";
 import { CommandPalette } from "../components/CommandPalette";
 import { CustomSnoozeDialogHost } from "../components/CustomSnoozeDialog";
+import { HandoffBriefDialogHost, HandoffDialogHost } from "../components/HandoffDialog";
 import { MoveToWorktreeDialogHost } from "../components/MoveToWorktreeDialog";
 import { ConfirmDialogHost } from "../components/ConfirmDialogHost";
 import { KeybindingsConfigWarning } from "../components/KeybindingsConfigWarning";
@@ -202,6 +203,8 @@ function RootRouteView() {
           <FontAppearanceSync />
           <ProviderAuthCallbackCoordinator />
           <CustomSnoozeDialogHost />
+          <HandoffDialogHost />
+          <HandoffBriefDialogHost />
           <MoveToWorktreeDialogHost />
           <CommandPalette>
             <AppSidebarLayout>
@@ -272,6 +275,8 @@ function RootRouteView() {
           <ReopenClosedViewShortcut />
           <ConfirmDialogHost />
           <CustomSnoozeDialogHost />
+          <HandoffDialogHost />
+          <HandoffBriefDialogHost />
           <MoveToWorktreeDialogHost />
           <SlowRpcRequestToastCoordinator />
           <PermissionUpdateNotice />

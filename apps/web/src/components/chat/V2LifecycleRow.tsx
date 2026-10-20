@@ -27,6 +27,7 @@ import {
   type EnvironmentId,
   type NodeId,
   type ScopedThreadRef,
+  type HandoffReason,
 } from "@moonfold/contracts";
 import type { TimestampFormat } from "@moonfold/contracts/settings";
 import {
@@ -43,6 +44,7 @@ import {
 import { Tooltip, TooltipTrigger, TooltipPopup } from "../ui/tooltip";
 import { getProviderInstanceEntry } from "../../providerInstances";
 import { formatShortTimestamp } from "../../timestampFormat";
+import { requestHandoffBrief } from "../HandoffDialog";
 import { getTriggerDisplayModelName } from "./providerIconUtils";
 import { ProviderInstanceIcon, providerTextColor } from "./ProviderInstanceIcon";
 import { cn } from "~/lib/utils";
@@ -129,6 +131,22 @@ export function V2LifecycleRow(props: {
         endpoints={resolveHandoffEndpoints(item, props.runs)}
         providers={props.providerStatuses}
         failed={item.status === "failed"}
+        reason={item.reason}
+        time={
+          item.reason === undefined
+            ? undefined
+            : formatShortTimestamp(props.createdAt, props.timestampFormat)
+        }
+        onViewBrief={
+          item.reason === undefined
+            ? undefined
+            : () =>
+                requestHandoffBrief({
+                  environmentId: props.environmentId,
+                  threadId: item.threadId,
+                  contextHandoffId: item.contextHandoffId,
+                })
+        }
       />
     );
   }
@@ -550,14 +568,21 @@ export function HandoffRow(props: {
   readonly providers: ReadonlyArray<ServerProvider>;
   readonly pending?: boolean;
   readonly failed?: boolean;
+  /** Why the thread moved; absent on handoffs from before reasons were recorded. */
+  readonly reason?: HandoffReason | undefined;
+  readonly time?: string | undefined;
+  readonly onViewBrief?: (() => void) | undefined;
 }) {
   const { from: fromEndpoints, to } = props.endpoints;
   return (
     <TimelineSystemDivider
-      label={props.pending ? "Context handoff pending" : "Context handoff"}
+      label={props.pending ? "Context handoff pending" : handoffRowLabel(props.reason)}
       icon={ArrowRightLeftIcon}
       showDetailSeparator={false}
       tone={props.failed ? "danger" : "neutral"}
+      {...(props.onViewBrief === undefined
+        ? {}
+        : { actionLabel: "View the brief that was sent", onAction: props.onViewBrief })}
       detail={
         <span className="inline-flex min-w-0 flex-wrap items-center justify-center gap-1.5">
           {fromEndpoints.map((endpoint, index) => (
@@ -585,10 +610,24 @@ export function HandoffRow(props: {
             instanceId={to.instanceId}
             model={to.model}
           />
+          {props.time === undefined ? null : <span>· {props.time}</span>}
         </span>
       }
     />
   );
+}
+
+export function handoffRowLabel(reason: HandoffReason | undefined): string {
+  switch (reason) {
+    case "usage_limit":
+      return "Handed off after a usage limit";
+    case "automatic":
+      return "Handed off automatically after a usage limit";
+    case "manual":
+      return "Handed off by you";
+    default:
+      return "Context handoff";
+  }
 }
 
 function HandoffEndpoint(props: {
