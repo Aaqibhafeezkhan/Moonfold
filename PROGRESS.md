@@ -1,5 +1,50 @@
 # Progress
 
+## Phase 7: packaging and beta release (2026-10-20)
+
+Plan: docs/plans/phase-7.md. Process: docs/operations/release.md. REA gate: docs/REA-PHASE7.md.
+Decisions: DECISIONS D-45 to D-48. Notes: docs/releases/v0.1.0-beta.1.md. CHANGELOG.md.
+
+### Done
+
+- `release.yml` and `release-desktop.yml`: macOS arm64/x64 (dmg), Windows x64/arm64 (NSIS), Linux
+  x64/arm64 (AppImage and .deb) on GitHub-hosted runners; CLI archives for the install scripts
+  (none for Intel macOS); merged update manifests, CycloneDX SBOM, `SHA256SUMS`; prerelease for
+  `-beta.N`; signing only when its secrets exist; `release-dry-run/<version>` branches build
+  without publishing.
+- Beta installs accept GitHub prereleases; the install scripts' default channel includes betas;
+  server updates wait for the GitHub release instead of npm.
+- Signing requirements and first-run steps for unsigned builds; README install section.
+- Homebrew cask and winget manifests generated from a release's `SHA256SUMS`
+  (`vp run release:manifests`), not submitted.
+
+### Verification (real output, 2026-10-20)
+
+- Dry run `0.1.0-beta.1` on GitHub Actions: all six targets, the CLI smoke tests and the assemble
+  job passed (run 39444188954); 26 release files listed.
+- Windows 11 x64: the installer installed silently, launched on a scratch home, reached its
+  backend, and uninstalled cleanly. `install.ps1` installed the CLI archive from a local mirror
+  and `moonfold --version` printed `moonfold v0.1.0-beta.1`. Packaged warm launch: splash 0.9 s,
+  usable window 4.0 to 5.1 s.
+- REA: Electron fuses, app.asar, update feed config and hosts of the Linux build; Authenticode
+  status of the Windows installer (unsigned).
+- Tests: package manifests 4/4, update channels, release-published check and update-everything
+  hooks 287/287, registry tests 7 passed (2 skip on Windows; CI runs them). Typechecks clean;
+  knip clean; `vp check` errors only in the untracked `moonfold-website/`.
+
+### Not verified / open
+
+- The BUILD-PLAN gate's clean-machine runs on macOS and Linux, a provider task and handoff on an
+  installed build (both provider accounts are at their limits until November), and an update to
+  a newer build (needs a second release).
+- Owner actions: reserve the `moonfold` name on npm; Apple Developer and Windows signing for
+  signed builds; submit the Homebrew and winget manifests after beta feedback.
+- QA-REPORT P-1: cold start to a usable window is still about 4 s.
+
+### Next step
+
+Tag `v0.1.0-beta.1` on main to publish, then Phase 8 (launch assets).
+
 ## Phase 6: hardening (complete with one open item, 2026-10-20)
 
 Plan: docs/plans/phase-6.md. Report: docs/QA-REPORT.md. REA gate: docs/REA-PHASE6.md. Decisions:
