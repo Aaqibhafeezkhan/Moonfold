@@ -1345,3 +1345,23 @@ export function restorePlanFollowUpComposer(input: {
     detectTrigger: true,
   });
 }
+
+/**
+ * Whether the composer should follow a thread that moved to another provider (a handoff). Only
+ * when the same thread changed provider and the composer still points at the one it left; a
+ * composer already on another provider is the user's own pending switch.
+ */
+export function shouldComposerFollowThreadProvider(input: {
+  readonly last: { readonly threadId: string; readonly instanceId: string } | null;
+  readonly threadId: string;
+  readonly threadInstanceId: string;
+  readonly composerInstanceId: string | null;
+}): boolean {
+  const { last } = input;
+  return (
+    last !== null &&
+    last.threadId === input.threadId &&
+    last.instanceId !== input.threadInstanceId &&
+    input.composerInstanceId === last.instanceId
+  );
+}

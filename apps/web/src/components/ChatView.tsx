@@ -9,7 +9,7 @@ import {
   resolveWorktreeSetupProgress,
 } from "./ChatView.logic";
 import * as DateTime from "effect/DateTime";
-import { restorePlanFollowUpComposer } from "./ChatView.logic";
+import { restorePlanFollowUpComposer, shouldComposerFollowThreadProvider } from "./ChatView.logic";
 import { assistantCitationsToPlainText } from "@moonfold/shared/assistantCitations";
 import { prepareQueuedEditAttachments, recoverQueuedMessageEdit } from "./chat/queuedMessageEdit";
 import {
@@ -3117,6 +3117,35 @@ export default function ChatView(props: ChatViewProps) {
     providers: providerStatuses,
   });
   const modelPickerLockedProvider = supportsProviderSwitchingViaHandoff ? null : lockedProvider;
+  // A handoff (from the dialog or an automatic fallback) moves the thread to another provider on
+  // the server. When the composer still points at the provider the thread left, follow the
+  // thread; otherwise the next message would quietly switch it back.
+  const lastThreadProviderRef = useRef<{ threadId: string; instanceId: string } | null>(null);
+  const threadModelSelection = activeThread?.modelSelection ?? null;
+  useEffect(() => {
+    const last = lastThreadProviderRef.current;
+    if (threadModelSelection === null) {
+      lastThreadProviderRef.current = null;
+      return;
+    }
+    lastThreadProviderRef.current = { threadId, instanceId: threadModelSelection.instanceId };
+    if (
+      shouldComposerFollowThreadProvider({
+        last,
+        threadId,
+        threadInstanceId: threadModelSelection.instanceId,
+        composerInstanceId: composerActiveProvider,
+      })
+    ) {
+      setComposerDraftModelSelection(composerDraftTarget, threadModelSelection);
+    }
+  }, [
+    threadId,
+    threadModelSelection,
+    composerActiveProvider,
+    composerDraftTarget,
+    setComposerDraftModelSelection,
+  ]);
   const pullRequestsCapabilityKnown = serverConfig !== null;
   const supportsPullRequests = serverConfig?.environment.capabilities.pullRequests === true;
   const attachmentEnvironmentConfig = environmentById.get(environmentId)?.serverConfig ?? null;

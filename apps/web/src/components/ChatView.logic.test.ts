@@ -1,4 +1,8 @@
-import { findRecordedWorktreeSetup, resolveVisibleWorktreeSetup } from "./ChatView.logic";
+import {
+  findRecordedWorktreeSetup,
+  resolveVisibleWorktreeSetup,
+  shouldComposerFollowThreadProvider,
+} from "./ChatView.logic";
 import {
   recallCheckoutIsRepo,
   rememberCheckoutIsRepo,
@@ -2178,5 +2182,50 @@ describe("waitForRevertedMessage", () => {
     await vi.advanceTimersByTimeAsync(50);
     await settled;
     vi.useRealTimers();
+  });
+});
+
+describe("shouldComposerFollowThreadProvider", () => {
+  const last = { threadId: "thread-a", instanceId: "codex" };
+
+  it("follows a handoff when the composer still points at the provider the thread left", () => {
+    expect(
+      shouldComposerFollowThreadProvider({
+        last,
+        threadId: "thread-a",
+        threadInstanceId: "claudeAgent",
+        composerInstanceId: "codex",
+      }),
+    ).toBe(true);
+  });
+
+  it("keeps a switch the user picked in the composer", () => {
+    expect(
+      shouldComposerFollowThreadProvider({
+        last,
+        threadId: "thread-a",
+        threadInstanceId: "claudeAgent",
+        composerInstanceId: "grok",
+      }),
+    ).toBe(false);
+  });
+
+  it("ignores moving to another thread or an unchanged provider", () => {
+    expect(
+      shouldComposerFollowThreadProvider({
+        last,
+        threadId: "thread-b",
+        threadInstanceId: "claudeAgent",
+        composerInstanceId: "codex",
+      }),
+    ).toBe(false);
+    expect(
+      shouldComposerFollowThreadProvider({
+        last,
+        threadId: "thread-a",
+        threadInstanceId: "codex",
+        composerInstanceId: "codex",
+      }),
+    ).toBe(false);
   });
 });
