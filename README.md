@@ -184,6 +184,8 @@ agents and integrations need. See [docs/legal/privacy.md](./docs/legal/privacy.m
 
 ## Documentation
 
+The user guides are also published at [mr-dark-debug.github.io/Moonfold](https://mr-dark-debug.github.io/Moonfold/).
+
 - [Install and first run](./docs/user/install.md)
 - [Permission modes](./docs/user/permission-modes.md)
 - [Keyboard shortcuts](./docs/user/keybindings.md)
