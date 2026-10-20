@@ -1,5 +1,8 @@
 # Context in portable handoffs
 
+For moving a thread to another provider when one hits its limit, see
+[Provider handoff](provider-handoff.md). This page explains how much history travels with it.
+
 Moonfold transfers conversation context when you switch providers, continue through a portable
 restart, or use a fork that the provider cannot resume itself.
 
