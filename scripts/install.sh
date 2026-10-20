@@ -145,11 +145,11 @@ fi
 channel="${MOONFOLD_CHANNEL:-stable}"
 version="${MOONFOLD_VERSION:-}"
 if [ -z "$version" ]; then
-  # Tags are v<semver>; the channel is the prerelease identifier, or none for
-  # stable. Only tags of the requested train are considered, so a stable
-  # install can never pick up a nightly or preview build by accident.
+  # Tags are v<semver>. Stable takes releases and testing builds (-beta.N, -rc.N),
+  # matching `moonfold update`; nightly and preview tags carry a date and a run
+  # number, so a stable install can never pick one up by accident.
   case "$channel" in
-    stable) tag_pattern='v\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\)' ;;
+    stable) tag_pattern='v\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\(-[a-z][a-z]*\.[0-9][0-9]*\)\{0,1\}\)' ;;
     nightly | preview) tag_pattern="v\([0-9][^\"]*-${channel}\.[0-9]*\.[0-9]*\)" ;;
     *) fail "MOONFOLD_CHANNEL must be stable, nightly, or preview" ;;
   esac
