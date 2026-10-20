@@ -117,6 +117,17 @@ export function registerMistralVibeAcpExtensions(context: AcpAdapterV2ExtensionC
 }
 // ─── End per-agent exceptions (Devin's gates are marked in makeAcpRegistryAdapterV2) ───
 
+/**
+ * Whether an agent's error message reports an exhausted quota or rate limit. Agent-agnostic: ACP
+ * has no limit code, so the wording agents pass through from their model APIs is the signal
+ * (Gemini's `RESOURCE_EXHAUSTED`, HTTP 429, "quota exceeded", "usage limit", "rate limit").
+ */
+export function messageReportsUsageLimit(message: string): boolean {
+  return /\bRESOURCE_EXHAUSTED\b|\b429\b|quota (?:exceeded|exhausted)|exceeded (?:your |the )?quota|usage limit|rate[- ]limit(?:ed)?\b|too many requests/i.test(
+    message,
+  );
+}
+
 export function acpRegistryPromptFailure(agentId: string, cause: unknown) {
   return makeProviderFailure({
     cause,
@@ -126,7 +137,8 @@ export function acpRegistryPromptFailure(agentId: string, cause: unknown) {
           code: String(cause.code),
           class:
             // Per-agent exception: see the note above registerMistralVibeAcpExtensions.
-            agentId === "mistral-vibe" && cause.code === MISTRAL_VIBE_RATE_LIMITED
+            (agentId === "mistral-vibe" && cause.code === MISTRAL_VIBE_RATE_LIMITED) ||
+            messageReportsUsageLimit(cause.errorMessage)
               ? ("usage_limit" as const)
               : ("provider_error" as const),
         }

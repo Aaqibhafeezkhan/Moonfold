@@ -110,7 +110,20 @@ describe("AcpRegistryAdapterV2", () => {
       code: "-31001",
       retryable: null,
     });
-    assert.equal(acpRegistryPromptFailure("other-agent", limit).class, "provider_error");
+    // Any agent that passes its model API's limit wording through is at a usage limit.
+    assert.equal(acpRegistryPromptFailure("other-agent", limit).class, "usage_limit");
+    const geminiQuota = new EffectAcpErrors.AcpRequestError({
+      code: -32603,
+      errorMessage:
+        "[429 Too Many Requests] RESOURCE_EXHAUSTED: Quota exceeded for quota metric 'Gemini 2.5 Pro Requests'",
+    });
+    assert.equal(acpRegistryPromptFailure("gemini", geminiQuota).class, "usage_limit");
+    const ineligible = new EffectAcpErrors.AcpRequestError({
+      code: -32000,
+      errorMessage:
+        "This client is no longer supported for Gemini Code Assist for individuals. To continue using Gemini, please migrate to the Antigravity suite of products: https://antigravity.google",
+    });
+    assert.equal(acpRegistryPromptFailure("gemini", ineligible).class, "provider_error");
     assert.equal(
       acpRegistryPromptFailure("mistral-vibe", new Error("private defect")).message,
       "Provider turn failed.",
