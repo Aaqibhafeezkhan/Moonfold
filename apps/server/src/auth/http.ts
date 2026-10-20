@@ -199,13 +199,30 @@ export function failEnvironmentInternal(reason: EnvironmentInternalErrorReason, 
   });
 }
 
-const appendSessionCookie = (cookieName: string, token: string, expiresAt: DateTime.DateTime) =>
+/**
+ * Whether the browser reached this server over HTTPS, directly or through a TLS proxy such as
+ * Tailscale serve. Session cookies set over HTTPS are marked Secure so they never travel in clear.
+ */
+const requestUsedHttps = (request: HttpServerRequest.HttpServerRequest) => {
+  const forwarded = request.headers["x-forwarded-proto"];
+  const proto = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(",")[0]?.trim();
+  if (proto !== undefined) return proto.toLowerCase() === "https";
+  return request.originalUrl.startsWith("https:");
+};
+
+const appendSessionCookie = (
+  cookieName: string,
+  token: string,
+  expiresAt: DateTime.DateTime,
+  secure: boolean,
+) =>
   Effect.fromResult(
     Cookies.set(Cookies.empty, cookieName, token, {
       expires: DateTime.toDate(expiresAt),
       httpOnly: true,
       path: "/",
       sameSite: "lax",
+      ...(secure ? { secure: true } : {}),
     }),
   ).pipe(
     Effect.catch(() => failEnvironmentInternal("browser_session_cookie_failed")),
@@ -285,7 +302,12 @@ export const layer = HttpApiBuilder.group(
               result.sessionMethod === "browser-session-cookie" &&
               result.expiresAt
             ) {
-              yield* appendSessionCookie(sessions.cookieName, credential.token, result.expiresAt);
+              yield* appendSessionCookie(
+                sessions.cookieName,
+                credential.token,
+                result.expiresAt,
+                requestUsedHttps(request),
+              );
               yield* appendCredentialResponseHeaders;
             }
             return result;
@@ -321,6 +343,7 @@ export const layer = HttpApiBuilder.group(
                 httpOnly: true,
                 path: "/",
                 sameSite: "lax",
+                ...(requestUsedHttps(request) ? { secure: true } : {}),
               }),
             ).pipe(Effect.catch(() => failEnvironmentInternal("browser_session_cookie_failed")));
             const sessionCookies = result.expireNormalCookie

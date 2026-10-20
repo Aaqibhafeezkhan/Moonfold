@@ -599,9 +599,12 @@ const make = (options?: StartupOptions) =>
             yield* Effect.logDebug("startup phase: browser open check");
             const startupBrowserTarget = yield* resolveStartupBrowserTarget;
             if (serverConfig.mode !== "desktop") {
+              // The URL carries an admin pairing token: print it for the person at the terminal,
+              // never into structured logs, which can be exported to a collector.
               yield* Effect.logInfo(
                 "Authentication required. Open Moonfold using the pairing URL.",
-              ).pipe(Effect.annotateLogs({ pairingUrl: startupBrowserTarget }));
+              );
+              yield* Console.log(`  pairingUrl: ${startupBrowserTarget}`);
             }
             yield* runStartupPhase("browser.open", maybeOpenBrowser(startupBrowserTarget));
           }

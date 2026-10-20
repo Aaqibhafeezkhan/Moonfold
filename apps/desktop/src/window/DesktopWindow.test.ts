@@ -97,6 +97,10 @@ function makeFakeBrowserWindow() {
     setBackgroundThrottling: vi.fn(),
     setWindowOpenHandler: vi.fn(),
     toggleDevTools: vi.fn(),
+    session: {
+      setPermissionRequestHandler: vi.fn(),
+      setPermissionCheckHandler: vi.fn(),
+    },
   };
 
   const window = {

@@ -91,6 +91,39 @@ type DesktopWindowRuntimeServices =
   | DesktopRendererHistory.DesktopRendererHistory
   | PreviewManager.PreviewManager;
 
+/** The only preload a preview webview may run, whatever the renderer asked for. */
+const PREVIEW_PICK_PRELOAD_PATH = `${__dirname}/preview-pick-preload.cjs`;
+
+/** Preview webviews start blank or on a web page; any other scheme is refused. */
+function isPreviewWebviewSource(src: string | undefined): boolean {
+  if (src === undefined || src === "" || src === "about:blank") return true;
+  try {
+    const protocol = new URL(src).protocol;
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Permissions Moonfold's own renderer uses. Everything else (camera, microphone, location,
+ * USB, serial, HID, MIDI) is denied on the app's session, so a frame embedded in the app
+ * cannot ask for it either.
+ */
+const APP_PERMISSIONS: ReadonlySet<string> = new Set([
+  "clipboard-read",
+  "clipboard-sanitized-write",
+  "display-capture",
+  "fullscreen",
+  "notifications",
+]);
+
+function installAppPermissionPolicy(session: Electron.Session) {
+  session.setPermissionRequestHandler((_webContents, permission, callback) =>
+    callback(APP_PERMISSIONS.has(permission)),
+  );
+  session.setPermissionCheckHandler((_webContents, permission) => APP_PERMISSIONS.has(permission));
+}
 export type DesktopWindowError =
   | ElectronWindow.ElectronWindowCreateError
   | PreviewManager.PreviewManagerError;
@@ -633,14 +666,18 @@ export const make = Effect.gen(function* () {
     flushMainWindowBounds = flushBoundsPersist;
 
     yield* previewManager.setMainWindow(window);
+    installAppPermissionPolicy(window.webContents.session);
     window.webContents.on("will-attach-webview", (event, webPreferences, params) => {
       if (
         typeof params.partition !== "string" ||
-        !previewManager.isBrowserPartition(params.partition)
+        !previewManager.isBrowserPartition(params.partition) ||
+        !isPreviewWebviewSource(params.src)
       ) {
         event.preventDefault();
         return;
       }
+      // The renderer names the preload; the main process decides which one actually runs.
+      webPreferences.preload = PREVIEW_PICK_PRELOAD_PATH;
       webPreferences.sandbox = true;
       webPreferences.nodeIntegration = false;
       webPreferences.nodeIntegrationInSubFrames = false;
