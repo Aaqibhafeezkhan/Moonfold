@@ -6,7 +6,7 @@ import {
 } from "@moonfold/contracts";
 import { createModelSelection } from "@moonfold/shared/model";
 import { ArrowDownIcon, ArrowUpIcon, PlusIcon, XIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { getCustomModelOptionsByInstance } from "../../modelSelection";
 import {
@@ -60,6 +60,31 @@ export function HandoffSettingsPanel() {
   const enabledEntries = entries.filter((entry) => entry.enabled);
   const firstEntry = enabledEntries[0];
   const [adding, setAdding] = useState<ModelSelection | null>(null);
+  // Reordering moves or unmounts the focused button; this puts focus back on the same row, or
+  // on the row that took the removed one's place.
+  const fallbackListRef = useRef<HTMLOListElement>(null);
+  const refocus = useRef<{ key: string; action: "up" | "down" | "remove"; index: number } | null>(
+    null,
+  );
+  useEffect(() => {
+    const target = refocus.current;
+    const list = fallbackListRef.current;
+    if (target === null || list === null) return;
+    refocus.current = null;
+    if (handoff.fallbackOrder.length === 0) return;
+    const rows = [...list.querySelectorAll<HTMLLIElement>("li[data-fallback-key]")];
+    const row =
+      target.action === "remove"
+        ? rows[Math.min(target.index, rows.length - 1)]
+        : rows.find((candidate) => candidate.dataset.fallbackKey === target.key);
+    const buttons = [
+      ...(row?.querySelectorAll<HTMLButtonElement>("button[data-fallback-action]") ?? []),
+    ];
+    const preferred = buttons.find(
+      (button) => button.dataset.fallbackAction === target.action && !button.disabled,
+    );
+    (preferred ?? buttons.find((button) => !button.disabled))?.focus();
+  }, [handoff.fallbackOrder]);
   const modelOptions = getCustomModelOptionsByInstance(
     settings,
     providers,
@@ -128,54 +153,65 @@ export function HandoffSettingsPanel() {
               : "A limited thread continues in the first agent here that is on, allowed and not at its own limit."
           }
         >
-          <ol className="mt-2 space-y-1.5">
-            {handoff.fallbackOrder.map((selection, index) => (
-              <li
-                key={`${selection.instanceId}:${selection.model}`}
-                className="flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm"
-              >
-                <span className="w-5 text-muted-foreground tabular-nums">{index + 1}.</span>
-                <span className="min-w-0 flex-1 truncate">
-                  {nameOf(selection.instanceId)} · {selection.model}
-                </span>
-                <Button
-                  size="icon-xs"
-                  variant="ghost"
-                  aria-label={`Move ${nameOf(selection.instanceId)} up`}
-                  disabled={index === 0}
-                  onClick={() =>
-                    update({ fallbackOrder: moveFallback(handoff.fallbackOrder, index, -1) })
-                  }
+          <ol ref={fallbackListRef} className="mt-2 space-y-1.5">
+            {handoff.fallbackOrder.map((selection, index) => {
+              const key = `${selection.instanceId}:${selection.model}`;
+              const label = `${nameOf(selection.instanceId)} ${selection.model}`;
+              return (
+                <li
+                  key={key}
+                  data-fallback-key={key}
+                  className="flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm"
                 >
-                  <ArrowUpIcon />
-                </Button>
-                <Button
-                  size="icon-xs"
-                  variant="ghost"
-                  aria-label={`Move ${nameOf(selection.instanceId)} down`}
-                  disabled={index === handoff.fallbackOrder.length - 1}
-                  onClick={() =>
-                    update({ fallbackOrder: moveFallback(handoff.fallbackOrder, index, 1) })
-                  }
-                >
-                  <ArrowDownIcon />
-                </Button>
-                <Button
-                  size="icon-xs"
-                  variant="ghost"
-                  aria-label={`Remove ${nameOf(selection.instanceId)}`}
-                  onClick={() =>
-                    update({
-                      fallbackOrder: handoff.fallbackOrder.filter(
-                        (_, position) => position !== index,
-                      ),
-                    })
-                  }
-                >
-                  <XIcon />
-                </Button>
-              </li>
-            ))}
+                  <span className="w-5 text-muted-foreground tabular-nums">{index + 1}.</span>
+                  <span className="min-w-0 flex-1 truncate">
+                    {nameOf(selection.instanceId)} · {selection.model}
+                  </span>
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    aria-label={`Move ${label} up`}
+                    data-fallback-action="up"
+                    disabled={index === 0}
+                    onClick={() => {
+                      refocus.current = { key, action: "up", index };
+                      update({ fallbackOrder: moveFallback(handoff.fallbackOrder, index, -1) });
+                    }}
+                  >
+                    <ArrowUpIcon />
+                  </Button>
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    aria-label={`Move ${label} down`}
+                    data-fallback-action="down"
+                    disabled={index === handoff.fallbackOrder.length - 1}
+                    onClick={() => {
+                      refocus.current = { key, action: "down", index };
+                      update({ fallbackOrder: moveFallback(handoff.fallbackOrder, index, 1) });
+                    }}
+                  >
+                    <ArrowDownIcon />
+                  </Button>
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    aria-label={`Remove ${label}`}
+                    data-fallback-action="remove"
+                    onClick={() => {
+                      refocus.current = { key, action: "remove", index };
+                      update({
+                        fallbackOrder: handoff.fallbackOrder.filter(
+                          (_, position) => position !== index,
+                        ),
+                      });
+                    }}
+                  >
+                    <XIcon />
+                  </Button>
+                </li>
+              );
+            })}
           </ol>
           {firstEntry ? (
             <div className="mt-2 flex flex-wrap items-center gap-2">

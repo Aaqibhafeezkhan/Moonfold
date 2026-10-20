@@ -85,10 +85,12 @@ export function QuickWindowShortcutRow() {
     <SettingsRow
       {...searchableSetting("quick-window-shortcut")}
       description={
-        error ??
-        (unavailable
-          ? (status.message ?? "This shortcut is not active.")
-          : "Opens a small window on top of other apps for starting a thread.")
+        <span role="status">
+          {error ??
+            (unavailable
+              ? (status.message ?? "This shortcut is not active.")
+              : "Opens a small window on top of other apps for starting a thread.")}
+        </span>
       }
       control={
         <div className="flex items-center gap-2">
@@ -97,9 +99,11 @@ export function QuickWindowShortcutRow() {
             size="sm"
             variant={recording ? "secondary" : "outline"}
             aria-label={
-              shortcut
-                ? `Record quick window shortcut, currently ${formatSnapShotShortcutLabel(shortcut)}`
-                : "Record quick window shortcut"
+              recording
+                ? "Press a shortcut that includes a modifier key"
+                : shortcut
+                  ? `Record quick window shortcut, currently ${formatSnapShotShortcutLabel(shortcut)}`
+                  : "Record quick window shortcut"
             }
             aria-pressed={recording}
             data-keybinding-capture=""

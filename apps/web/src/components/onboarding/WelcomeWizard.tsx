@@ -1131,7 +1131,7 @@ function AgentInstallTerminal({
       className="mt-4 overflow-hidden rounded-lg border border-border/70 bg-background text-foreground"
     >
       <div className="flex items-center justify-between border-b border-border/60 bg-background/60 px-3 py-1.5">
-        <span className="text-2xs font-medium text-muted-foreground">
+        <span role="status" className="text-2xs font-medium text-muted-foreground">
           {!canOperateTerminal ? (
             "This connection cannot control terminals."
           ) : setupState === "writeFailed" ? (
@@ -1539,7 +1539,9 @@ function ImportStep({
         </div>
       </ScrollArea>
       {visibleImportError ? (
-        <p className="mt-3 text-sm text-destructive">{visibleImportError}</p>
+        <p role="alert" className="mt-3 text-sm text-destructive-foreground">
+          {visibleImportError}
+        </p>
       ) : null}
       <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
         <Button variant="ghost-muted" disabled={isImporting} onClick={finishAfterImport}>
@@ -1604,6 +1606,7 @@ function ImportCandidateList({
         <Collapsible>
           <div className="flex items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-muted/40">
             <Checkbox
+              aria-label="Select every other folder"
               checked={otherSelected === other.length}
               indeterminate={otherSelected > 0 && otherSelected < other.length}
               onCheckedChange={(checked) =>
@@ -1614,7 +1617,7 @@ function ImportCandidateList({
               }
             />
             <CollapsibleTrigger className="group flex min-w-0 flex-1 items-center gap-1.5 text-left">
-              <ChevronRightIcon className="size-3.5 shrink-0 text-muted-foreground transition-transform group-data-panel-open:rotate-90" />
+              <ChevronRightIcon className="size-3.5 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none group-data-panel-open:rotate-90" />
               <span className="truncate text-sm text-muted-foreground">Other folders</span>
               <span className="ml-auto shrink-0 text-xs text-muted-foreground tabular-nums">
                 {other.length} {other.length === 1 ? "folder" : "folders"}
@@ -1667,12 +1670,13 @@ function ImportRepositoryGroup({
     <Collapsible defaultOpen>
       <div className="flex items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-muted/40">
         <Checkbox
+          aria-label={`Select every clone of ${group.label}`}
           checked={selectedCount === keys.length}
           indeterminate={selectedCount > 0 && selectedCount < keys.length}
           onCheckedChange={(checked) => onToggle(keys, checked === true)}
         />
         <CollapsibleTrigger className="group flex min-w-0 flex-1 items-center gap-1.5 text-left">
-          <ChevronRightIcon className="size-3.5 shrink-0 text-muted-foreground transition-transform group-data-panel-open:rotate-90" />
+          <ChevronRightIcon className="size-3.5 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none group-data-panel-open:rotate-90" />
           <span className="truncate text-sm font-medium">{group.label}</span>
           <ImportRowMeta
             sources={[...new Set(group.candidates.flatMap((c) => c.sources))]}
