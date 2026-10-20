@@ -403,6 +403,14 @@ import {
   MemoryUpsertInput,
 } from "./memories.ts";
 import {
+  HandoffBriefInput,
+  HandoffBriefResult,
+  HandoffError,
+  HandoffPreview,
+  HandoffPreviewInput,
+  HandoffStartInput,
+} from "./handoff.ts";
+import {
   BrowserSiteAnswerInput,
   BrowserSiteDecisions,
   BrowserSiteError,
@@ -621,6 +629,9 @@ export const WS_METHODS = {
   memoriesSetEnabled: "memories.setEnabled",
   memoriesThreadStatus: "memories.threadStatus",
   memoriesSetThreadOptOut: "memories.setThreadOptOut",
+  handoffPreview: "handoff.preview",
+  handoffStart: "handoff.start",
+  handoffBrief: "handoff.brief",
   browserSitesGetPolicy: "browserSites.getPolicy",
   browserSitesSetRule: "browserSites.setRule",
   browserSitesRemoveRule: "browserSites.removeRule",
@@ -2175,6 +2186,23 @@ const WsMemoriesSetThreadOptOutRpc = Rpc.make(WS_METHODS.memoriesSetThreadOptOut
   error: Schema.Union([MemoryError, EnvironmentAuthorizationError]),
 });
 
+/** Builds the brief and checks the rules for moving a thread to another provider; sends nothing. */
+const WsHandoffPreviewRpc = Rpc.make(WS_METHODS.handoffPreview, {
+  payload: HandoffPreviewInput,
+  success: HandoffPreview,
+  error: Schema.Union([HandoffError, EnvironmentAuthorizationError]),
+});
+const WsHandoffStartRpc = Rpc.make(WS_METHODS.handoffStart, {
+  payload: HandoffStartInput,
+  error: Schema.Union([HandoffError, EnvironmentAuthorizationError]),
+});
+/** The brief a past handoff sent, for its timeline divider. */
+const WsHandoffBriefRpc = Rpc.make(WS_METHODS.handoffBrief, {
+  payload: HandoffBriefInput,
+  success: HandoffBriefResult,
+  error: Schema.Union([HandoffError, EnvironmentAuthorizationError]),
+});
+
 const WsScheduledTasksGetWebhookDeliveryRpc = Rpc.make(
   WS_METHODS.scheduledTasksGetWebhookDelivery,
   {
@@ -2454,6 +2482,9 @@ export const WsRpcGroupPart5 = RpcGroup.make(
   WsMemoriesSetEnabledRpc,
   WsMemoriesThreadStatusRpc,
   WsMemoriesSetThreadOptOutRpc,
+  WsHandoffPreviewRpc,
+  WsHandoffStartRpc,
+  WsHandoffBriefRpc,
   WsBrowserSitesGetPolicyRpc,
   WsBrowserSitesSetRuleRpc,
   WsBrowserSitesRemoveRuleRpc,

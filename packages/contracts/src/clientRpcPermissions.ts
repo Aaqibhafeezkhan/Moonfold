@@ -65,6 +65,7 @@ export const CLIENT_GUARDED_RPC_SCOPES = {
   [WS_METHODS.memoriesDelete]: AuthSettingsWriteScope,
   [WS_METHODS.memoriesSetEnabled]: AuthSettingsWriteScope,
   [WS_METHODS.memoriesSetThreadOptOut]: AuthOrchestrationOperateScope,
+  [WS_METHODS.handoffStart]: AuthOrchestrationOperateScope,
   // Site rules decide what agents may do on the web.
   [WS_METHODS.browserSitesSetRule]: AuthSettingsWriteScope,
   [WS_METHODS.browserSitesRemoveRule]: AuthSettingsWriteScope,
