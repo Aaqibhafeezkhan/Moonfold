@@ -1243,7 +1243,6 @@ export function EnvironmentProviderSettings({
       <UsageProviderSettings
         key={environmentId}
         environmentId={environmentId}
-        environmentLabel={environmentLabel}
         sources={settings.usageLimitSources}
         cursorKeychainUsageEnabled={settings.cursorKeychainUsageEnabled}
         readOnly={readOnly}

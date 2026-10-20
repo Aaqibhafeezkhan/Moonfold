@@ -1,6 +1,5 @@
 import type { EnvironmentId, UnifiedSettings } from "@moonfold/contracts";
 import { useAtomValue } from "@effect/atom-react";
-import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 
 import { useUpdateEnvironmentSettings } from "../../hooks/useSettings";
@@ -17,20 +16,21 @@ import {
 } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
 import { Switch } from "../ui/switch";
-import { AddUsageLimitSourceDialog } from "./AddUsageLimitSourceDialog";
 import { searchableSetting } from "./settingsSearch";
 import { SettingsRow, SettingsSection } from "./settingsLayout";
 
-/** Hub management follows the selected device and access rules of provider settings. */
+/**
+ * Account-usage options for the selected device. Usage hubs (CLIProxyAPI) are not supported:
+ * they pool provider logins, which Moonfold never does. A hub saved by an older build is still
+ * listed so its stored management key can be removed.
+ */
 export function UsageProviderSettings({
   environmentId,
-  environmentLabel,
   sources,
   cursorKeychainUsageEnabled,
   readOnly,
 }: {
   readonly environmentId: EnvironmentId;
-  readonly environmentLabel: string;
   readonly sources: UnifiedSettings["usageLimitSources"];
   readonly cursorKeychainUsageEnabled: boolean;
   readonly readOnly: boolean;
@@ -44,7 +44,6 @@ export function UsageProviderSettings({
   });
   const platform = useAtomValue(serverEnvironment.configValueAtom(environmentId))?.environment
     .platform;
-  const [adding, setAdding] = useState(false);
   const [updatingCursor, setUpdatingCursor] = useState(false);
   const entries = Object.entries(sources);
 
@@ -65,17 +64,7 @@ export function UsageProviderSettings({
 
   return (
     <>
-      <SettingsSection
-        {...searchableSetting("usage-providers")}
-        headerAction={
-          !readOnly ? (
-            <Button size="xs" variant="outline" onClick={() => setAdding(true)}>
-              <PlusIcon className="size-3" aria-hidden />
-              Add hub
-            </Button>
-          ) : null
-        }
-      >
+      <SettingsSection {...searchableSetting("usage-providers")}>
         {platform?.os === "darwin" ? (
           <SettingsRow
             id="cursor-keychain-usage"
@@ -91,8 +80,8 @@ export function UsageProviderSettings({
             }
           />
         ) : null}
-        {entries.length === 0 ? (
-          <SettingsRow title="No hubs configured." />
+        {entries.length === 0 && platform?.os !== "darwin" ? (
+          <SettingsRow title="Usage comes from each provider's own CLI login." />
         ) : (
           entries.map(([id, source]) => {
             const label = source.label?.trim() || source.url;
@@ -102,8 +91,8 @@ export function UsageProviderSettings({
                 title={label}
                 description={
                   <span className="break-all">
-                    CLI Proxy{source.enabled ? "" : " · Disabled"}
-                    {label !== source.url ? ` · ${source.url}` : ""}
+                    No longer read: usage hubs pool provider logins, which Moonfold does not
+                    support. Remove it to delete its stored management key.
                   </span>
                 }
                 control={
@@ -119,14 +108,6 @@ export function UsageProviderSettings({
           })
         )}
       </SettingsSection>
-      {adding && !readOnly ? (
-        <AddUsageLimitSourceDialog
-          open
-          onOpenChange={setAdding}
-          environmentId={environmentId}
-          environmentLabel={environmentLabel}
-        />
-      ) : null}
     </>
   );
 }

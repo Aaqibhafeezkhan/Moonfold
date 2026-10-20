@@ -21,7 +21,7 @@ export interface DesktopIpcSyncEvent {
  * context isolation, so none of the app's channels may answer them; guest-facing channels
  * (pick, recording, passkeys) are registered separately with their own checks.
  */
-export function isAppFrame(event: Pick<DesktopIpcInvokeEvent, "senderFrame">): boolean {
+function isAppFrame(event: Pick<DesktopIpcInvokeEvent, "senderFrame">): boolean {
   const url = event.senderFrame?.url;
   return url !== undefined && /^moonfold(-dev)?:\/\/app\//.test(url);
 }

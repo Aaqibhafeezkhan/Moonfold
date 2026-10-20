@@ -825,10 +825,9 @@ export const AntigravitySettings = makeProviderSettingsSchema(
 export type AntigravitySettings = typeof AntigravitySettings.Type;
 
 /**
- * A read-only quota source outside this environment's provider CLIs. The
- * only kind today is a CLIProxyAPI hub, whose management API reports the
- * windows of every pooled account. The key travels in settings for now, like
- * provider environment secrets; it is redacted before reaching a client.
+ * A usage hub saved by an older build. Moonfold no longer reads hubs (they pool provider logins,
+ * which it never does); the shape still decodes so such settings load and can be removed, and the
+ * key stays redacted before reaching a client.
  */
 export const UsageLimitSourceConfig = Schema.Struct({
   kind: Schema.Literal("cliproxy"),
