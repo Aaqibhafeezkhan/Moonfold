@@ -62,6 +62,9 @@ export const fixPath = Effect.fn("fixPath")(function* (options?: {
   const env = yield* HostProcess.Environment;
 
   if (platform === "win32") {
+    // The desktop app installs the user's environment before it starts the backend; reading it
+    // again costs a synchronous PowerShell spawn on every cold start.
+    if (options?.shellEnvironmentPrepared === true) return;
     const repairedEnvironment = yield* resolveWindowsEnvironment(env).pipe(
       Effect.catchDefect((defect) =>
         Effect.sync(() => {
