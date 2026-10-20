@@ -13,6 +13,7 @@
     "@moonfold/shared": "workspace:*",
     "@moonfold/tailscale": "workspace:*",
     "effect": "catalog:",
+    "marked": "16.4.2",
     "plist": "catalog:",
     "sharp": "0.35.5"
   },

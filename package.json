@@ -46,6 +46,7 @@
     "release:smoke": "node scripts/release-smoke.ts",
     "release:manifests": "node scripts/package-manifests.ts",
     "brand:social": "node scripts/render-social-preview.ts",
+    "docs:site": "node scripts/build-docs-site.ts",
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules apps/*/dist apps/*/dist-electron packages/*/dist .vite-plus apps/*/.vite-plus packages/*/.vite-plus",
     "sync:repos": "node scripts/sync-reference-repos.ts"
   },
