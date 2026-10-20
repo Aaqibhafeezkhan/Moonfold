@@ -391,3 +391,11 @@ needs the owner's npm account; until then the docs do not promise `npx moonfold`
 The Node single-executable for Intel macOS crashed (SIGSEGV) in its smoke test on the release
 runner, as it did upstream. Intel Macs get the desktop app; docs/user/install.md explains how to
 run the server from source there.
+
+## D-49 New threads start Supervised
+
+The default permission mode was inherited as Full access. CLAUDE.md requires the safest mode by
+default, so `DEFAULT_RUNTIME_MODE` is now `approval-required` (Supervised): new threads,
+environments whose settings never chose a default, and new scheduled tasks ask before commands
+and file changes. Users opt into Auto-accept edits, Auto or Full access in the composer or in
+Settings → General → New threads → Permissions; threads and saved defaults keep what they had.

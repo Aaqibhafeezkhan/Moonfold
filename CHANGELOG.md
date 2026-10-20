@@ -28,6 +28,8 @@ The first Moonfold beta, forked from T3 Code (MIT). Notes:
 
 ### Security
 
+- New threads and scheduled tasks start in Supervised mode, which asks before commands and file
+  changes; Full access is an explicit choice.
 - Desktop IPC answers only the app's own frame; the app's CSP allows inline scripts by hash only;
   session cookies are `Secure` over HTTPS; the app session grants only listed permissions.
 - Usage hubs, which pooled provider logins, are removed. Reading Claude's stored login for

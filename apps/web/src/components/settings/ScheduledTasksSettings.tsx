@@ -67,7 +67,7 @@ import { EMPTY_SERVER_PROVIDERS, serverEnvironment } from "../../state/server";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { WorktreeBaseBranchPicker } from "../WorktreeBaseBranchPicker";
 import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
-import { AuthOrchestrationOperateScope } from "@moonfold/contracts";
+import { AuthOrchestrationOperateScope, DEFAULT_RUNTIME_MODE } from "@moonfold/contracts";
 import { readEnvironmentScope } from "~/state/session";
 import { useSettingsScope } from "./SettingsScopeContext";
 import {
@@ -156,7 +156,7 @@ const EMPTY_DRAFT: DraftState = {
   startFromOrigin: true,
   existingWorktreePath: "",
   modelKey: "",
-  runtimeMode: "full-access",
+  runtimeMode: DEFAULT_RUNTIME_MODE,
   interactionMode: "default",
   baseModelSelection: null,
   signatureEnabled: false,
