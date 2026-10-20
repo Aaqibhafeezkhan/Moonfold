@@ -59,6 +59,8 @@ const SECRET_ASSIGNMENT =
  */
 function isReference(value: string): boolean {
   if (value.startsWith("[REDACTED")) return true;
+  // Plain numbers are counts and budgets (`inputTokens: 12345`), not credentials.
+  if (/^\d+(\.\d+)?$/.test(value)) return true;
   if (/^\$\{?[A-Za-z_]/.test(value) || /^%[A-Za-z_]+%$/.test(value)) return true;
   return /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*(?:\(|$)/.test(value) && !/\d/.test(value);
 }
