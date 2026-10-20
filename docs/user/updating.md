@@ -23,8 +23,8 @@ restart from the update button when you are ready. A server still restarting
 finishes on its own, and the button keeps showing it after the desktop app
 restarts.
 
-Server updates appear only after that version is published to npm. Remote
-desktop apps do not wait for npm. The confirmation lists each machine it skips
+Server updates appear only after that version is published on Moonfold's
+GitHub Releases, where servers download it. Remote desktop apps do not wait. The confirmation lists each machine it skips
 and why, such as a machine that is offline or needs a manual update. Use the
 notice or **Settings → Connections** for those.
 
@@ -93,10 +93,6 @@ asks before restarting the background service; if you decline, run
 `moonfold service restart` when you are ready. For a server you started by hand,
 stop it and start it again afterwards with your usual options such as `--host`
 or `--tailscale-serve`.
-
-If you run the server with `npx` rather than an installed `moonfold`, there is
-nothing to update on the host: stop the server and relaunch it as
-`npx moonfold@<client-version>` with the same subcommand and options.
 
 ## If an update fails
 
