@@ -1,5 +1,37 @@
 # Progress
 
+## Phase 5: more providers (complete, 2026-10-20)
+
+Plan: docs/plans/phase-5.md. REA gate: docs/REA-PHASE5.md. Decisions: DECISIONS D-36 to D-38.
+
+### Done
+
+- Gemini CLI runs through the ACP integration (registry agent or `gemini --acp` as a local command);
+  docs/user/providers-gemini.md explains sign-in.
+- Agent-agnostic limit detection for ACP agents: quota and rate-limit wording ends the turn as a
+  usage limit, so Gemini and other ACP agents can hand off.
+- README provider matrix generated from docs/provider-checks.json (`vp run providers:matrix`), with
+  a test that fails on drift.
+- No OpenAI-compatible endpoint provider: recorded why (D-37).
+
+### Verification (Windows 11, 2026-10-20)
+
+- Codex and Claude: installed, signed in, models listed, real limit signals and handoff verified
+  (Phases 2 to 4). Gemini CLI 0.43.0: ACP handshake verified live; Google refused its
+  Google-account sign-in (`UNSUPPORTED_CLIENT`). Antigravity: its managed ACP server was not
+  installed; the 125 MB download was left to the owner.
+- Tests: ACP registry adapter tests pass apart from its baseline Windows case; provider-matrix
+  tests pass.
+
+### Not verified / open
+
+- Gemini CLI with an API key or Vertex AI; Antigravity end to end; Cursor, OpenCode and Grok (not
+  installed); macOS and Linux runs of any provider.
+
+### Next step
+
+Phase 6 (hardening): audits, measurements and QA-REPORT.md.
+
 ## Phase 4: provider handoff (complete, 2026-10-20)
 
 Plan: docs/plans/phase-4.md. Gate: docs/QA-PHASE4.md. Decisions: DECISIONS D-31 to D-35. Limit

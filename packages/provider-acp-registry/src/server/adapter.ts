@@ -122,7 +122,7 @@ export function registerMistralVibeAcpExtensions(context: AcpAdapterV2ExtensionC
  * has no limit code, so the wording agents pass through from their model APIs is the signal
  * (Gemini's `RESOURCE_EXHAUSTED`, HTTP 429, "quota exceeded", "usage limit", "rate limit").
  */
-export function messageReportsUsageLimit(message: string): boolean {
+function messageReportsUsageLimit(message: string): boolean {
   return /\bRESOURCE_EXHAUSTED\b|\b429\b|quota (?:exceeded|exhausted)|exceeded (?:your |the )?quota|usage limit|rate[- ]limit(?:ed)?\b|too many requests/i.test(
     message,
   );
