@@ -48,6 +48,14 @@ The brief and the earlier conversation go to the next agent in its first turn; t
 divider with the reason, and **View brief** shows exactly what was sent. Settings → Handoff sets
 the fallback order and which agents are allowed. Details: [Provider handoff](./docs/user/provider-handoff.md).
 
+## More demos
+
+Recorded in the app; hostnames and local paths are blurred.
+
+| Browser pane and scheduled tasks                                                                                                                                 | Plugins and memories                                                                                                                                      |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <img src="docs/assets/demo-browser-and-scheduled-tasks.gif" width="460" alt="The browser pane opens the release page, then a weekday scheduled task is created"> | <img src="docs/assets/demo-plugins-and-memories.gif" width="460" alt="A folder of skills is installed as a plugin and turned on, then a memory is added"> |
+
 ## Status
 
 Moonfold is in beta. [v0.1.0-beta.1](https://github.com/Mr-Dark-debug/Moonfold/releases/tag/v0.1.0-beta.1)
