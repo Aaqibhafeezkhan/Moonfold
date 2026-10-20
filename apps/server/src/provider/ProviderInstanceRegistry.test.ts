@@ -205,42 +205,50 @@ describe("ProviderInstanceRegistry — multi-instance codex slice", () => {
   // `NodeServices.layer` through `Layer.provideMerge` to satisfy that
   // dependency while still surfacing NodeServices to the test body (the
   // codex driver's `create` yields `ChildProcessSpawner` directly).
-  const layerBaseDeps = ServerConfig.layerTest(process.cwd(), {
-    prefix: "provider-instance-registry-test",
-  }).pipe(
-    Layer.provideMerge(NodeServices.layer),
-    Layer.provideMerge(
-      Layer.mock(CodexInstallation.CodexInstallation)({
-        managedDirectory: "unused-managed-installation",
-      }),
-    ),
-    Layer.provideMerge(Layer.mock(ServerSecretStore.ServerSecretStore)({})),
-    Layer.provideMerge(
-      Layer.succeed(ServerEnvironment.ServerEnvironmentIdentity, {
-        getEnvironmentId: Effect.succeed(
-          EnvironmentId.make("00000000-0000-4000-8000-000000000001"),
-        ),
-      }),
-    ),
-    Layer.provideMerge(layerBackgroundPolicyAlwaysRun),
-    Layer.provideMerge(ServerSettings.layerTest()),
-    Layer.provideMerge(layerTestHttpClient),
-    Layer.provideMerge(ServerSettings.layerTest()),
-    Layer.provideMerge(
-      Layer.succeed(
-        ProviderEventLoggers.ProviderEventLoggers,
-        ProviderEventLoggers.NoOpProviderEventLoggers,
+  const makeLayerBaseDeps = (settings: Parameters<typeof ServerSettings.layerTest>[0] = {}) =>
+    ServerConfig.layerTest(process.cwd(), {
+      prefix: "provider-instance-registry-test",
+    }).pipe(
+      Layer.provideMerge(NodeServices.layer),
+      Layer.provideMerge(
+        Layer.mock(CodexInstallation.CodexInstallation)({
+          managedDirectory: "unused-managed-installation",
+        }),
       ),
-    ),
-    Layer.provideMerge(ProviderLatestVersions.layer),
-    Layer.provideMerge(McpProviderSessions.layer),
-    Layer.provideMerge(ModelManifest.layerTest),
-    Layer.provideMerge(ResetCreditCoordinator.layerTest),
-  );
-  const layerBase = ProviderHostLive.layer.pipe(Layer.provideMerge(layerBaseDeps));
-  const layerTest = ProviderOrchestrationAdapterInfrastructure.layer.pipe(
-    Layer.provideMerge(layerBase),
-  );
+      Layer.provideMerge(Layer.mock(ServerSecretStore.ServerSecretStore)({})),
+      Layer.provideMerge(
+        Layer.succeed(ServerEnvironment.ServerEnvironmentIdentity, {
+          getEnvironmentId: Effect.succeed(
+            EnvironmentId.make("00000000-0000-4000-8000-000000000001"),
+          ),
+        }),
+      ),
+      Layer.provideMerge(layerBackgroundPolicyAlwaysRun),
+      Layer.provideMerge(ServerSettings.layerTest(settings)),
+      Layer.provideMerge(layerTestHttpClient),
+      Layer.provideMerge(ServerSettings.layerTest(settings)),
+      Layer.provideMerge(
+        Layer.succeed(
+          ProviderEventLoggers.ProviderEventLoggers,
+          ProviderEventLoggers.NoOpProviderEventLoggers,
+        ),
+      ),
+      Layer.provideMerge(ProviderLatestVersions.layer),
+      Layer.provideMerge(McpProviderSessions.layer),
+      Layer.provideMerge(ModelManifest.layerTest),
+      Layer.provideMerge(ResetCreditCoordinator.layerTest),
+    );
+  // The provider host reads settings from the layer it is built with, so a test that needs other
+  // settings gets its own layer.
+  const makeLayerTest = (settings: Parameters<typeof ServerSettings.layerTest>[0] = {}) =>
+    ProviderOrchestrationAdapterInfrastructure.layer.pipe(
+      Layer.provideMerge(
+        ProviderHostLive.layer.pipe(Layer.provideMerge(makeLayerBaseDeps(settings))),
+      ),
+    );
+  const layerTest = makeLayerTest();
+  // Reading Claude's stored login for resets is opt-in.
+  const layerTestWithClaudeResets = makeLayerTest({ claudeResetCreditsEnabled: true });
 
   it.live("boots two independent codex instances from a ProviderInstanceConfigMap", () =>
     Effect.gen(function* () {
@@ -549,9 +557,7 @@ describe("ProviderInstanceRegistry — multi-instance codex slice", () => {
     }).pipe(
       // macOS logins live in the Keychain, where resets are never read.
       Effect.provideService(HostProcess.Platform, "linux"),
-      // Reading Claude's stored login for resets is opt-in.
-      Effect.provide(ServerSettings.layerTest({ claudeResetCreditsEnabled: true })),
-      Effect.provide(layerTest),
+      Effect.provide(layerTestWithClaudeResets),
     );
 
   it.live.skipIf(windowsHost)("refreshes Claude usage after redeeming a reset", () =>
