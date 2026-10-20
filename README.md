@@ -11,7 +11,8 @@ git worktrees, diff review, pull requests, scheduled tasks, and remote access fr
 
 The goal that sets Moonfold apart is **provider handoff**: when one agent hits its usage limit
 mid-task, the same task continues in another agent with the plan, the diff and the open problems
-carried over. That work is in progress; see [Status](#status).
+carried over. Moonfold builds a redacted brief of where the task stands, shows it to you, and sends
+it to the next agent; see [Provider handoff](./docs/user/provider-handoff.md).
 
 Moonfold is a fork of [T3 Code](https://github.com/pingdotgg/t3code) and keeps its MIT license.
 See [NOTICE](./NOTICE) for attribution.
@@ -20,13 +21,13 @@ See [NOTICE](./NOTICE) for attribution.
 
 Moonfold is pre-release. There are no published installers yet; build it from source.
 
-| Area                                                  | State                           |
-| ----------------------------------------------------- | ------------------------------- |
-| Multi-provider threads, worktrees, diff and PR flow   | Works (inherited from Moonfold) |
-| Rebrand, local-first defaults, no hosted services     | Done                            |
-| Codex-app parity features (goals, review, hooks, ...) | In progress                     |
-| Provider handoff on usage limits                      | In progress                     |
-| Signed installers for macOS, Windows and Linux        | Planned                         |
+| Area                                                  | State                          |
+| ----------------------------------------------------- | ------------------------------ |
+| Multi-provider threads, worktrees, diff and PR flow   | Works (inherited from T3 Code) |
+| Rebrand, local-first defaults, no hosted services     | Done                           |
+| Codex-app parity features (goals, review, hooks, ...) | Works                          |
+| Provider handoff on usage limits                      | Works                          |
+| Signed installers for macOS, Windows and Linux        | Planned                        |
 
 ## Requirements
 
@@ -40,6 +41,25 @@ Install and sign in to at least one provider CLI with your own account:
 - Antigravity: enable it in Settings, then use **Install Antigravity** and **Sign in with Google**
 
 Moonfold never proxies, pools or shares provider logins. Each agent runs as your own local CLI.
+
+### Provider matrix
+
+<!-- provider-matrix:start -->
+
+| Provider             | Status       | CLI checked          | Install | Sign-in | Models | Turn | Limit signal | Handoff | Where, when                |
+| -------------------- | ------------ | -------------------- | ------- | ------- | ------ | ---- | ------------ | ------- | -------------------------- |
+| **Codex**            | Verified     | codex-cli 0.163.0    | ✅      | ✅      | ✅     | ✅   | ✅           | ✅      | Windows 11 x64, 2026-10-20 |
+| **Claude Code**      | Verified     | 2.1.303              | ✅      | ✅      | ✅     | ✅   | ✅           | ✅      | Windows 11 x64, 2026-10-20 |
+| **Gemini CLI (ACP)** | Not verified | 0.43.0               | ✅      | ❌      | —      | —    | tests        | —       | Windows 11 x64, 2026-10-20 |
+| **Antigravity**      | Not verified | agy 1.3.5 (CLI only) | ❌      | —       | —      | —    | tests        | —       | Windows 11 x64, 2026-10-20 |
+| **Cursor**           | Not verified | not installed        | —       | —       | —      | —    | none         | —       | Windows 11 x64, 2026-10-20 |
+| **OpenCode**         | Not verified | not installed        | —       | —       | —      | —    | none         | —       | Windows 11 x64, 2026-10-20 |
+| **Grok Build**       | Not verified | not installed        | —       | —       | —      | —    | tests        | —       | Windows 11 x64, 2026-10-20 |
+
+Generated from [docs/provider-checks.json](./docs/provider-checks.json), which records only
+checks that ran on a real install. Notes for each provider are in that file.
+
+<!-- provider-matrix:end -->
 
 ## Build from source
 
@@ -82,7 +102,9 @@ agents and integrations need. See [docs/legal/privacy.md](./docs/legal/privacy.m
 - [Remote access from another machine](./docs/user/remote-access.md)
 - [Connect outside agents over MCP](./docs/user/outside-agents.md)
 - [Source control integrations](./docs/user/source-control.md)
-- [Codex](./docs/user/providers-codex.md) and [Claude](./docs/user/providers-claude.md) accounts
+- [Codex](./docs/user/providers-codex.md), [Claude](./docs/user/providers-claude.md) and
+  [Gemini CLI](./docs/user/providers-gemini.md) accounts
+- [Provider handoff](./docs/user/provider-handoff.md)
 
 Architecture: [docs/internals/overview.md](./docs/internals/overview.md).
 

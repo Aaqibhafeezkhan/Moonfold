@@ -1,0 +1,96 @@
+{
+  "$comment": "Checks run on real installs. README's provider matrix is generated from this file by `node scripts/provider-matrix.ts`; record only what actually ran.",
+  "checks": [
+    {
+      "provider": "Codex",
+      "cli": "codex-cli 0.163.0",
+      "platform": "Windows 11 x64",
+      "date": "2026-10-20",
+      "install": "pass",
+      "login": "pass",
+      "models": "pass",
+      "turn": "pass",
+      "limitSignal": "pass",
+      "handoff": "pass",
+      "notes": "Turns and goals verified in Phases 2 and 3; the account's real usage limit was hit and reported with a reset time on 2026-10-20; received a handoff from Claude."
+    },
+    {
+      "provider": "Claude Code",
+      "cli": "2.1.303",
+      "platform": "Windows 11 x64",
+      "date": "2026-10-20",
+      "install": "pass",
+      "login": "pass",
+      "models": "pass",
+      "turn": "pass",
+      "limitSignal": "pass",
+      "handoff": "pass",
+      "notes": "Turns verified in Phase 2; the account's real usage limit was reported with its reset time and started a handoff to Codex."
+    },
+    {
+      "provider": "Gemini CLI (ACP)",
+      "cli": "0.43.0",
+      "platform": "Windows 11 x64",
+      "date": "2026-10-20",
+      "install": "pass",
+      "login": "fail",
+      "models": "not run",
+      "turn": "not run",
+      "limitSignal": "unit test only",
+      "handoff": "not run",
+      "notes": "ACP handshake works (`gemini --acp`). Google refuses Google-account sign-in for this client (UNSUPPORTED_CLIENT); an API key or Vertex AI is required. Not verified."
+    },
+    {
+      "provider": "Antigravity",
+      "cli": "agy 1.3.5 (CLI only)",
+      "platform": "Windows 11 x64",
+      "date": "2026-10-20",
+      "install": "fail",
+      "login": "not run",
+      "models": "not run",
+      "turn": "not run",
+      "limitSignal": "unit test only",
+      "handoff": "not run",
+      "notes": "Moonfold drives Antigravity's ACP server, a separate managed download (Settings → Providers → Install Antigravity); it was not installed on this machine. Not verified."
+    },
+    {
+      "provider": "Cursor",
+      "cli": "not installed",
+      "platform": "Windows 11 x64",
+      "date": "2026-10-20",
+      "install": "not run",
+      "login": "not run",
+      "models": "not run",
+      "turn": "not run",
+      "limitSignal": "none mapped",
+      "handoff": "not run",
+      "notes": "Adapter inherited from upstream; not verified by Moonfold."
+    },
+    {
+      "provider": "OpenCode",
+      "cli": "not installed",
+      "platform": "Windows 11 x64",
+      "date": "2026-10-20",
+      "install": "not run",
+      "login": "not run",
+      "models": "not run",
+      "turn": "not run",
+      "limitSignal": "none mapped",
+      "handoff": "not run",
+      "notes": "Adapter inherited from upstream; not verified by Moonfold."
+    },
+    {
+      "provider": "Grok Build",
+      "cli": "not installed",
+      "platform": "Windows 11 x64",
+      "date": "2026-10-20",
+      "install": "not run",
+      "login": "not run",
+      "models": "not run",
+      "turn": "not run",
+      "limitSignal": "unit test only",
+      "handoff": "not run",
+      "notes": "Adapter inherited from upstream; not verified by Moonfold."
+    }
+  ]
+}
