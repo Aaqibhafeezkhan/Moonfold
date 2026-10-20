@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.9.0.schema.json
+
+PackageIdentifier: MrDarkDebug.Moonfold
+PackageVersion: 0.1.0-beta.1
+InstallerType: nullsoft
+Scope: user
+UpgradeBehavior: install
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/Mr-Dark-debug/Moonfold/releases/download/v0.1.0-beta.1/Moonfold-0.1.0-beta.1-x64.exe
+    InstallerSha256: AD140F9D1EC5B391E9B5AE81EEECB651C3BE7C6989EE72DD998EEDA4A38060D6
+  - Architecture: arm64
+    InstallerUrl: https://github.com/Mr-Dark-debug/Moonfold/releases/download/v0.1.0-beta.1/Moonfold-0.1.0-beta.1-arm64.exe
+    InstallerSha256: BF9F17F44474B5E33FCA76F25C773CA2A9CAFFAB6A94DCE0B9BDF539C4CC6D0D
+ManifestType: installer
+ManifestVersion: 1.9.0
