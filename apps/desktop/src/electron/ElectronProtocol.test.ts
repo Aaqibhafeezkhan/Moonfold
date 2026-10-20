@@ -1,3 +1,5 @@
+// @effect-diagnostics nodeBuiltinImport:off -- Computes the expected script hash.
+import * as NodeCrypto from "node:crypto";
 import { assert, describe, it } from "@effect/vitest";
 import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
@@ -103,7 +105,7 @@ describe("ElectronProtocol", () => {
           assert.equal(yield* Effect.promise(() => response.text()), "ok");
           assert.include(
             response.headers.get("content-security-policy") ?? "",
-            "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://clerk.example.org https://challenges.cloudflare.com",
+            "script-src 'self' 'wasm-unsafe-eval' https://clerk.example.org https://challenges.cloudflare.com",
           );
           assert.include(
             response.headers.get("content-security-policy") ?? "",
@@ -285,6 +287,15 @@ describe("ElectronProtocol", () => {
     }).pipe(Effect.provide(layerProtocol)),
   );
 
+  it("allows exactly the inline scripts the served HTML contains", () => {
+    const hashes = ElectronProtocol.inlineScriptHashes(
+      '<html><script>boot()</script><script type="module" src="/main.js"></script><script> </script></html>',
+    );
+    assert.deepEqual(hashes, [
+      `'sha256-${NodeCrypto.createHash("sha256").update("boot()").digest("base64")}'`,
+    ]);
+  });
+
   it("keeps executable sources host-restricted while allowing runtime network resources", () => {
     const policy = ElectronProtocol.makeDesktopContentSecurityPolicy({
       scheme: "moonfold",
@@ -300,11 +311,18 @@ describe("ElectronProtocol", () => {
 
     assert.deepEqual(directives["script-src"], [
       "'self'",
-      "'unsafe-inline'",
       "'wasm-unsafe-eval'",
       "https://clerk.example.org",
       "https://challenges.cloudflare.com",
     ]);
+    // Without a Clerk build, neither Clerk nor its challenge may load scripts.
+    const withoutClerk = ElectronProtocol.makeDesktopContentSecurityPolicy({
+      scheme: "moonfold",
+      targetOrigin: new URL("http://127.0.0.1:3773/"),
+      clerkFrontendApiHostname: undefined,
+    });
+    const scriptPolicy = withoutClerk.split("; ").find((d) => d.startsWith("script-src")) ?? "";
+    assert.equal(scriptPolicy, "script-src 'self' 'wasm-unsafe-eval'");
     assert.deepEqual(directives["connect-src"], [
       "'self'",
       "blob:",

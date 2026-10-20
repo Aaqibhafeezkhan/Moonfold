@@ -1,3 +1,5 @@
+// @effect-diagnostics nodeBuiltinImport:off -- Hashes the inline scripts of served HTML for the CSP.
+import * as NodeCrypto from "node:crypto";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
@@ -68,16 +70,34 @@ export class ElectronProtocol extends Context.Service<
   }
 >()("@moonfold/desktop/electron/ElectronProtocol") {}
 
-export function makeDesktopContentSecurityPolicy(input: DesktopProtocolRegistrationInput): string {
+/**
+ * `'sha256-…'` sources for the inline `<script>` elements of an HTML document, so the renderer
+ * runs exactly the inline scripts it was served (the theme boot script, and Vite's preamble in
+ * development) and no injected one.
+ */
+export function inlineScriptHashes(html: string): ReadonlyArray<string> {
+  const hashes = new Set<string>();
+  for (const match of html.matchAll(/<script(?![^>]*\bsrc\s*=)[^>]*>([\s\S]*?)<\/script>/gi)) {
+    const body = match[1] ?? "";
+    if (body.trim() === "") continue;
+    hashes.add(`'sha256-${NodeCrypto.createHash("sha256").update(body, "utf8").digest("base64")}'`);
+  }
+  return [...hashes];
+}
+
+export function makeDesktopContentSecurityPolicy(
+  input: DesktopProtocolRegistrationInput,
+  scriptHashes: ReadonlyArray<string> = [],
+): string {
   const clerkOrigin = input.clerkFrontendApiHostname
     ? `https://${input.clerkFrontendApiHostname}`
     : undefined;
+  // Clerk and its Turnstile challenge load only in builds configured for a self-hosted relay.
   const scriptSources = [
     "'self'",
-    "'unsafe-inline'",
+    ...scriptHashes,
     "'wasm-unsafe-eval'",
-    ...(clerkOrigin ? [clerkOrigin] : []),
-    "https://challenges.cloudflare.com",
+    ...(clerkOrigin ? [clerkOrigin, "https://challenges.cloudflare.com"] : []),
   ];
 
   // The renderer connects directly to user-configured environments in addition to
@@ -103,14 +123,28 @@ export function makeDesktopContentSecurityPolicy(input: DesktopProtocolRegistrat
   ].join("; ");
 }
 
-function withContentSecurityPolicy(response: Response, policy: string): Response {
+/** Adds the CSP; an HTML document's policy also allows exactly its own inline scripts. */
+async function withContentSecurityPolicy(
+  response: Response,
+  input: DesktopProtocolRegistrationInput,
+): Promise<Response> {
   const headers = new Headers(response.headers);
-  headers.set("Content-Security-Policy", policy);
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
+  const isHtml = headers.get("content-type")?.toLowerCase().includes("text/html") ?? false;
+  if (!isHtml || response.body === null) {
+    headers.set("Content-Security-Policy", makeDesktopContentSecurityPolicy(input));
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  }
+  const html = await response.text();
+  headers.set(
+    "Content-Security-Policy",
+    makeDesktopContentSecurityPolicy(input, inlineScriptHashes(html)),
+  );
+  headers.delete("content-length");
+  return new Response(html, { status: response.status, statusText: response.statusText, headers });
 }
 
 /**
@@ -171,7 +205,7 @@ const fetchWithTransientRetry = (url: string, init: RequestInit) =>
 const proxyRequest = Effect.fn("desktop.protocol.proxyRequest")(function* (
   request: Request,
   targetOrigin: URL,
-  contentSecurityPolicy: string,
+  input: DesktopProtocolRegistrationInput,
 ) {
   const requestUrl = new URL(request.url);
   if (requestUrl.host !== DESKTOP_HOST) {
@@ -210,7 +244,7 @@ const proxyRequest = Effect.fn("desktop.protocol.proxyRequest")(function* (
     request.method === "GET" || request.method === "HEAD"
       ? yield* fetchWithTransientRetry(targetUrl.toString(), init)
       : yield* netFetch(targetUrl.toString(), init);
-  return withContentSecurityPolicy(response, contentSecurityPolicy);
+  return yield* Effect.promise(() => withContentSecurityPolicy(response, input));
 });
 
 // Serves the packaged web client without a backend: files resolve within the
@@ -264,8 +298,6 @@ export const make = Effect.gen(function* () {
     function* (input: DesktopProtocolRegistrationInput) {
       if (yield* Ref.get(registered)) return;
 
-      const contentSecurityPolicy = makeDesktopContentSecurityPolicy(input);
-
       yield* Effect.acquireRelease(
         Effect.try({
           try: () => {
@@ -273,12 +305,12 @@ export const make = Effect.gen(function* () {
               if ("assetDirectory" in input) {
                 return withContentSecurityPolicy(
                   await runPromise(serveDesktopAsset(request, input.assetDirectory)),
-                  contentSecurityPolicy,
+                  input,
                 );
               }
               // Reject with net.fetch's own error, as an unproxied fetch would.
               return runPromise(
-                proxyRequest(request, input.targetOrigin, contentSecurityPolicy).pipe(
+                proxyRequest(request, input.targetOrigin, input).pipe(
                   Effect.catchTags({
                     ElectronProtocolFetchError: (error) => Effect.die(error.cause),
                   }),
