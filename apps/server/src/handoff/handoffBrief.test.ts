@@ -107,7 +107,7 @@ const input: HandoffBriefInput = {
 describe("buildHandoffBrief", () => {
   it("matches the golden brief for a task that hit its usage limit", async () => {
     const brief = buildHandoffBrief(input);
-    await expect(brief.text).toMatchFileSnapshot("./__golden__/usage-limit-brief.md");
+    await expect(brief.text).toMatchFileSnapshot("./__golden__/usage-limit-brief.txt");
     expect(brief.redactions).toEqual([{ kind: "secret_assignment", count: 1 }]);
   });
 
