@@ -14,7 +14,7 @@
     "@moonfold/tailscale": "workspace:*",
     "effect": "catalog:",
     "plist": "catalog:",
-    "sharp": "0.35.4"
+    "sharp": "0.35.5"
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",

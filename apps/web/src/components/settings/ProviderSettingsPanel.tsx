@@ -1243,9 +1243,9 @@ export function EnvironmentProviderSettings({
       <UsageProviderSettings
         key={environmentId}
         environmentId={environmentId}
-        environmentLabel={environmentLabel}
         sources={settings.usageLimitSources}
         cursorKeychainUsageEnabled={settings.cursorKeychainUsageEnabled}
+        claudeResetCreditsEnabled={settings.claudeResetCreditsEnabled}
         readOnly={readOnly}
       />
 

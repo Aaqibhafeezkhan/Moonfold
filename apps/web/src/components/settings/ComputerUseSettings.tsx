@@ -37,6 +37,13 @@ const ACTION_LABELS: Record<ComputerUseLogEntry["action"], string> = {
   scroll: "Scroll",
 };
 
+// The badge colour shows the outcome; this text says it to screen readers.
+const OUTCOME_LABELS: Record<ComputerUseLogEntry["outcome"], string> = {
+  done: "Done.",
+  refused: "Refused.",
+  failed: "Failed.",
+};
+
 function reportFailure(title: string, result: AtomCommandResult<unknown, unknown>) {
   if (result._tag !== "Failure" || isAtomCommandInterrupted(result)) return;
   toastManager.add(
@@ -267,7 +274,10 @@ function ActionLog(props: {
               </Badge>
               {entry.app ? <span className="font-medium">{entry.app}</span> : null}
               <span className="text-muted-foreground">{entry.detail}</span>
-              {entry.error ? <span className="text-destructive">{entry.error}</span> : null}
+              <span className="sr-only">{OUTCOME_LABELS[entry.outcome]}</span>
+              {entry.error ? (
+                <span className="text-destructive-foreground">{entry.error}</span>
+              ) : null}
               <span className="ml-auto text-muted-foreground">
                 {formatRelativeTimeLabel(entry.at)}
               </span>

@@ -3,32 +3,13 @@
 Connect a phone, browser, or another desktop app to Moonfold running on a different
 machine. That machine must stay running and reachable while you work.
 
-## Moonfold Connect
+## Moonfold Connect (self-hosted only)
 
-Moonfold Connect makes an environment available to your other devices without setting
-up router forwarding. In the desktop app on the host, open **Settings →
-Connections**, sign in, and enable **Moonfold Connect** for that environment.
-
-For a command-line host, run:
-
-```bash
-moonfold connect
-```
-
-Follow the sign-in instructions. Setup offers a
-[background service](./background-service.md); if you decline it, start the
-server with `moonfold serve`. Saving your sign-in alone does not make the machine
-reachable.
-
-On your other device, sign in to the same Moonfold Connect account and choose the
-environment. Over SSH, the CLI prints a browser link and a short code. Open the
-link on any device, confirm the code matches, and approve. The CLI continues on
-its own, so you do not need to forward an OAuth callback port.
-
-Moonfold Connect renews access credentials when needed without disconnecting a healthy
-connection. Pull request diffs and provider settings keep working after the
-previous credential expires. A failed renewal affects that request; it does not
-disconnect an otherwise healthy conversation.
+Moonfold Connect reaches an environment from your other devices through a relay, without router
+forwarding. Moonfold does not run a relay or an account service, so release builds have Connect
+turned off. To use it, deploy your own relay from `infra/relay` and your own sign-in service, and
+build Moonfold with their settings (see `.env.example`). Otherwise use one of the options below:
+direct pairing on your network, Tailscale, or an SSH tunnel.
 
 ## Pair over a LAN or private network
 

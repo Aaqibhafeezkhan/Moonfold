@@ -245,14 +245,14 @@ const bootstrap = Effect.gen(function* () {
   }
 
   if (!(yield* Ref.get(state.quitting))) {
-    // The main window waits for the primary backend. In wsl-only mode that is
-    // the WSL backend, which can be slow to cold-boot — show a "Connecting to
-    // WSL" splash immediately so the app feels responsive instead of presenting
-    // no window until WSL is ready. (Dual mode opens fast off the Windows
-    // primary, so no splash there.)
-    if (settings.wslOnly === true && settings.wslBackendEnabled === true) {
-      yield* desktopWindow.showConnectingSplash;
-    }
+    // The main window waits for the primary backend, which takes a few seconds
+    // to boot (measured 3.2 s warm on a mid Windows laptop; WSL can be slower),
+    // so a splash appears at once instead of no window at all.
+    yield* desktopWindow.showConnectingSplash(
+      settings.wslOnly === true && settings.wslBackendEnabled === true
+        ? "Connecting to WSL…"
+        : "Starting Moonfold…",
+    );
     yield* primaryBackend.start;
     yield* logBootstrapInfo("bootstrap backend start requested");
     yield* appActivation.start.pipe(

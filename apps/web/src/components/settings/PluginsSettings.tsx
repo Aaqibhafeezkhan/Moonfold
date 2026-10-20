@@ -155,7 +155,12 @@ function PluginEnvironmentSection({
       }
       headerAction={
         showEnvironmentHeading && canManage && connected ? (
-          <Button size="xs" variant="ghost-muted" onClick={onAdd}>
+          <Button
+            size="xs"
+            variant="ghost-muted"
+            aria-label={`Add a plugin to ${environment.label}`}
+            onClick={onAdd}
+          >
             <PlusIcon className="size-3" />
             Add
           </Button>

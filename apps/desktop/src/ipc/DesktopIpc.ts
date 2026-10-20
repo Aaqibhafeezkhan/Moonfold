@@ -6,10 +6,24 @@ import * as Scope from "effect/Scope";
 
 export interface DesktopIpcInvokeEvent {
   readonly sender: { readonly id: number };
+  /** The frame that sent the message; null once it has navigated away or been destroyed. */
+  readonly senderFrame?: { readonly url: string } | null;
 }
 
 export interface DesktopIpcSyncEvent {
   returnValue: unknown;
+  readonly senderFrame?: { readonly url: string } | null;
+}
+
+/**
+ * Whether a message came from Moonfold's own renderer, served from `moonfold://app` (or
+ * `moonfold-dev://app` in development). Preview pages are arbitrary sites and run without
+ * context isolation, so none of the app's channels may answer them; guest-facing channels
+ * (pick, recording, passkeys) are registered separately with their own checks.
+ */
+function isAppFrame(event: Pick<DesktopIpcInvokeEvent, "senderFrame">): boolean {
+  const url = event.senderFrame?.url;
+  return url !== undefined && /^moonfold(-dev)?:\/\/app\//.test(url);
 }
 
 export type DesktopIpcHandleListener = (
@@ -94,14 +108,17 @@ export const make = (ipcMain: DesktopIpcMain): DesktopIpc["Service"] =>
         Effect.try({
           try: () => {
             ipcMain.removeHandler(channel);
-            ipcMain.handle(channel, (event, raw) =>
-              runPromise(
+            ipcMain.handle(channel, (event, raw) => {
+              if (!isAppFrame(event)) {
+                return Promise.reject(new Error(`IPC ${channel} refused: not sent by the app.`));
+              }
+              return runPromise(
                 Effect.gen(function* () {
                   yield* Effect.annotateCurrentSpan({ channel });
                   return yield* handler(raw, event);
                 }).pipe(Effect.annotateLogs({ channel }), Effect.withSpan("desktop.ipc.invoke")),
-              ),
-            );
+              );
+            });
           },
           catch: (cause) =>
             new DesktopIpcRegistrationError({ handlerKind: "invoke", channel, cause }),
@@ -128,6 +145,10 @@ export const make = (ipcMain: DesktopIpcMain): DesktopIpc["Service"] =>
           try: () => {
             ipcMain.removeAllListeners(channel);
             ipcMain.on(channel, (event) => {
+              if (!isAppFrame(event)) {
+                event.returnValue = null;
+                return;
+              }
               event.returnValue = runSync(
                 Effect.gen(function* () {
                   yield* Effect.annotateCurrentSpan({ channel });

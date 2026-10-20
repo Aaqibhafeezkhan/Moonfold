@@ -169,7 +169,12 @@ function MemoryEnvironmentSection({
       }
       headerAction={
         showEnvironmentHeading && connected && canWrite ? (
-          <Button size="xs" variant="ghost-muted" onClick={onAdd}>
+          <Button
+            size="xs"
+            variant="ghost-muted"
+            aria-label={`Add a memory to ${environment.label}`}
+            onClick={onAdd}
+          >
             <PlusIcon className="size-3" />
             Add memory
           </Button>

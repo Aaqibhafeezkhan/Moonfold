@@ -729,9 +729,7 @@ export const SETTINGS_SEARCH_ITEMS = [
     id: "usage-providers",
     title: "Usage providers",
     to: "/settings/providers",
-    searchTerms: [
-      "usage sources CLIProxyAPI CLI proxy hub quota subscription limits management key add remove",
-    ],
+    searchTerms: ["usage account limits cursor keychain subscription quota"],
     providerSettingsOnly: true,
   },
   {

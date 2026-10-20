@@ -91,6 +91,39 @@ type DesktopWindowRuntimeServices =
   | DesktopRendererHistory.DesktopRendererHistory
   | PreviewManager.PreviewManager;
 
+/** The only preload a preview webview may run, whatever the renderer asked for. */
+const PREVIEW_PICK_PRELOAD_PATH = `${__dirname}/preview-pick-preload.cjs`;
+
+/** Preview webviews start blank or on a web page; any other scheme is refused. */
+function isPreviewWebviewSource(src: string | undefined): boolean {
+  if (src === undefined || src === "" || src === "about:blank") return true;
+  try {
+    const protocol = new URL(src).protocol;
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Permissions Moonfold's own renderer uses. Everything else (camera, microphone, location,
+ * USB, serial, HID, MIDI) is denied on the app's session, so a frame embedded in the app
+ * cannot ask for it either.
+ */
+const APP_PERMISSIONS: ReadonlySet<string> = new Set([
+  "clipboard-read",
+  "clipboard-sanitized-write",
+  "display-capture",
+  "fullscreen",
+  "notifications",
+]);
+
+function installAppPermissionPolicy(session: Electron.Session) {
+  session.setPermissionRequestHandler((_webContents, permission, callback) =>
+    callback(APP_PERMISSIONS.has(permission)),
+  );
+  session.setPermissionCheckHandler((_webContents, permission) => APP_PERMISSIONS.has(permission));
+}
 export type DesktopWindowError =
   | ElectronWindow.ElectronWindowCreateError
   | PreviewManager.PreviewManagerError;
@@ -109,7 +142,7 @@ export class DesktopWindow extends Context.Service<
     // Show a lightweight "Connecting to WSL" splash window immediately (wsl-only
     // mode), before the WSL backend that acts as the primary is ready. It is
     // dismissed automatically once the real main window reveals.
-    readonly showConnectingSplash: Effect.Effect<void>;
+    readonly showConnectingSplash: (label: string) => Effect.Effect<void>;
     // Marks the primary backend as ready so `createMainIfBackendReady` and the
     // macOS "activate without windows" path may open the real main window. The
     // renderer now always loads the local client URL (getDesktopUrl) and connects
@@ -230,15 +263,17 @@ export function resolveInitialMainWindowBounds(
   return DesktopAppSettings.DEFAULT_MAIN_WINDOW_SIZE;
 }
 
-// A self-contained "Connecting to WSL" splash, shown immediately in wsl-only
-// mode while the WSL backend (which serves the renderer) cold-boots. Inlined as
-// a data URL so it needs no bundled asset and no backend — pure CSS, no JS.
-function buildConnectingSplashDataUrl(shouldUseDarkColors: boolean): string {
+// A self-contained splash ("Starting Moonfold…", or "Connecting to WSL…" in
+// wsl-only mode), shown immediately while the backend that serves the renderer
+// boots. Inlined as a data URL so it needs no bundled asset and no backend —
+// pure CSS, no JS.
+function buildConnectingSplashDataUrl(shouldUseDarkColors: boolean, label: string): string {
+  const text = label.replaceAll("&", "&amp;").replaceAll("<", "&lt;");
   const background = getInitialWindowBackgroundColor(shouldUseDarkColors);
-  const label = shouldUseDarkColors ? "#9ca3af" : "#6b7280";
+  const labelColor = shouldUseDarkColors ? "#9ca3af" : "#6b7280";
   const accent = shouldUseDarkColors ? "#f8fafc" : "#1f2937";
   const track = shouldUseDarkColors ? "rgba(248,250,252,0.18)" : "rgba(31,41,55,0.18)";
-  const html = `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><style>html,body{margin:0;height:100%}body{background:${background};color:${label};font-family:system-ui,-apple-system,'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;-webkit-user-select:none;user-select:none;-webkit-app-region:drag}.spinner{width:26px;height:26px;border:3px solid ${track};border-top-color:${accent};border-radius:50%;animation:spin .8s linear infinite}.label{font-size:13px}@keyframes spin{to{transform:rotate(360deg)}}</style></head><body><div class="spinner"></div><div class="label">Connecting to WSL…</div></body></html>`;
+  const html = `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><style>html,body{margin:0;height:100%}body{background:${background};color:${labelColor};font-family:system-ui,-apple-system,'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;-webkit-user-select:none;user-select:none;-webkit-app-region:drag}.spinner{width:26px;height:26px;border:3px solid ${track};border-top-color:${accent};border-radius:50%;animation:spin .8s linear infinite}.label{font-size:13px}@keyframes spin{to{transform:rotate(360deg)}}</style></head><body><div class="spinner"></div><div class="label">${text}</div></body></html>`;
   return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
 }
 
@@ -633,14 +668,18 @@ export const make = Effect.gen(function* () {
     flushMainWindowBounds = flushBoundsPersist;
 
     yield* previewManager.setMainWindow(window);
+    installAppPermissionPolicy(window.webContents.session);
     window.webContents.on("will-attach-webview", (event, webPreferences, params) => {
       if (
         typeof params.partition !== "string" ||
-        !previewManager.isBrowserPartition(params.partition)
+        !previewManager.isBrowserPartition(params.partition) ||
+        !isPreviewWebviewSource(params.src)
       ) {
         event.preventDefault();
         return;
       }
+      // The renderer names the preload; the main process decides which one actually runs.
+      webPreferences.preload = PREVIEW_PICK_PRELOAD_PATH;
       webPreferences.sandbox = true;
       webPreferences.nodeIntegration = false;
       webPreferences.nodeIntegrationInSubFrames = false;
@@ -935,52 +974,53 @@ export const make = Effect.gen(function* () {
     yield* createMain;
   }).pipe(Effect.withSpan("desktop.window.createMainIfBackendReady"));
 
-  const showConnectingSplash = Effect.gen(function* () {
-    // Only when nothing is shown yet: no real window, no existing splash.
-    const existingSplash = yield* Ref.get(splashWindowRef);
-    if (Option.isSome(existingSplash)) return;
-    const existingWindow = yield* electronWindow.currentMainOrFirst;
-    if (Option.isSome(existingWindow)) return;
+  const showConnectingSplash = (label: string) =>
+    Effect.gen(function* () {
+      // Only when nothing is shown yet: no real window, no existing splash.
+      const existingSplash = yield* Ref.get(splashWindowRef);
+      if (Option.isSome(existingSplash)) return;
+      const existingWindow = yield* electronWindow.currentMainOrFirst;
+      if (Option.isSome(existingWindow)) return;
 
-    const shouldUseDarkColors = yield* electronTheme.shouldUseDarkColors;
-    const splash = yield* electronWindow.create({
-      width: 360,
-      height: 220,
-      resizable: false,
-      minimizable: false,
-      maximizable: false,
-      fullscreenable: false,
-      frame: false,
-      center: true,
-      show: false,
-      skipTaskbar: false,
-      backgroundColor: getInitialWindowBackgroundColor(shouldUseDarkColors),
-      title: environment.displayName,
-      webPreferences: {
-        contextIsolation: true,
-        nodeIntegration: false,
-        sandbox: true,
-      },
-    });
-    yield* rendererHistory.register(splash.webContents, { surface: "splash" });
-    yield* Ref.set(splashWindowRef, Option.some(splash));
-    splash.once("closed", () => {
-      void runPromise(Ref.set(splashWindowRef, Option.none()));
-    });
-    splash.once("ready-to-show", () => {
-      if (!splash.isDestroyed()) {
-        splash.show();
-      }
-    });
-    void splash.loadURL(buildConnectingSplashDataUrl(shouldUseDarkColors));
-    yield* logWindowInfo("connecting splash shown");
-  }).pipe(
-    // The splash is best-effort UX — never let it fail startup.
-    Effect.catch((error) =>
-      logWindowWarning("failed to show connecting splash", { message: error.message }),
-    ),
-    Effect.withSpan("desktop.window.showConnectingSplash"),
-  );
+      const shouldUseDarkColors = yield* electronTheme.shouldUseDarkColors;
+      const splash = yield* electronWindow.create({
+        width: 360,
+        height: 220,
+        resizable: false,
+        minimizable: false,
+        maximizable: false,
+        fullscreenable: false,
+        frame: false,
+        center: true,
+        show: false,
+        skipTaskbar: false,
+        backgroundColor: getInitialWindowBackgroundColor(shouldUseDarkColors),
+        title: environment.displayName,
+        webPreferences: {
+          contextIsolation: true,
+          nodeIntegration: false,
+          sandbox: true,
+        },
+      });
+      yield* rendererHistory.register(splash.webContents, { surface: "splash" });
+      yield* Ref.set(splashWindowRef, Option.some(splash));
+      splash.once("closed", () => {
+        void runPromise(Ref.set(splashWindowRef, Option.none()));
+      });
+      splash.once("ready-to-show", () => {
+        if (!splash.isDestroyed()) {
+          splash.show();
+        }
+      });
+      void splash.loadURL(buildConnectingSplashDataUrl(shouldUseDarkColors, label));
+      yield* logWindowInfo("connecting splash shown");
+    }).pipe(
+      // The splash is best-effort UX — never let it fail startup.
+      Effect.catch((error) =>
+        logWindowWarning("failed to show connecting splash", { message: error.message }),
+      ),
+      Effect.withSpan("desktop.window.showConnectingSplash"),
+    );
 
   const dispatchRendererEvent = Effect.fn("desktop.window.dispatchRendererEvent")(function* (
     channel: string,

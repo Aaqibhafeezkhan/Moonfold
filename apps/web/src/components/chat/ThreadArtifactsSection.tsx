@@ -88,6 +88,7 @@ export function ThreadArtifactsSection(props: {
           size="xs"
           variant="ghost-muted"
           className="mt-1"
+          aria-expanded={expanded}
           onClick={() => setExpanded((current) => !current)}
         >
           {expanded ? "Show fewer" : `Show all ${artifacts.length}`}

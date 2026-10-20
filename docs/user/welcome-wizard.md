@@ -12,10 +12,8 @@ browser.
 
 You can add more computers before continuing:
 
-- **Moonfold Connect** connects computers that are signed in to your account.
-  [Install the CLI](./install.md#command-line) and run `moonfold connect` on each
-  computer you want to add, then start Moonfold or run `moonfold serve` so the
-  computer stays available.
+- **Moonfold Connect** appears only in builds configured with a self-hosted relay; see
+  [Remote access](./remote-access.md#moonfold-connect-self-hosted-only).
 - **Add a computer** connects directly to a server on your network or tailnet.
   Start the server with `moonfold serve`, then run `moonfold pair --tailscale` and paste
   the pairing link. You can also run `moonfold serve --host <address>` and use

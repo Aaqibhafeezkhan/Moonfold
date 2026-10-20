@@ -58,6 +58,7 @@ describe("redactSecrets", () => {
         "const token = getToken();",
         "token = process.env.API_TOKEN",
         "SECRET=${VAULT_SECRET}",
+        '"inputTokens": 1234567',
       ].join("\n"),
     );
     expect(text).toBe(
@@ -67,6 +68,7 @@ describe("redactSecrets", () => {
         "const token = getToken();",
         "token = process.env.API_TOKEN",
         "SECRET=${VAULT_SECRET}",
+        '"inputTokens": 1234567',
       ].join("\n"),
     );
     expect(findings).toEqual([{ kind: "secret_assignment", count: 2 }]);

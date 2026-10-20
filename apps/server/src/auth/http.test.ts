@@ -124,7 +124,22 @@ it.effect("sets the selected browser session cookies through the HTTP route", ()
           const devCookies = devResponse.headers.getSetCookie();
           const devCookie = devCookies.find((cookie) => cookie.startsWith("moonfold_dev_session_"));
           expect(devCookie).toContain("HttpOnly");
+          expect(devCookie).not.toContain("Secure");
           expect(devCookie).toContain(`=${DEV_TOKEN};`);
+          // Behind a TLS proxy (Tailscale serve, a tunnel) the session cookie is Secure.
+          const httpsResponse = await environmentA.handler(
+            postJson(
+              "/api/auth/browser-session",
+              { credential: DEV_TOKEN },
+              { "x-forwarded-proto": "https" },
+            ),
+            requestContext,
+          );
+          expect(
+            httpsResponse.headers
+              .getSetCookie()
+              .find((cookie) => cookie.startsWith("moonfold_dev_session_")),
+          ).toContain("Secure");
           expect(devCookies).toContainEqual(
             expect.stringMatching(/^moonfold_session_[^=]*=;.*Max-Age=0/),
           );

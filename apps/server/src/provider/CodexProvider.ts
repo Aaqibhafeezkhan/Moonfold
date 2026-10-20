@@ -142,7 +142,7 @@ function codexAccountAuthLabel(account: CodexSchema.V2GetAccountResponse["accoun
 }
 
 /** Shared with usage-limit sources, which report the same `planType` slugs. */
-export function codexPlanLabel(planType: string | null | undefined): string | undefined {
+function codexPlanLabel(planType: string | null | undefined): string | undefined {
   switch (planType) {
     case "free":
       return "ChatGPT Free Subscription";

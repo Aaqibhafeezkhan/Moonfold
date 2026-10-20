@@ -60,7 +60,7 @@ describe("DesktopIpc", () => {
           },
         }),
       );
-      const sender = { sender: { id: 7 } };
+      const sender = { sender: { id: 7 }, senderFrame: { url: "moonfold://app/#/" } };
       let received: DesktopIpc.DesktopIpcInvokeEvent | undefined;
 
       yield* Effect.scoped(
@@ -77,6 +77,51 @@ describe("DesktopIpc", () => {
       );
 
       assert.strictEqual(received, sender);
+    }),
+  );
+
+  it.effect("refuses app channels to pages outside the app, such as preview guests", () =>
+    Effect.gen(function* () {
+      let listener: DesktopIpc.DesktopIpcHandleListener | undefined;
+      const ipc = DesktopIpc.make(
+        makeIpcMain({
+          handle: (_channel, registered) => {
+            listener = registered;
+          },
+        }),
+      );
+      let calls = 0;
+      yield* Effect.scoped(
+        Effect.gen(function* () {
+          yield* ipc.handle({
+            channel: "desktop.test.token",
+            handler: () =>
+              Effect.sync(() => {
+                calls += 1;
+              }),
+          });
+          for (const senderFrame of [
+            { url: "https://evil.example/" },
+            { url: "moonfold://evil/" },
+            null,
+          ]) {
+            const refused = yield* Effect.promise(() =>
+              Promise.resolve(listener!({ sender: { id: 9 }, senderFrame }, undefined)).then(
+                () => false,
+                () => true,
+              ),
+            );
+            assert.isTrue(refused);
+          }
+          yield* Effect.promise(async () =>
+            listener!(
+              { sender: { id: 1 }, senderFrame: { url: "moonfold-dev://app/" } },
+              undefined,
+            ),
+          );
+        }),
+      );
+      assert.strictEqual(calls, 1);
     }),
   );
 

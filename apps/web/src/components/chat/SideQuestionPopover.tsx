@@ -89,28 +89,33 @@ export function SideQuestionPopover(props: { readonly threadRef: ScopedThreadRef
               The thread's model answers from the conversation. Nothing is added to the thread.
             </p>
           </div>
-          {exchanges.length > 0 ? (
-            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto">
-              {exchanges.map((exchange, index) => (
-                <div key={index} className="space-y-1.5">
-                  <p className="text-sm font-medium">{exchange.question}</p>
-                  {exchange.answer !== null ? (
-                    <div className="text-sm">
-                      <ChatMarkdown
-                        text={exchange.answer}
-                        cwd={undefined}
-                        threadRef={props.threadRef}
-                      />
-                    </div>
-                  ) : exchange.error !== null ? (
-                    <p className="text-sm text-destructive-foreground">{exchange.error}</p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Thinking…</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : null}
+          {/* Mounted while empty so answers that arrive later are announced. */}
+          <div
+            role="log"
+            aria-live="polite"
+            className={
+              exchanges.length > 0 ? "min-h-0 flex-1 space-y-3 overflow-y-auto" : "sr-only"
+            }
+          >
+            {exchanges.map((exchange, index) => (
+              <div key={index} className="space-y-1.5">
+                <p className="text-sm font-medium">{exchange.question}</p>
+                {exchange.answer !== null ? (
+                  <div className="text-sm">
+                    <ChatMarkdown
+                      text={exchange.answer}
+                      cwd={undefined}
+                      threadRef={props.threadRef}
+                    />
+                  </div>
+                ) : exchange.error !== null ? (
+                  <p className="text-sm text-destructive-foreground">{exchange.error}</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Thinking…</p>
+                )}
+              </div>
+            ))}
+          </div>
           <div className="flex items-end gap-2">
             <Textarea
               aria-label="Question about this thread"

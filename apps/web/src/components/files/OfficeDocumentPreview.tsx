@@ -64,7 +64,10 @@ export function OfficeDocumentPreview(props: {
 
   if (props.sourceFailed || state.status === "failed") {
     return (
-      <div className="flex min-h-0 flex-1 items-center justify-center px-6 text-center text-xs leading-relaxed text-destructive">
+      <div
+        role="alert"
+        className="flex min-h-0 flex-1 items-center justify-center px-6 text-center text-xs leading-relaxed text-destructive-foreground"
+      >
         {state.status === "failed" ? state.message : "Unable to load file preview."}
       </div>
     );

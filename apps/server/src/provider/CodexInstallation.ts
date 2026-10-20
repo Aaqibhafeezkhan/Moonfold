@@ -356,10 +356,16 @@ export const makeCodexInstallation = Effect.fn("makeCodexInstallation")(function
         cached?.fingerprint === fingerprint
           ? cached.executable
           : yield* Effect.gen(function* () {
-              const output = yield* runCommand(executablePath, ["--version"]);
+              // Both probes run together: this resolves on every server start.
+              const [output] = yield* Effect.all(
+                [
+                  runCommand(executablePath, ["--version"]),
+                  runCommand(executablePath, ["app-server", "--help"]),
+                ],
+                { concurrency: 2 },
+              );
               const version = /^codex-cli (\d+\.\d+\.\d+)$/u.exec(output.trim())?.[1];
               if (!version) return null;
-              yield* runCommand(executablePath, ["app-server", "--help"]);
               return {
                 executablePath,
                 source: "local",

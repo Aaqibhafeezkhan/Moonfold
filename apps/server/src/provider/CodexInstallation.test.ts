@@ -159,7 +159,7 @@ it.effect.each(["0.156.0", "0.156.1", "0.156.2", "0.157.0"])(
       yield* h.installation.acquire().pipe(Effect.scoped);
       expect(h.downloads()).toBe(0);
       expect(yield* h.fs.exists(h.installation.managedDirectory)).toBe(false);
-      expect((yield* h.fs.readFileString(h.probeLog)).trim().split("\n")).toEqual([
+      expect((yield* h.fs.readFileString(h.probeLog)).trim().split("\n").toSorted()).toEqual([
         "--version",
         "app-server --help",
       ]);
@@ -243,7 +243,7 @@ it.effect("rechecks a cached local executable when the shared manifest policy ch
     expect((yield* terminalState(h.installation)).phase).toBe("succeeded");
     expect((yield* h.installation.resolve()).source).toBe("managed");
     expect(h.downloads()).toBe(1);
-    expect((yield* h.fs.readFileString(h.probeLog)).trim().split("\n")).toEqual([
+    expect((yield* h.fs.readFileString(h.probeLog)).trim().split("\n").toSorted()).toEqual([
       "--version",
       "app-server --help",
     ]);

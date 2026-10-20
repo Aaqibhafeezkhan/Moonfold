@@ -220,7 +220,7 @@ function HandoffDialog({ request, onClose }: { request: HandoffRequest; onClose:
                 Pick the agent and model to continue with.
               </p>
             ) : previewError !== null ? (
-              <p role="alert" className="text-sm text-destructive">
+              <p role="alert" className="text-sm text-destructive-foreground">
                 {previewError}
               </p>
             ) : preview === null ? (
@@ -230,7 +230,7 @@ function HandoffDialog({ request, onClose }: { request: HandoffRequest; onClose:
             ) : (
               <>
                 {preview.blockedReason !== null ? (
-                  <p role="alert" className="text-sm text-destructive">
+                  <p role="alert" className="text-sm text-destructive-foreground">
                     {preview.blockedReason}
                   </p>
                 ) : null}
