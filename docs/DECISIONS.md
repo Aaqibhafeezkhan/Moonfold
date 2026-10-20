@@ -363,3 +363,31 @@ Windows laptop: splash 0.94 s, usable window 4.3 s. The remaining time is evalua
 bundle (about 1.2 s) and building its services (about 1.3 s), so meeting 3 s means starting to
 listen before providers and device support finish loading. That is a server startup change large
 enough to need its own work item; it is recorded as open (QA-REPORT P-1) rather than declared met.
+
+## D-45 Releases build on GitHub-hosted runners, one stable train with betas
+
+`release.yml` builds every target on GitHub-hosted runners (macOS, Windows and Linux, x64 and
+arm64) and publishes to this repository's Releases. Moonfold publishes no nightly or preview
+channels; the workflow refuses those versions. A `release-dry-run/<version>` branch runs the full
+build without publishing, because a manual run only works once the workflow is on `main`. Signing
+steps run only when their secrets exist, so the owner turns signing on by adding secrets.
+
+## D-46 Betas belong to the main train
+
+`moonfold update` already treated any version that is not nightly or preview as the main train.
+The install scripts now do the same, so `-beta.N` and `-rc.N` releases install by default, and a
+desktop beta install accepts GitHub prereleases so it updates to the next beta and then to the
+stable release. A stable install never sees prereleases.
+
+## D-47 Server updates wait for the GitHub release, not npm
+
+Servers installed from release archives download updates from GitHub Releases. The client used to
+wait until the version appeared on npm, which Moonfold does not publish to, so every server update
+was skipped. It now waits until the GitHub release exists with its `SHA256SUMS`. Publishing to npm
+needs the owner's npm account; until then the docs do not promise `npx moonfold`.
+
+## D-48 No CLI archive for Intel macOS
+
+The Node single-executable for Intel macOS crashed (SIGSEGV) in its smoke test on the release
+runner, as it did upstream. Intel Macs get the desktop app; docs/user/install.md explains how to
+run the server from source there.
