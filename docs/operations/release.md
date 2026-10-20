@@ -21,15 +21,15 @@ switch, once it is on `main`.
 
 ## What a release contains
 
-| Asset                                                                           | Built on                                |
-| ------------------------------------------------------------------------------- | --------------------------------------- |
-| `Moonfold-<version>-arm64.dmg`, `-x64.dmg`                                      | macos-15, macos-15-intel                |
-| `Moonfold-<version>-x64.exe`, `-arm64.exe`                                      | windows-2025, windows-11-arm            |
-| `.AppImage` and `.deb`, x64 and arm64                                           | ubuntu-24.04, ubuntu-24.04-arm          |
-| `moonfold-<version>-<platform>-<arch>` CLI archives (`.tar.gz`, Windows `.zip`) | the same runners                        |
-| `latest*.yml` and `.blockmap` files                                             | the desktop updater's feed              |
-| `moonfold-<version>-sbom.cdx.json`                                              | CycloneDX SBOM from the lockfile (Syft) |
-| `SHA256SUMS`                                                                    | every file above                        |
+| Asset                                                                                                                                                                                                           | Built on                                |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| `Moonfold-<version>-arm64.dmg`, `-x64.dmg`, and the matching `.zip` the updater downloads                                                                                                                       | macos-15, macos-15-intel                |
+| `Moonfold-<version>-x64.exe`, `-arm64.exe` (NSIS installers)                                                                                                                                                    | windows-2025, windows-11-arm            |
+| `Moonfold-<version>-x86_64.AppImage`, `-amd64.deb`, `-arm64.AppImage`, `-arm64.deb`                                                                                                                             | ubuntu-24.04, ubuntu-24.04-arm          |
+| `moonfold-<version>-<platform>-<arch>.tar.gz` (Windows `.zip`) CLI archives for linux-x64, linux-arm64, darwin-arm64, win32-x64 and win32-arm64; none for Intel macOS, where the Node single-executable crashes | the same runners                        |
+| `latest-mac.yml`, `latest.yml`, `latest-linux.yml`, `latest-linux-arm64.yml` and `.blockmap` files                                                                                                              | the desktop updater's feed              |
+| `moonfold-<version>-sbom.cdx.json`                                                                                                                                                                              | CycloneDX SBOM from the lockfile (Syft) |
+| `SHA256SUMS`                                                                                                                                                                                                    | every file above                        |
 
 The CLI archives are what `scripts/install.sh` and `scripts/install.ps1` download; they check each
 archive against `SHA256SUMS`. Windows installers embed the Linux CLI archive of the same
