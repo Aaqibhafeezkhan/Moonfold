@@ -93,8 +93,9 @@ when the next reset lands and how much it hands back. The hatched
 part of a segment is what that reset restores. Tap a segment or account row for the account's plan,
 where it is signed in, and its reset time. On web, you can hover too. Codex and Claude accounts
 with banked reset credits show a ticket count and the **Use reset** action in the account details.
-Claude resets are not available when the server runs on macOS, where Claude keeps its login in the
-Keychain. On narrow screens, numbered rows below
+Claude resets are off until you turn on **Claude banked resets** in **Settings → Providers →
+Usage providers**, because Moonfold then reads the Claude CLI's stored login; they are not
+available when the server runs on macOS, where Claude keeps its login in the Keychain. On narrow screens, numbered rows below
 the bar show each account's quota, countdown, and credits. Tap a row to open its details.
 
 The same account signed in on more than one environment counts once.

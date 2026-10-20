@@ -1245,6 +1245,7 @@ export function EnvironmentProviderSettings({
         environmentId={environmentId}
         sources={settings.usageLimitSources}
         cursorKeychainUsageEnabled={settings.cursorKeychainUsageEnabled}
+        claudeResetCreditsEnabled={settings.claudeResetCreditsEnabled}
         readOnly={readOnly}
       />
 

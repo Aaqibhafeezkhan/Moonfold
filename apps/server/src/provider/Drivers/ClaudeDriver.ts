@@ -131,6 +131,7 @@ export const ClaudeDriver: ProviderDriver<ClaudeSettings, ClaudeDriverEnv, Path.
       const httpClient = yield* HttpClient.HttpClient;
       const latestVersions = yield* ProviderLatestVersions.ProviderLatestVersions;
       const resetCreditCoordinator = yield* ResetCreditCoordinator.ResetCreditCoordinator;
+      const host = yield* ProviderHost.ProviderHost;
       const catalogService = yield* ModelCatalog.ModelCatalog;
       const modelCatalog = catalogService
         .current(DRIVER_KIND)
@@ -237,11 +238,19 @@ export const ClaudeDriver: ProviderDriver<ClaudeSettings, ClaudeDriverEnv, Path.
                 stateDir,
                 catalog,
                 scopedLimitNames,
+                // Reading resets uses the CLI's stored login directly, so the user opts in.
                 (version) =>
-                  ClaudeResetCredits.readClaudeResetCredits(configDir, version).pipe(
-                    Effect.provideService(HttpClient.HttpClient, httpClient),
-                    Effect.provideService(FileSystem.FileSystem, fileSystem),
-                    Effect.provideService(Path.Path, path),
+                  host.settings.get.pipe(
+                    Effect.orElseSucceed(() => null),
+                    Effect.flatMap((settings) =>
+                      settings?.claudeResetCreditsEnabled === true
+                        ? ClaudeResetCredits.readClaudeResetCredits(configDir, version).pipe(
+                            Effect.provideService(HttpClient.HttpClient, httpClient),
+                            Effect.provideService(FileSystem.FileSystem, fileSystem),
+                            Effect.provideService(Path.Path, path),
+                          )
+                        : Effect.succeed(undefined),
+                    ),
                   ),
               ),
             ),

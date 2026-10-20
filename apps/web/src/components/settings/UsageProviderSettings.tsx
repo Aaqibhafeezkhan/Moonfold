@@ -28,11 +28,13 @@ export function UsageProviderSettings({
   environmentId,
   sources,
   cursorKeychainUsageEnabled,
+  claudeResetCreditsEnabled,
   readOnly,
 }: {
   readonly environmentId: EnvironmentId;
   readonly sources: UnifiedSettings["usageLimitSources"];
   readonly cursorKeychainUsageEnabled: boolean;
+  readonly claudeResetCreditsEnabled: boolean;
   readonly readOnly: boolean;
 }) {
   const updateSettings = useUpdateEnvironmentSettings(environmentId);
@@ -47,13 +49,12 @@ export function UsageProviderSettings({
   const [updatingCursor, setUpdatingCursor] = useState(false);
   const entries = Object.entries(sources);
 
-  const setCursorUsageEnabled = async (enabled: boolean) => {
+  const setUsageSetting = async (
+    patch: { cursorKeychainUsageEnabled: boolean } | { claudeResetCreditsEnabled: boolean },
+  ) => {
     setUpdatingCursor(true);
     try {
-      const result = await updateCursorSettings({
-        environmentId,
-        input: { patch: { cursorKeychainUsageEnabled: enabled } },
-      });
+      const result = await updateCursorSettings({ environmentId, input: { patch } });
       if (result._tag === "Success") {
         await refreshProviders({ environmentId, input: {} });
       }
@@ -75,38 +76,55 @@ export function UsageProviderSettings({
                 aria-label="Cursor account usage"
                 checked={cursorKeychainUsageEnabled}
                 disabled={readOnly || updatingCursor}
-                onCheckedChange={(enabled) => void setCursorUsageEnabled(enabled)}
+                onCheckedChange={(enabled) =>
+                  void setUsageSetting({ cursorKeychainUsageEnabled: enabled })
+                }
               />
             }
           />
         ) : null}
-        {entries.length === 0 && platform?.os !== "darwin" ? (
-          <SettingsRow title="Usage comes from each provider's own CLI login." />
-        ) : (
-          entries.map(([id, source]) => {
-            const label = source.label?.trim() || source.url;
-            return (
-              <SettingsRow
-                key={id}
-                title={label}
-                description={
-                  <span className="break-all">
-                    No longer read: usage hubs pool provider logins, which Moonfold does not
-                    support. Remove it to delete its stored management key.
-                  </span>
-                }
-                control={
-                  !readOnly ? (
-                    <RemoveUsageProviderButton
-                      label={label}
-                      onConfirm={() => updateSettings({ usageLimitSources: { [id]: null } })}
-                    />
-                  ) : null
+        {platform?.os !== "darwin" ? (
+          <SettingsRow
+            id="claude-reset-credits"
+            title="Claude banked resets"
+            description="Read the Claude CLI's stored login on this machine to show and use banked usage resets. Moonfold sends it only to Anthropic."
+            control={
+              <Switch
+                aria-label="Claude banked resets"
+                checked={claudeResetCreditsEnabled}
+                disabled={readOnly || updatingCursor}
+                onCheckedChange={(enabled) =>
+                  void setUsageSetting({ claudeResetCreditsEnabled: enabled })
                 }
               />
-            );
-          })
-        )}
+            }
+          />
+        ) : null}
+        {entries.length === 0
+          ? null
+          : entries.map(([id, source]) => {
+              const label = source.label?.trim() || source.url;
+              return (
+                <SettingsRow
+                  key={id}
+                  title={label}
+                  description={
+                    <span className="break-all">
+                      No longer read: usage hubs pool provider logins, which Moonfold does not
+                      support. Remove it to delete its stored management key.
+                    </span>
+                  }
+                  control={
+                    !readOnly ? (
+                      <RemoveUsageProviderButton
+                        label={label}
+                        onConfirm={() => updateSettings({ usageLimitSources: { [id]: null } })}
+                      />
+                    ) : null
+                  }
+                />
+              );
+            })}
       </SettingsSection>
     </>
   );
