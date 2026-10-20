@@ -22,8 +22,8 @@ irm https://raw.githubusercontent.com/Mr-Dark-debug/Moonfold/main/scripts/instal
 
 This installs the `moonfold` binary to `~/.local/bin`. If your shell reports `command not found`
 afterwards, that directory is not on your `PATH` yet; the installer prints the
-line to add. Set `MOONFOLD_CHANNEL=nightly` to install the nightly train, or
-`MOONFOLD_VERSION` to pin an exact version.
+line to add. Set `MOONFOLD_VERSION` to pin an exact version, for example
+`MOONFOLD_VERSION=0.1.0-beta.1`.
 
 | Task                                             | Command                                                         |
 | ------------------------------------------------ | --------------------------------------------------------------- |
@@ -40,9 +40,6 @@ is accepted only if it already exists.
 If `moonfold` or `moonfold start` reports an already running server, connect to that server
 instead. Stop it before starting a replacement, or use a different `--base-dir`
 for an independent server.
-
-To try Moonfold once without installing it, run `npx moonfold@latest` instead (needs
-Node.js for `npx`).
 
 ### Intel Macs
 
@@ -62,7 +59,23 @@ update it with `git pull` and a rebuild.
 ## Desktop app
 
 Download a release from [GitHub Releases](https://github.com/Mr-Dark-debug/Moonfold/releases).
-On Debian and Ubuntu, install the `.deb` with `sudo apt install ./Moonfold-*.deb`.
+On Debian and Ubuntu, install the `.deb` with `sudo apt install ./Moonfold-*.deb`. Each release
+has a `SHA256SUMS` file if you want to check a download.
+
+### Opening an unsigned build
+
+Beta builds are not code-signed yet, so the first launch shows a warning:
+
+- **macOS:** open the `.dmg` and drag Moonfold to Applications. The first time, Control-click
+  the app in Applications and choose **Open**, then **Open** again. If macOS only offers to move
+  it to the Bin, open **System Settings → Privacy & Security**, find the note about Moonfold,
+  and choose **Open Anyway**.
+- **Windows:** SmartScreen shows "Windows protected your PC". Choose **More info**, then
+  **Run anyway**.
+- **Linux:** make the AppImage executable (`chmod +x Moonfold-*.AppImage`) and run it, or install
+  the `.deb`.
+
+You only need to do this once per install; updates open normally.
 
 The `.deb` updates itself like the other desktop builds. It asks for your
 password to install each update. If your desktop has no password prompt, the

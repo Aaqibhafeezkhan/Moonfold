@@ -130,11 +130,11 @@ $arch = switch ($rawArch) {
 $channel = if ($env:MOONFOLD_CHANNEL) { $env:MOONFOLD_CHANNEL } else { "stable" }
 $version = $env:MOONFOLD_VERSION
 if (-not $version) {
-  # Tags are v<semver>; the channel is the prerelease identifier, or none for
-  # stable. Only tags of the requested train are considered, so a stable
-  # install can never pick up a nightly or preview build by accident.
+  # Tags are v<semver>. Stable takes releases and testing builds (-beta.N, -rc.N),
+  # matching `moonfold update`; nightly and preview tags carry a date and a run
+  # number, so a stable install can never pick one up by accident.
   $tagPattern = switch ($channel) {
-    "stable" { '^v\d+\.\d+\.\d+$' }
+    "stable" { '^v\d+\.\d+\.\d+(-[a-z]+\.\d+)?$' }
     "nightly" { '^v\d+\.\d+\.\d+-nightly\.\d+\.\d+$' }
     "preview" { '^v\d+\.\d+\.\d+-preview\.\d+\.\d+$' }
     default { Fail "MOONFOLD_CHANNEL must be stable, nightly, or preview" }

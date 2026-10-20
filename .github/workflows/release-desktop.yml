@@ -1,0 +1,264 @@
+name: Release desktop build
+
+# One platform/arch build, called once per target from release.yml. It builds the JS bundle,
+# packages the desktop app, and, where `cli_archive` is set, the self-contained CLI archive that
+# scripts/install.sh and scripts/install.ps1 download. Signing runs only when the matching secrets
+# exist; without them the artifacts are unsigned (docs/operations/release.md#signing).
+
+on:
+  workflow_call:
+    secrets:
+      CSC_LINK:
+        required: false
+      CSC_KEY_PASSWORD:
+        required: false
+      APPLE_API_KEY:
+        required: false
+      APPLE_API_KEY_ID:
+        required: false
+      APPLE_API_ISSUER:
+        required: false
+      MACOS_PROVISIONING_PROFILE:
+        required: false
+      AZURE_TENANT_ID:
+        required: false
+      AZURE_CLIENT_ID:
+        required: false
+      AZURE_CLIENT_SECRET:
+        required: false
+      AZURE_TRUSTED_SIGNING_ENDPOINT:
+        required: false
+      AZURE_TRUSTED_SIGNING_ACCOUNT_NAME:
+        required: false
+      AZURE_TRUSTED_SIGNING_CERTIFICATE_PROFILE_NAME:
+        required: false
+      AZURE_TRUSTED_SIGNING_PUBLISHER_NAME:
+        required: false
+    inputs:
+      label:
+        required: true
+        type: string
+      runner:
+        required: true
+        type: string
+      platform:
+        required: true
+        type: string
+      target:
+        required: true
+        type: string
+      arch:
+        required: true
+        type: string
+      rust_target:
+        required: true
+        type: string
+      resource_key:
+        required: true
+        type: string
+      cli_archive:
+        required: false
+        default: false
+        type: boolean
+      version:
+        required: true
+        type: string
+      ref:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ inputs.label }}
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+          sparse-checkout: |
+            /*
+            !/.repos/
+          sparse-checkout-cone-mode: false
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version-file: package.json
+          cache: ${{ inputs.platform != 'win' }}
+          run-install: false
+
+      - name: Install dependencies
+        run: vp install --filter=@moonfold/desktop... --filter=moonfold... --filter=@moonfold/web... --filter=@moonfold/scripts...
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ inputs.rust_target }}
+
+      - name: Install Spectre-mitigated MSVC libraries
+        if: inputs.platform == 'win'
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $installPath = & $vswhere -products * -latest -property installationPath
+          $setupExe = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\setup.exe"
+          $component = "Microsoft.VisualStudio.Component.VC.Runtimes.${{ inputs.arch == 'arm64' && 'ARM64' || 'x86.x64' }}.Spectre"
+          $proc = Start-Process -FilePath $setupExe `
+            -ArgumentList "modify", "--installPath", "`"$installPath`"", "--add", $component, "--quiet", "--norestart" `
+            -Wait -PassThru -NoNewWindow
+          if ($null -eq $proc -or $proc.ExitCode -ne 0) {
+            Write-Error "Visual Studio Installer failed with exit code $($proc.ExitCode)"
+            exit 1
+          }
+
+      - name: Install Linux build libraries
+        if: inputs.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsecret-1-dev pkg-config imagemagick
+
+      - name: Align package versions to the release version
+        run: node scripts/update-release-package-versions.ts "${{ inputs.version }}"
+
+      # Windows embeds the same-arch Linux CLI archive as the WSL runtime; release.yml runs the
+      # Linux job first.
+      - name: Download Linux CLI archive for WSL
+        if: inputs.platform == 'win'
+        uses: actions/download-artifact@v8
+        with:
+          name: cli-linux-${{ inputs.arch }}
+          path: wsl-runtime
+
+      - name: Build desktop artifact
+        shell: bash
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          MACOS_PROVISIONING_PROFILE: ${{ secrets.MACOS_PROVISIONING_PROFILE }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TRUSTED_SIGNING_ENDPOINT: ${{ secrets.AZURE_TRUSTED_SIGNING_ENDPOINT }}
+          AZURE_TRUSTED_SIGNING_ACCOUNT_NAME: ${{ secrets.AZURE_TRUSTED_SIGNING_ACCOUNT_NAME }}
+          AZURE_TRUSTED_SIGNING_CERTIFICATE_PROFILE_NAME: ${{ secrets.AZURE_TRUSTED_SIGNING_CERTIFICATE_PROFILE_NAME }}
+          AZURE_TRUSTED_SIGNING_PUBLISHER_NAME: ${{ secrets.AZURE_TRUSTED_SIGNING_PUBLISHER_NAME }}
+        run: |
+          set -euo pipefail
+          args=(
+            --platform "${{ inputs.platform }}"
+            --target "${{ inputs.target }}"
+            --arch "${{ inputs.arch }}"
+            --build-version "${{ inputs.version }}"
+            --verbose
+          )
+          has_all() {
+            for value in "$@"; do
+              [[ -n "$value" ]] || return 1
+            done
+          }
+          if [[ "${{ inputs.platform }}" == "mac" ]]; then
+            if has_all "$CSC_LINK" "$CSC_KEY_PASSWORD" "$APPLE_API_KEY" "$APPLE_API_KEY_ID" "$APPLE_API_ISSUER" "$APPLE_TEAM_ID" "$MACOS_PROVISIONING_PROFILE"; then
+              key_path="$RUNNER_TEMP/AuthKey_${APPLE_API_KEY_ID}.p8"
+              printf '%s' "$APPLE_API_KEY" > "$key_path"
+              export APPLE_API_KEY="$key_path"
+              profile_path="$RUNNER_TEMP/moonfold.provisionprofile"
+              printf '%s' "$MACOS_PROVISIONING_PROFILE" | base64 -D > "$profile_path"
+              export MOONFOLD_APPLE_TEAM_ID="$APPLE_TEAM_ID"
+              export MOONFOLD_MACOS_PROVISIONING_PROFILE="$profile_path"
+              echo "macOS signing enabled."
+              args+=(--signed)
+            else
+              unset CSC_LINK CSC_KEY_PASSWORD APPLE_API_KEY APPLE_API_KEY_ID APPLE_API_ISSUER
+              export CSC_IDENTITY_AUTO_DISCOVERY=false
+              echo "macOS signing disabled: the app is unsigned."
+            fi
+          elif [[ "${{ inputs.platform }}" == "win" ]]; then
+            args+=(--wsl-runtime "$(ls "$GITHUB_WORKSPACE"/wsl-runtime/moonfold-*-linux-${{ inputs.arch }}.tar.gz)")
+            if has_all "$AZURE_TENANT_ID" "$AZURE_CLIENT_ID" "$AZURE_CLIENT_SECRET" "$AZURE_TRUSTED_SIGNING_ENDPOINT" "$AZURE_TRUSTED_SIGNING_ACCOUNT_NAME" "$AZURE_TRUSTED_SIGNING_CERTIFICATE_PROFILE_NAME" "$AZURE_TRUSTED_SIGNING_PUBLISHER_NAME"; then
+              echo "Windows signing enabled (Azure Trusted Signing)."
+              args+=(--signed)
+            else
+              echo "Windows signing disabled: the installer is unsigned."
+            fi
+          fi
+          vp run dist:desktop:artifact "${args[@]}"
+
+      # The single-executable needs a Node with --build-sea; keep in step with SEA_NODE_VERSION in
+      # apps/server/vite.config.ts.
+      - name: Build CLI single-executable
+        if: inputs.cli_archive
+        shell: bash
+        env:
+          VP_NODE_VERSION: "26.8.2"
+        run: node apps/server/scripts/cli.ts build-exe --verbose
+
+      - name: Build CLI archive
+        if: inputs.cli_archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          binary_name="moonfold-resource-monitor"
+          if [[ "${{ inputs.platform }}" == "win" ]]; then
+            binary_name="${binary_name}.exe"
+          fi
+          staged="$RUNNER_TEMP/cli-resource-monitor/${{ inputs.resource_key }}"
+          mkdir -p "$staged"
+          cp "native/resource-monitor/target/${{ inputs.rust_target }}/release/${binary_name}" "$staged/$binary_name"
+          node scripts/build-cli-archive.ts \
+            --platform "${{ inputs.platform }}" \
+            --arch "${{ inputs.arch }}" \
+            --version "${{ inputs.version }}" \
+            --resource-monitor-dir "$RUNNER_TEMP/cli-resource-monitor" \
+            --output-dir release-cli
+
+      - name: Smoke-test CLI archive
+        if: inputs.cli_archive
+        shell: bash
+        run: node scripts/smoke-cli-archive.ts --archive release-cli/* --expect-version "${{ inputs.version }}"
+
+      - name: Upload CLI archive
+        if: inputs.cli_archive
+        uses: actions/upload-artifact@v7
+        with:
+          name: cli-${{ inputs.platform }}-${{ inputs.arch }}
+          path: release-cli/*
+          if-no-files-found: error
+
+      # electron-updater reads one manifest per platform; release.yml merges the per-arch files.
+      - name: Collect release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-publish
+          shopt -s nullglob
+          for file in release/*.dmg release/*.zip release/*.AppImage release/*.deb release/*.exe release/*.blockmap release/*.yml; do
+            [[ "$file" == */builder-debug.yml ]] && continue
+            cp "$file" release-publish/
+          done
+          if [[ "${{ inputs.platform }}" == "mac" && "${{ inputs.arch }}" != "arm64" ]]; then
+            for manifest in release-publish/*-mac.yml; do
+              mv "$manifest" "${manifest%.yml}-${{ inputs.arch }}.yml"
+            done
+          fi
+          if [[ "${{ inputs.platform }}" == "win" ]]; then
+            for manifest in release-publish/*.yml; do
+              mv "$manifest" "${manifest%.yml}-win-${{ inputs.arch }}.yml"
+            done
+          fi
+          ls -la release-publish
+
+      - name: Upload desktop artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-${{ inputs.platform }}-${{ inputs.arch }}
+          path: release-publish/*
+          if-no-files-found: error

@@ -34,7 +34,7 @@ import * as ElectronWindow from "../electron/ElectronWindow.ts";
 import * as IpcChannels from "../ipc/channels.ts";
 import * as DesktopAppSettings from "../settings/DesktopAppSettings.ts";
 import { normalizeDesktopUpdateReleaseNotes } from "./releaseNotes.ts";
-import { resolveDefaultDesktopUpdateChannel } from "./updateChannels.ts";
+import { isTestingReleaseVersion, resolveDefaultDesktopUpdateChannel } from "./updateChannels.ts";
 import {
   createInitialDesktopUpdateState,
   reduceDesktopUpdateStateOnCheckFailure,
@@ -461,7 +461,9 @@ export const make = Effect.gen(function* () {
     yield* Effect.annotateCurrentSpan({ channel });
     const allowsPrerelease = channel === "nightly";
     yield* electronUpdater.setChannel(channel);
-    yield* electronUpdater.setAllowPrerelease(allowsPrerelease);
+    yield* electronUpdater.setAllowPrerelease(
+      allowsPrerelease || isTestingReleaseVersion(environment.appVersion),
+    );
     yield* electronUpdater.setAllowDowngrade(allowsPrerelease);
     yield* electronUpdater.setFullChangelog(allowsPrerelease);
     yield* logUpdaterInfo("using update channel", {

@@ -25,6 +25,8 @@ const ALLOWED_FILES: ReadonlyArray<RegExp> = [
   /^LAUNCH-PLAN\.md$/,
   /^PROGRESS\.md$/,
   /^README\.md$/,
+  /^CHANGELOG\.md$/,
+  /^docs\/releases\//,
   /^docs\/(ARCHITECTURE|BRAND|CODEX-APP-REA|DECISIONS|FEATURE-MATRIX|NETWORK-AUDIT|PROTOCOL|REA|REA-SELF-AUDIT|REA-PHASE[0-9]+|QA-REPORT|QA-PHASE[0-9]+|UX-STUDY|UX-STUDY-TEMPLATE)\.md$/,
   /^docs\/DEV\.md$/,
   /^docs\/operations\/release\.md$/,
