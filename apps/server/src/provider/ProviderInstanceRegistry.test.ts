@@ -549,6 +549,8 @@ describe("ProviderInstanceRegistry — multi-instance codex slice", () => {
     }).pipe(
       // macOS logins live in the Keychain, where resets are never read.
       Effect.provideService(HostProcess.Platform, "linux"),
+      // Reading Claude's stored login for resets is opt-in.
+      Effect.provide(ServerSettings.layerTest({ claudeResetCreditsEnabled: true })),
       Effect.provide(layerTest),
     );
 

@@ -1,4 +1,4 @@
-// @effect-diagnostics nodeBuiltinImport:off globalConsole:off globalTimers:off globalDate:off - A maintainer measurement script.
+// @effect-diagnostics nodeBuiltinImport:off globalConsole:off globalTimers:off globalDate:off globalRandom:off - A maintainer measurement script.
 /**
  * Starts the built server (apps/server/dist/bin.mjs) on a fresh home directory, reports the time
  * until it listens, then samples its CPU and resident memory while idle. Stops only the process it
