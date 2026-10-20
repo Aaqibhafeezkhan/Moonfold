@@ -149,7 +149,9 @@ jobs:
       arch: x64
       rust_target: x86_64-apple-darwin
       resource_key: darwin-x64
-      cli_archive: true
+      # The Node single-executable crashes on Intel macOS, so Intel Macs get the desktop app only
+      # (docs/user/install.md).
+      cli_archive: false
       version: ${{ needs.preflight.outputs.version }}
       ref: ${{ needs.preflight.outputs.ref }}
 
