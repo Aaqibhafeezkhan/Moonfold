@@ -296,3 +296,29 @@ provider is not listed, whatever started it (dialog, model picker, scheduled tas
 itself stopped at a limit whose reset is still ahead, and dispatches with command id
 `handoff-auto:<runId>`, so restarts and repeated sweeps never move a thread twice for one stop.
 Agents get no handoff tool: sending a thread's context to another company is the user's choice.
+
+## D-36 Gemini CLI runs through the ACP integration, with agent-agnostic limit wording
+
+Gemini CLI speaks ACP (`gemini --acp`), so it needs no dedicated driver: it is added from the ACP
+Registry or as a local ACP command. The registry adapter forbids new agent-specific branches, so
+limit detection is agent-agnostic: an ACP request error whose message reports an exhausted quota
+or rate limit is a `usage_limit`. On this machine Google refused Gemini CLI's Google-account
+sign-in for individuals (`UNSUPPORTED_CLIENT`), so Gemini is listed as not verified until it runs
+with an API key or Vertex AI.
+
+## D-37 No OpenAI-compatible endpoint provider in this phase
+
+Every Moonfold provider wraps an agent that owns its tools, sandbox and sign-in. An
+OpenAI-compatible endpoint is only a model API: supporting it would mean Moonfold running its own
+agent loop (tools, edits, approvals) and storing an API key, which no adapter does and which would
+duplicate what ACP agents already provide. Users who want an OpenAI-compatible model can run an
+ACP agent that supports one (for example through the ACP Registry). Revisit if a maintained,
+license-compatible ACP agent for generic endpoints appears.
+
+## D-38 The README provider matrix is generated from recorded checks
+
+`docs/provider-checks.json` records checks that ran on a real install (CLI version, platform, date,
+install, sign-in, models, turn, limit signal, handoff). `node scripts/provider-matrix.ts` renders
+the README table, and a test fails when the README drifts. A provider is "Verified" only when every
+live check passed; adapters inherited from upstream that were not run here are listed as not
+verified rather than hidden, so users see the real state.
