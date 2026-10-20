@@ -42,4 +42,25 @@ describe("docs site", () => {
       NodeFS.rmSync(output, { recursive: true, force: true });
     }
   });
+  
+  it("links each page to its source Markdown file and keeps the index folder link", () => {
+    const root = NodePath.resolve(import.meta.dirname, "..");
+    const output = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "moonfold-docs-site-"));
+    try {
+      buildDocsSite(NodePath.join(root, "docs", "user"), output);
+
+      const page = NodeFS.readFileSync(NodePath.join(output, "install.html"), "utf8");
+      const index = NodeFS.readFileSync(NodePath.join(output, "index.html"), "utf8");
+
+      expect(page).toContain(
+        'href="https://github.com/Mr-Dark-debug/Moonfold/edit/main/docs/user/install.md"',
+      );
+      expect(index).toContain(
+        'href="https://github.com/Mr-Dark-debug/Moonfold/edit/main/docs/user"',
+      );
+    } finally {
+      NodeFS.rmSync(output, { recursive: true, force: true });
+    }
+  });
+
 });
