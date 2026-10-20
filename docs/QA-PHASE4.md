@@ -55,3 +55,18 @@ finish a task live.
 - Automatic mode live (needs a second provider that is not limited).
 - The usage-warning offer live (needs a provider reporting a window between the threshold and 100%).
 - Gemini CLI as a target (Phase 5).
+
+## Live follow-up (2026-10-20, Phase 8)
+
+Both provider accounts worked again by the evening, so the step Phase 4 could not run live was run
+while recording the README demo, in a throwaway repository on a scratch Moonfold home:
+
+| Step                                               | Result                                                                                                                                                   |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Task sent to Codex (GPT-6-Luna) in Supervised mode | Codex asked to run a command; the request was declined and Codex ended its turn                                                                          |
+| Hand off to another agent (command palette)        | The dialog defaulted to the fallback, Claude Sonnet 5.5, and showed the brief: objective, `git status` (clean), how to continue; no secrets found        |
+| Send                                               | Divider "Handed off by you · GPT-6-Luna → Claude Sonnet 5.5"; Claude started from the brief                                                              |
+| Claude finished the task                           | It asked to edit `invoice.js` and run the tests (both approved), fixed the bug, and reported all 3 tests passing; `node --test` confirmed 3 pass, 0 fail |
+
+A bug found here was fixed: after a handoff the composer kept the provider the thread left, so the
+next message would have switched the thread back (now it follows the thread).
