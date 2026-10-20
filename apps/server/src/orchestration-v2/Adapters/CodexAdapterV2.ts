@@ -22,6 +22,7 @@ import {
   codexRateLimitsToUpdate,
   mergeCodexRateLimits,
   codexUsageLimitResetAt,
+  codexUsageLimitResetAtFromMessage,
   type CodexRateLimitSnapshot,
 } from "../../provider/codexUsageLimits.ts";
 import {
@@ -5885,7 +5886,12 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
                   failure.class === "usage_limit"
                     ? {
                         ...failure,
-                        resetAt: codexUsageLimitResetAt(yield* Ref.get(rateLimitSnapshot)),
+                        // A turn refused at once has no rate-limit snapshot; its message names the time.
+                        resetAt:
+                          codexUsageLimitResetAt(yield* Ref.get(rateLimitSnapshot)) ??
+                          codexUsageLimitResetAtFromMessage(
+                            input.failureMessage ?? previousFailure?.nativeMessage,
+                          ),
                       }
                     : failure,
                 ...(input.providerRetry === undefined

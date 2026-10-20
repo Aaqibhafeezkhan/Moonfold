@@ -248,3 +248,33 @@ export function codexUsageLimitResetAt(
     null,
   );
 }
+
+const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+
+/**
+ * The reset time Codex writes into its limit message ("try again at Nov 17th, 2026 6:46 AM"),
+ * read in this machine's time zone, where the CLI formatted it. Used when the turn failed before
+ * any rate-limit snapshot arrived; null when the message names no time.
+ */
+export function codexUsageLimitResetAtFromMessage(message: string | undefined): string | null {
+  const match =
+    message === undefined
+      ? null
+      : /try again at ([A-Za-z]{3})[a-z]* (\d{1,2})(?:st|nd|rd|th)?,? (\d{4}),? (\d{1,2}):(\d{2})\s*(AM|PM)?/i.exec(
+          message,
+        );
+  if (match === null) return null;
+  const month = MONTHS.indexOf(match[1]!.toLowerCase());
+  if (month === -1) return null;
+  let hour = Number(match[4]);
+  const meridiem = match[6]?.toUpperCase();
+  if (meridiem === "PM" && hour < 12) hour += 12;
+  if (meridiem === "AM" && hour === 12) hour = 0;
+  const pad = (value: number) => String(value).padStart(2, "0");
+  const wallClock = `${match[3]}-${pad(month + 1)}-${pad(Number(match[2]))}T${pad(hour)}:${match[5]}:00`;
+  const zoned = DateTime.makeZoned(wallClock, {
+    timeZone: DateTime.zoneMakeLocal(),
+    adjustForTimeZone: true,
+  });
+  return Option.isNone(zoned) ? null : DateTime.formatIso(DateTime.toUtc(zoned.value));
+}

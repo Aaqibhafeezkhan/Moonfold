@@ -1,3 +1,5 @@
+import * as DateTime from "effect/DateTime";
+import * as Option from "effect/Option";
 import * as CodexErrors from "effect-codex-app-server/errors";
 import { describe, expect, it } from "vite-plus/test";
 
@@ -298,7 +300,7 @@ describe("mergeCodexRateLimits", () => {
   });
 });
 
-import { codexUsageLimitResetAt } from "./codexUsageLimits.ts";
+import { codexUsageLimitResetAt, codexUsageLimitResetAtFromMessage } from "./codexUsageLimits.ts";
 
 describe("codexUsageLimitResetAt", () => {
   it("waits for every exhausted window and never invents an unknown reset", () => {
@@ -312,5 +314,33 @@ describe("codexUsageLimitResetAt", () => {
     expect(
       codexUsageLimitResetAt({ primary: { usedPercent: 50, resetsAt: 2000000000 } }),
     ).toBeNull();
+  });
+});
+
+/** A wall-clock time on this machine as a UTC ISO string. */
+const localIso = (wallClock: string) =>
+  DateTime.formatIso(
+    DateTime.toUtc(
+      Option.getOrThrow(
+        DateTime.makeZoned(wallClock, {
+          timeZone: DateTime.zoneMakeLocal(),
+          adjustForTimeZone: true,
+        }),
+      ),
+    ),
+  );
+
+describe("codexUsageLimitResetAtFromMessage", () => {
+  it("reads the reset time Codex writes into its limit message, in local time", () => {
+    expect(
+      codexUsageLimitResetAtFromMessage(
+        "You've hit your usage limit. Upgrade to Plus to continue using Codex (https://chatgpt.com/explore/plus), or try again at Nov 17th, 2026 6:46 AM.",
+      ),
+    ).toBe(localIso("2026-11-17T06:46:00"));
+    expect(codexUsageLimitResetAtFromMessage("try again at Dec 1st, 2026 12:05 PM")).toBe(
+      localIso("2026-12-01T12:05:00"),
+    );
+    expect(codexUsageLimitResetAtFromMessage("Usage limit reached.")).toBeNull();
+    expect(codexUsageLimitResetAtFromMessage(undefined)).toBeNull();
   });
 });
