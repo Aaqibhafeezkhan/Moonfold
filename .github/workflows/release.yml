@@ -1,0 +1,331 @@
+name: Release
+
+# Builds every desktop target and CLI archive, then publishes a GitHub Release with checksums, an
+# SBOM, and the electron-updater manifests the desktop app reads (docs/operations/release.md).
+#
+# - Pushing a tag `vX.Y.Z` or `vX.Y.Z-beta.N` builds and publishes that version. A version with a
+#   prerelease part is published as a GitHub prerelease.
+# - Running it by hand builds a version without publishing unless `publish` is checked.
+# - Pushing a branch `release-dry-run/<version>` builds that version without publishing, which
+#   tests the pipeline before the workflow reaches main.
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+    branches:
+      - "release-dry-run/**"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build, for example 0.1.0-beta.1"
+        required: true
+        type: string
+      publish:
+        description: "Publish a GitHub Release (otherwise the build only uploads workflow artifacts)"
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: Preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      tag: ${{ steps.meta.outputs.tag }}
+      is_prerelease: ${{ steps.meta.outputs.is_prerelease }}
+      publish: ${{ steps.meta.outputs.publish }}
+      ref: ${{ github.sha }}
+    steps:
+      - id: meta
+        name: Resolve release version
+        shell: bash
+        env:
+          DISPATCH_VERSION: ${{ github.event.inputs.version }}
+          DISPATCH_PUBLISH: ${{ github.event.inputs.publish }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            raw="$DISPATCH_VERSION"
+            publish="${DISPATCH_PUBLISH:-false}"
+          elif [[ "$GITHUB_REF" == refs/heads/release-dry-run/* ]]; then
+            raw="${GITHUB_REF#refs/heads/release-dry-run/}"
+            publish=false
+          else
+            raw="$GITHUB_REF_NAME"
+            publish=true
+          fi
+          version="${raw#v}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid release version: $raw" >&2
+            exit 1
+          fi
+          if [[ "$version" =~ -(nightly|preview|pr)\. ]]; then
+            echo "Moonfold does not publish nightly, preview or PR channels: $version" >&2
+            exit 1
+          fi
+          {
+            echo "version=$version"
+            echo "tag=v$version"
+            echo "publish=$publish"
+            if [[ "$version" == *-* ]]; then
+              echo "is_prerelease=true"
+            else
+              echo "is_prerelease=false"
+            fi
+          } >> "$GITHUB_OUTPUT"
+          echo "Building $version (publish: $publish)"
+
+  desktop_linux_x64:
+    name: Linux x64
+    needs: [preflight]
+    uses: ./.github/workflows/release-desktop.yml
+    secrets: inherit
+    with:
+      label: Linux x64
+      runner: ubuntu-24.04
+      platform: linux
+      target: AppImage
+      arch: x64
+      rust_target: x86_64-unknown-linux-gnu
+      resource_key: linux-x64
+      cli_archive: true
+      version: ${{ needs.preflight.outputs.version }}
+      ref: ${{ needs.preflight.outputs.ref }}
+
+  desktop_linux_arm64:
+    name: Linux arm64
+    needs: [preflight]
+    uses: ./.github/workflows/release-desktop.yml
+    secrets: inherit
+    with:
+      label: Linux arm64
+      runner: ubuntu-24.04-arm
+      platform: linux
+      target: AppImage
+      arch: arm64
+      rust_target: aarch64-unknown-linux-gnu
+      resource_key: linux-arm64
+      cli_archive: true
+      version: ${{ needs.preflight.outputs.version }}
+      ref: ${{ needs.preflight.outputs.ref }}
+
+  desktop_mac_arm64:
+    name: macOS arm64
+    needs: [preflight]
+    uses: ./.github/workflows/release-desktop.yml
+    secrets: inherit
+    with:
+      label: macOS arm64
+      runner: macos-15
+      platform: mac
+      target: dmg
+      arch: arm64
+      rust_target: aarch64-apple-darwin
+      resource_key: darwin-arm64
+      cli_archive: true
+      version: ${{ needs.preflight.outputs.version }}
+      ref: ${{ needs.preflight.outputs.ref }}
+
+  desktop_mac_x64:
+    name: macOS x64
+    needs: [preflight]
+    uses: ./.github/workflows/release-desktop.yml
+    secrets: inherit
+    with:
+      label: macOS x64
+      runner: macos-15-intel
+      platform: mac
+      target: dmg
+      arch: x64
+      rust_target: x86_64-apple-darwin
+      resource_key: darwin-x64
+      cli_archive: true
+      version: ${{ needs.preflight.outputs.version }}
+      ref: ${{ needs.preflight.outputs.ref }}
+
+  desktop_win_x64:
+    name: Windows x64
+    needs: [preflight, desktop_linux_x64]
+    uses: ./.github/workflows/release-desktop.yml
+    secrets: inherit
+    with:
+      label: Windows x64
+      runner: windows-2025
+      platform: win
+      target: nsis
+      arch: x64
+      rust_target: x86_64-pc-windows-msvc
+      resource_key: win32-x64
+      cli_archive: true
+      version: ${{ needs.preflight.outputs.version }}
+      ref: ${{ needs.preflight.outputs.ref }}
+
+  desktop_win_arm64:
+    name: Windows arm64
+    needs: [preflight, desktop_linux_arm64]
+    uses: ./.github/workflows/release-desktop.yml
+    secrets: inherit
+    with:
+      label: Windows arm64
+      runner: windows-11-arm
+      platform: win
+      target: nsis
+      arch: arm64
+      rust_target: aarch64-pc-windows-msvc
+      resource_key: win32-arm64
+      cli_archive: true
+      version: ${{ needs.preflight.outputs.version }}
+      ref: ${{ needs.preflight.outputs.ref }}
+
+  assemble:
+    name: Checksums, SBOM and update manifests
+    needs:
+      [
+        preflight,
+        desktop_linux_x64,
+        desktop_linux_arm64,
+        desktop_mac_arm64,
+        desktop_mac_x64,
+        desktop_win_x64,
+        desktop_win_arm64,
+      ]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.preflight.outputs.ref }}
+          sparse-checkout: |
+            /*
+            !/.repos/
+          sparse-checkout-cone-mode: false
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version-file: package.json
+          cache: true
+          run-install: |
+            args:
+              - --filter=@moonfold/scripts...
+
+      - name: Download desktop artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: desktop-*
+          merge-multiple: true
+          path: release-assets
+
+      - name: Download CLI archives
+        uses: actions/download-artifact@v8
+        with:
+          pattern: cli-*
+          merge-multiple: true
+          path: release-assets
+
+      - name: Merge macOS update manifests
+        shell: bash
+        run: |
+          shopt -s nullglob
+          for x64_manifest in release-assets/*-mac-x64.yml; do
+            arm64_manifest="${x64_manifest%-x64.yml}.yml"
+            if [[ -f "$arm64_manifest" ]]; then
+              node scripts/merge-update-manifests.ts --platform mac "$arm64_manifest" "$x64_manifest"
+              rm -f "$x64_manifest"
+            fi
+          done
+
+      - name: Merge Windows update manifests
+        shell: bash
+        run: |
+          shopt -s nullglob
+          for x64_manifest in release-assets/*-win-x64.yml; do
+            arm64_manifest="${x64_manifest%-x64.yml}-arm64.yml"
+            merged_manifest="${x64_manifest%-win-x64.yml}.yml"
+            if [[ -f "$arm64_manifest" ]]; then
+              node scripts/merge-update-manifests.ts --platform win "$x64_manifest" "$arm64_manifest" "$merged_manifest"
+              rm -f "$x64_manifest" "$arm64_manifest"
+            else
+              mv "$x64_manifest" "$merged_manifest"
+            fi
+          done
+
+      # A CycloneDX SBOM of the production dependency tree from the lockfile, generated by Syft.
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: cyclonedx-json
+          output-file: release-assets/moonfold-${{ needs.preflight.outputs.version }}-sbom.cdx.json
+          upload-artifact: false
+          upload-release-assets: false
+
+      # Installers verify archives against this file, so it is written last, from the exact bytes
+      # that get uploaded.
+      - name: Write checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd release-assets
+          sha256sum -- * > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Upload release bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-${{ needs.preflight.outputs.version }}
+          path: release-assets/*
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    needs: [preflight, assemble]
+    if: needs.preflight.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.preflight.outputs.ref }}
+          sparse-checkout: |
+            docs/releases
+          sparse-checkout-cone-mode: false
+
+      - name: Download release bundle
+        uses: actions/download-artifact@v8
+        with:
+          name: release-${{ needs.preflight.outputs.version }}
+          path: release-assets
+
+      # Release notes are written by hand in docs/releases/<tag>.md; a release without one fails
+      # here instead of shipping generated commit lists.
+      - name: Check release notes
+        shell: bash
+        run: test -f "docs/releases/${{ needs.preflight.outputs.tag }}.md"
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ needs.preflight.outputs.tag }}
+          target_commitish: ${{ needs.preflight.outputs.ref }}
+          name: Moonfold ${{ needs.preflight.outputs.tag }}
+          body_path: docs/releases/${{ needs.preflight.outputs.tag }}.md
+          prerelease: ${{ needs.preflight.outputs.is_prerelease }}
+          make_latest: ${{ needs.preflight.outputs.is_prerelease == 'false' }}
+          files: release-assets/*
+          fail_on_unmatched_files: true
+          token: ${{ github.token }}
