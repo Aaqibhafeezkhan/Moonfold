@@ -114,6 +114,8 @@ function makeTestAdapter(input: {
     Record<number, Omit<OrchestrationV2ProviderTurnTokenUsage, "updatedAt">>
   >;
   readonly failedRunOrdinals?: ReadonlySet<number>;
+  /** How failed runs are classified; a provider error unless a test needs a limit stop. */
+  readonly failureClass?: "provider_error" | "usage_limit";
   readonly interruptedRunOrdinals?: ReadonlySet<number>;
   readonly holdRunOrdinal?: number;
   readonly holdFirstTurn?: Deferred.Deferred<void>;
@@ -334,7 +336,7 @@ function makeTestAdapter(input: {
                         failure: makeProviderFailure({
                           message: "Simulated provider failure.",
                           code: "simulated_failure",
-                          class: "provider_error",
+                          class: input.failureClass ?? "provider_error",
                         }),
                       }
                     : { status: terminalStatus, failure: null }),
@@ -1191,6 +1193,140 @@ describe("orchestration v2 provider switching", () => {
                   },
                 },
                 layerRegistry,
+              ),
+            ),
+          );
+        }),
+      ),
+  );
+
+  it.live.each(["automatic", "manual"] as const)(
+    "hands a thread to another provider with a redacted brief (%s)",
+    (reason) =>
+      Effect.scoped(
+        Effect.gen(function* () {
+          const cwd = yield* checkpointWorkspace(`handoff-brief-${reason}`);
+          const capturedTurns = yield* Ref.make<ReadonlyArray<CapturedTurn>>([]);
+          const registry = ProviderAdapterRegistry.layerFromAdapters([
+            makeTestAdapter({
+              instanceId: CODEX_MODEL_SELECTION.instanceId,
+              driver: CODEX_DRIVER,
+              capabilities: CodexProviderCapabilitiesV2,
+              modelSelection: CODEX_MODEL_SELECTION,
+              responseByRunOrdinal: { 1: "Started on the parser." },
+              capturedTurns,
+              failedRunOrdinals: new Set([1]),
+              failureClass: "usage_limit",
+            }),
+            makeTestAdapter({
+              instanceId: CLAUDE_MODEL_SELECTION.instanceId,
+              driver: CLAUDE_DRIVER,
+              capabilities: ClaudeProviderCapabilitiesV2,
+              modelSelection: CLAUDE_MODEL_SELECTION,
+              responseByRunOrdinal: { 2: "Picked up the parser." },
+              capturedTurns,
+            }),
+          ]);
+          yield* Effect.gen(function* () {
+            const orchestrator = yield* Orchestrator.OrchestratorV2;
+            const worker = yield* EffectWorker.OrchestrationEffectWorkerV2;
+            const settle = (ordinal: number) =>
+              orchestrator.streamStoredEvents.pipe(
+                Stream.filter(
+                  ({ event }) =>
+                    event.type === "run.updated" &&
+                    event.payload.ordinal === ordinal &&
+                    (event.payload.status === "completed" || event.payload.status === "failed"),
+                ),
+                Stream.runHead,
+                Effect.andThen(worker.drain()),
+              );
+            yield* orchestrator.dispatch({
+              type: "thread.create",
+              commandId: CommandId.make(`handoff-brief-${reason}:create`),
+              threadId,
+              projectId,
+              createdBy: "user",
+              creationSource: "web",
+              title: "Handoff brief",
+              modelSelection: CODEX_MODEL_SELECTION,
+              runtimeMode: "full-access",
+              interactionMode: "default",
+              branch: null,
+              worktreePath: null,
+            });
+            yield* orchestrator.dispatch({
+              type: "message.dispatch",
+              commandId: CommandId.make(`handoff-brief-${reason}:1`),
+              threadId,
+              messageId: MessageId.make(`handoff-brief-${reason}:1`),
+              createdBy: "user",
+              creationSource: "web",
+              text: "Write the parser. The staging password is DB_PASSWORD=hunter2hunter2.",
+              attachments: [],
+              modelSelection: CODEX_MODEL_SELECTION,
+              dispatchMode: { type: "start_immediately" },
+            });
+            yield* settle(1);
+            // The limit stop on Codex is what the fallback worker (or the user) reacts to.
+            yield* orchestrator.dispatch({
+              type: "message.dispatch",
+              commandId: CommandId.make(`handoff-brief-${reason}:2`),
+              threadId,
+              messageId: MessageId.make(`handoff-brief-${reason}:2`),
+              createdBy: "user",
+              creationSource: "server",
+              text: "Continue the task from the handoff brief.",
+              attachments: [],
+              modelSelection: CLAUDE_MODEL_SELECTION,
+              handoffReason: reason,
+              dispatchMode: { type: "start_immediately" },
+            });
+            yield* settle(2);
+
+            const turns = yield* Ref.get(capturedTurns);
+            const claudeTurn = turns.find((turn) => turn.driver === CLAUDE_DRIVER);
+            assert.isDefined(claudeTurn);
+            const text = claudeTurn!.text;
+            assert.include(text, "# Handoff brief");
+            assert.include(
+              text,
+              reason === "automatic"
+                ? "Moonfold moved the task to you following the user's fallback order."
+                : "The user moved the task from",
+            );
+            assert.include(text, "Write the parser.");
+            // The continuation itself is the new turn, not something "the user said since".
+            assert.notInclude(text, "## What the user said since");
+            assert.include(text, "Continue the task from the handoff brief.");
+            // The secret is gone from the brief and from the history after it.
+            assert.notInclude(text, "hunter2hunter2");
+            assert.include(text, "DB_PASSWORD=[REDACTED:secret_assignment]");
+            assert.isBelow(text.indexOf("# Handoff brief"), text.indexOf("User message:"));
+
+            const projection = yield* orchestrator.getThreadProjection(threadId);
+            const handoffItem = projection.turnItems.find((item) => item.type === "handoff");
+            assert.equal(handoffItem?.type === "handoff" ? handoffItem.reason : null, reason);
+            const record = projection.contextHandoffs.find(
+              (handoff) =>
+                handoffItem?.type === "handoff" && handoff.id === handoffItem.contextHandoffId,
+            );
+            assert.equal(record?.reason, reason);
+            assert.include(record?.brief?.text, "# Handoff brief");
+            assert.deepEqual(record?.brief?.redactions, [{ kind: "secret_assignment", count: 1 }]);
+          }).pipe(
+            Effect.provide(
+              ProviderReplayHarness.layerWithRegistry(
+                {
+                  name: `handoff-brief-${reason}`,
+                  runtimePolicyOverride: {
+                    cwd,
+                    approvalPolicy: "never",
+                    sandboxPolicy: { type: "readOnly" },
+                  },
+                },
+                registry,
+                { handoffBriefs: true },
               ),
             ),
           );

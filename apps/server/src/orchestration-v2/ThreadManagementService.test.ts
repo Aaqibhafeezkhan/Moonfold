@@ -359,7 +359,11 @@ it.effect("inherits the machine value when the project has no override", () => {
 });
 
 const layerDispatchChokepointTest =
-  (settingsLayer: ReturnType<typeof ServerSettings.layerTest>) => (dispatched: Array<string>) =>
+  (
+    settingsLayer: ReturnType<typeof ServerSettings.layerTest>,
+    runs: ReadonlyArray<{ readonly ordinal: number; readonly providerInstanceId: string }> = [],
+  ) =>
+  (dispatched: Array<string>) =>
     ThreadManagementService.layer.pipe(
       Layer.provide(Layer.mock(ProviderSessionManager.ProviderSessionManagerV2)({})),
       Layer.provide(
@@ -375,6 +379,7 @@ const layerDispatchChokepointTest =
                   model: "test",
                 },
               },
+              runs,
             } as unknown as OrchestrationV2ThreadProjection),
           dispatch: (command) =>
             Effect.sync(() => {
@@ -425,6 +430,67 @@ it.effect(
       );
       expect(error).toMatchObject({ projectId, instanceId });
       expect(dispatched).toEqual([]);
+    }).pipe(Effect.provide(layerTest));
+  },
+);
+
+it.effect.each([
+  { allowed: ["codex_work"], refused: true },
+  { allowed: ["codex_work", "claude_work"], refused: false },
+])(
+  "the dispatch chokepoint applies the project's handoff allow list (refused: $refused)",
+  ({ allowed, refused }) => {
+    const projectId = ProjectId.make("project:thread-management:chokepoint");
+    const threadId = ThreadId.make("thread:thread-management:chokepoint");
+    const claude = ProviderInstanceId.make("claude_work");
+    const dispatched: Array<string> = [];
+    const layerTest = layerDispatchChokepointTest(
+      ServerSettings.layerTest({
+        providerInstances: {
+          [ProviderInstanceId.make("codex_work")]: { driver: "codex", enabled: true },
+          [claude]: { driver: "claudeAgent", enabled: true },
+        },
+        projectSettingsOverrides: {
+          [projectId]: {
+            providerHandoff: {
+              mode: "ask",
+              fallbackOrder: [],
+              allowedProviders: allowed.map((id) => ProviderInstanceId.make(id)),
+              warnAtUsagePercent: null,
+            },
+          },
+        },
+      }),
+      [{ ordinal: 1, providerInstanceId: "codex_work" }],
+    )(dispatched);
+
+    return Effect.gen(function* () {
+      const threads = yield* ThreadManagementService.ThreadManagementService;
+      const result = yield* Effect.result(
+        threads.dispatch({
+          type: "message.dispatch",
+          commandId: CommandId.make(`command:thread-management:handoff-${refused}`),
+          threadId,
+          messageId: MessageId.make(`message:thread-management:handoff-${refused}`),
+          text: "Continue the task from the handoff brief.",
+          attachments: [],
+          modelSelection: { instanceId: claude, model: "test" },
+          dispatchMode: { type: "start_immediately" },
+          createdBy: "user",
+          creationSource: "web",
+        }),
+      );
+
+      if (refused) {
+        expect(result._tag).toBe("Failure");
+        expect(result._tag === "Failure" ? result.failure : null).toMatchObject({
+          instanceId: claude,
+          reason: "handoff_not_allowed",
+        });
+        expect(dispatched).toEqual([]);
+      } else {
+        expect(dispatched).toEqual(["message.dispatch"]);
+      }
     }).pipe(Effect.provide(layerTest));
   },
 );

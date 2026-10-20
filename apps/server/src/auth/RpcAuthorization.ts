@@ -68,6 +68,10 @@ export const RPC_REQUIRED_SCOPES = {
   [WS_METHODS.memoriesSetEnabled]: AuthSettingsWriteScope,
   [WS_METHODS.memoriesThreadStatus]: AuthOrchestrationReadScope,
   [WS_METHODS.memoriesSetThreadOptOut]: AuthOrchestrationOperateScope,
+  // A handoff runs the thread on another provider, so it is operating the thread.
+  [WS_METHODS.handoffPreview]: AuthOrchestrationReadScope,
+  [WS_METHODS.handoffStart]: AuthOrchestrationOperateScope,
+  [WS_METHODS.handoffBrief]: AuthOrchestrationReadScope,
   // Site rules decide what agents may do on the web, so changing them is a settings change;
   // answering one agent's request is operating that thread.
   [WS_METHODS.browserSitesGetPolicy]: AuthOrchestrationReadScope,

@@ -24,6 +24,8 @@ export const deliverContextHandoffs = Effect.fn("orchestrationV2.deliverContextH
     readonly budget: number | Effect.Effect<number, BudgetError>;
     readonly deferInline?: boolean;
     readonly alreadyDeliveredItemIds: ReadonlySet<string>;
+    /** Applied to every history text before it is sent; provider handoffs redact secrets. */
+    readonly redact?: (text: string) => string;
     readonly inject?: (
       history: ProviderAdapter.ProviderAdapterV2HistoricalContext,
     ) => Effect.Effect<boolean, InjectError>;
@@ -83,6 +85,18 @@ export const deliverContextHandoffs = Effect.fn("orchestrationV2.deliverContextH
       if (input.deferInline) return { context: "", delivered: Effect.void, unsent: Effect.void };
       return yield* new ContextHandoffBudgetError();
     }
+    const redact = input.redact;
+    const outgoing =
+      redact === undefined
+        ? selected
+        : {
+            ...selected,
+            context: redact(selected.context),
+            messages: selected.messages.map((message) => ({
+              ...message,
+              text: redact(message.text),
+            })),
+          };
     const omittedItemIds = new Set(selected.omittedItemIds);
     const persist = (status: "pending" | "injected" | "inline") =>
       Effect.forEach(
@@ -126,8 +140,8 @@ export const deliverContextHandoffs = Effect.fn("orchestrationV2.deliverContextH
       }
       yield* persist("pending");
       const injected = yield* input.inject({
-        messages: selected.messages,
-        context: selected.context,
+        messages: outgoing.messages,
+        context: outgoing.context,
       });
       if (injected) {
         yield* persist("injected");
@@ -144,7 +158,7 @@ export const deliverContextHandoffs = Effect.fn("orchestrationV2.deliverContextH
       return { context: "", delivered: Effect.void, unsent: Effect.void };
     }
     return {
-      context: renderHistory(selected.messages, selected.context),
+      context: renderHistory(outgoing.messages, outgoing.context),
       delivered: persist("inline"),
       unsent: Effect.forEach(pending, input.persist, { discard: true }),
     };

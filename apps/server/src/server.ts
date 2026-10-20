@@ -35,6 +35,8 @@ import { fixPath } from "./os-jank.ts";
 import * as Ws from "./ws.ts";
 import * as WorktreeMcpService from "./mcp/WorktreeMcpService.ts";
 import * as PluginStore from "./plugins/PluginStore.ts";
+import * as HandoffBriefService from "./handoff/HandoffBriefService.ts";
+import * as HandoffService from "./handoff/HandoffService.ts";
 import * as MemoryStore from "./memories/MemoryStore.ts";
 import * as BrowserSitePermissions from "./browser/BrowserSitePermissions.ts";
 import * as ComputerUseService from "./computerUse/ComputerUseService.ts";
@@ -177,6 +179,7 @@ import * as ResourceCleanupService from "./orchestration-v2/ResourceCleanupServi
 import * as ThreadSettlementService from "./orchestration-v2/ThreadSettlementService.ts";
 import * as ThreadPullRequestService from "./orchestration-v2/ThreadPullRequestService.ts";
 import * as RunFinalizationService from "./orchestration-v2/RunFinalizationService.ts";
+import * as RuntimePolicy from "./orchestration-v2/RuntimePolicy.ts";
 import * as ProjectionStoreV2 from "./orchestration-v2/ProjectionStore.ts";
 import { makePersistedServerRuntimeState } from "./serverRuntimeState.ts";
 import * as OrchestrationHttp from "./orchestration-v2/http.ts";
@@ -596,6 +599,16 @@ const layerRuntimeCoreDependenciesBase = Layer.mergeAll(
   // The WebSocket RPCs and the MCP worktree tools share this instance (layers are memoized), so
   // a thread's checkout only ever changes through one guarded path.
   WorktreeMcpService.layer,
+  // Previews and starts handoffs over RPC; turns that send one read the brief service below.
+  HandoffService.layer.pipe(
+    Layer.provide(
+      Layer.mergeAll(
+        ProjectionStoreV2.layer,
+        // Resolves a project-folder thread to its project root, as turns do.
+        RuntimePolicy.layerFromProjectStore.pipe(Layer.provide(ProjectStore.layer)),
+      ),
+    ),
+  ),
   layerProviderInstallationRefresh,
   ReplayMarkers.layer,
   // Catches overrides left behind by a project deleted before this cleanup
@@ -607,6 +620,12 @@ const layerRuntimeCoreDependenciesBase = Layer.mergeAll(
   Layer.provideMerge(layerOrchestrationApplication),
   // Turns read memories through the reference; the RPCs and MCP tools use the same store.
   Layer.provideMerge(MemoryStore.layerThreadMemories.pipe(Layer.provideMerge(MemoryStore.layer))),
+  // The preview and the turn that sends a handoff build its brief with the same service.
+  Layer.provideMerge(
+    HandoffBriefService.layer.pipe(
+      Layer.provide(ProviderAdapterRegistry.layerFromProviderInstanceRegistry),
+    ),
+  ),
   // The browser tools and the RPCs share one instance, so an answer reaches the waiting tool.
   Layer.provideMerge(BrowserSitePermissions.layer),
   // The computer tools, the RPCs and the Stop button share one instance and one helper process.

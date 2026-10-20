@@ -39,6 +39,8 @@ import {
   latestNativeContextUsage,
 } from "@moonfold/provider-core/server/handoffBudget";
 import { deliverContextHandoffs } from "./ContextHandoffDelivery.ts";
+import { redactSecrets } from "@moonfold/shared/secretRedaction";
+import * as HandoffBriefService from "../handoff/HandoffBriefService.ts";
 import * as ProviderAdapter from "@moonfold/provider-core/server/ProviderAdapter";
 import * as IdAllocator from "@moonfold/provider-core/server/IdAllocator";
 import * as ProjectionStore from "./ProjectionStore.ts";
@@ -115,6 +117,8 @@ export const layer: Layer.Layer<
     const providerSessions = yield* ProviderSessionManager.ProviderSessionManagerV2;
     const runExecution = yield* RunExecutionService.RunExecutionServiceV2;
     const runtimePolicy = yield* RuntimePolicy.RuntimePolicyV2;
+    // Absent in narrow test layers, where a provider handoff sends its history without a brief.
+    const handoffBriefs = yield* Effect.serviceOption(HandoffBriefService.HandoffBriefService);
 
     // These callbacks outlive startup while a run drains background work. Build
     // them outside start's scope so they cannot retain its full thread history.
@@ -1122,8 +1126,54 @@ export const layer: Layer.Layer<
                     createdAt: yield* DateTime.now,
                   }),
                 ];
+          // A provider handoff not yet delivered to this native thread opens with its brief.
+          // A retry reuses the brief recorded on the first attempt, so both send the same text.
+          const nativeThreadId = runningProviderThread.nativeThreadRef?.nativeId ?? undefined;
+          // Compaction takes no prompt, so the brief waits for the next ordinary turn.
+          const briefHandoff = compact
+            ? undefined
+            : effectiveHandoffs.find(
+                (handoff) =>
+                  handoff.reason !== undefined &&
+                  (nativeThreadId === undefined ||
+                    handoff.delivery?.nativeThreadId !== nativeThreadId ||
+                    handoff.delivery.status === "pending"),
+              );
+          const brief =
+            briefHandoff === undefined
+              ? undefined
+              : (briefHandoff.brief ??
+                (handoffBriefs._tag === "None"
+                  ? undefined
+                  : yield* Effect.gen(function* () {
+                      const full = yield* projectionStore.getThreadProjection(projection.thread.id);
+                      const sourceRun = full.runs.find(
+                        (candidate) => candidate.ordinal === briefHandoff.coveredRunOrdinals.to,
+                      );
+                      const built = yield* handoffBriefs.value.build({
+                        // The turn being started is what continues the task, not part of it.
+                        projection: {
+                          ...full,
+                          turnItems: full.turnItems.filter((item) => item.runId !== run.id),
+                        },
+                        cwd: resolvedRuntimePolicy.cwd,
+                        from: sourceRun?.modelSelection ?? run.modelSelection,
+                        to: run.modelSelection,
+                        reason: briefHandoff.reason!,
+                      });
+                      return { text: built.text, redactions: built.redactions };
+                    })));
+          const handoffsToDeliver =
+            briefHandoff === undefined || brief === undefined
+              ? effectiveHandoffs
+              : effectiveHandoffs.map((handoff) =>
+                  handoff.id === briefHandoff.id ? { ...handoff, brief } : handoff,
+                );
           const delivery = yield* deliverContextHandoffs({
-            handoffs: [...effectiveHandoffs, ...retryHandoff],
+            handoffs: [...handoffsToDeliver, ...retryHandoff],
+            ...(briefHandoff === undefined
+              ? {}
+              : { redact: (text: string) => redactSecrets(text).text }),
             deferInline: compact,
             providerThread: runningProviderThread,
             budget: Effect.gen(function* () {
@@ -1172,7 +1222,7 @@ export const layer: Layer.Layer<
           });
           if (!(yield* isCurrentAttemptInStatus("running"))) return;
           const start = compact ? session.compactThread! : session.startTurn;
-          const context = [delivery.context, restartNote]
+          const context = [brief?.text ?? "", delivery.context, restartNote]
             .filter((part) => part !== "")
             .join("\n\n");
           // A note continuation has no turn to resume; its text is the prompt.
