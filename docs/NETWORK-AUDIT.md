@@ -1,5 +1,24 @@
 # Network audit (T3 Code base, pre-rebrand)
 
+## Update and data sources (2026-10-20)
+
+Every path that can change an installed Moonfold reads from this repository, and nothing reads
+from T3's repository, hosting or package accounts:
+
+| Path                                         | Source                                                                                                                  |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Desktop app updates (electron-updater)       | GitHub Releases of `Mr-Dark-debug/Moonfold` (`app-update.yml` in packaged builds, checked by REA in docs/REA-PHASE7.md) |
+| `moonfold update` and the background service | GitHub Releases of `Mr-Dark-debug/Moonfold` (`packages/shared/src/cliRelease.ts`)                                       |
+| "Server update available" in the app         | The same GitHub release, with its `SHA256SUMS`                                                                          |
+| Install scripts                              | `raw.githubusercontent.com/Mr-Dark-debug/Moonfold/main/scripts/install.*`                                               |
+| Model and provider-compatibility manifest    | `raw.githubusercontent.com/Mr-Dark-debug/Moonfold/main/apps/server/src/provider/model-manifest.json`                    |
+| Project file schema                          | `raw.githubusercontent.com/Mr-Dark-debug/Moonfold/main/schemas/moonfold.json`                                           |
+
+The GitHub repository is not a fork in GitHub's network, has one git remote (`origin`), and no
+dependency bot. `scripts/check-brand.ts` fails CI if T3's names or domains reappear outside the
+attribution files. Provider CLI updates come from each provider's own channel (npm, Homebrew or the
+CLI itself), and usage pricing from the public LiteLLM price list.
+
 ## Phase 1 status (2026-10-16)
 
 | Item                          | Outcome                                                                                                                            |
