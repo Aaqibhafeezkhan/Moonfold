@@ -91,6 +91,7 @@ import {
 } from "@moonfold/provider-core/server/notification";
 import * as ProviderContinuationRequests from "@moonfold/provider-core/server/ProviderContinuationRequests";
 import { makeProviderFailure } from "@moonfold/provider-core/server/failure";
+import { openCodeFailureClass } from "../usageLimit.ts";
 import {
   makeSubagentChildThread,
   makeSubagentConversationArtifacts,
@@ -2368,7 +2369,7 @@ export const make = Effect.fn("OpenCode2Adapter.make")(function* (instanceId: Pr
             failure: makeProviderFailure({
               message: event.data.error.message,
               code: event.data.error.type,
-              class: "provider_error",
+              class: openCodeFailureClass(event.data.error),
             }),
           });
         default:
@@ -4062,7 +4063,7 @@ export const make = Effect.fn("OpenCode2Adapter.make")(function* (instanceId: Pr
                     if (!CLEAR_PROMPT_REJECTIONS.has(cause._tag)) markUnsettled(state);
                     yield* finishTurn(state, {
                       status: "failed",
-                      failure: makeProviderFailure({ cause, class: "provider_error" }),
+                      failure: makeProviderFailure({ cause, class: openCodeFailureClass(cause) }),
                     });
                   })
                 : Effect.void,

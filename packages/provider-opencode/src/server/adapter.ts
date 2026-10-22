@@ -68,6 +68,7 @@ import { buildRuntimeInstructions } from "@moonfold/provider-core/server/runtime
 import * as OpenCodeRuntime from "./OpenCodeRuntime.ts";
 import * as IdAllocator from "@moonfold/provider-core/server/IdAllocator";
 import { makeProviderFailure } from "@moonfold/provider-core/server/failure";
+import { openCodeFailureClass } from "./usageLimit.ts";
 import { turnScopedSelectionTransition } from "@moonfold/provider-core/server/selectionTransition";
 import { providerMessageTextWithAttachmentPaths } from "@moonfold/provider-core/server/attachmentPrompt";
 import * as ProviderAdapter from "@moonfold/provider-core/server/ProviderAdapter";
@@ -2695,7 +2696,10 @@ export const makeOpenCodeAdapterV2 = Effect.fn("makeOpenCodeAdapterV2")(function
                       failure: makeProviderFailure({
                         message,
                         code: event.properties.error?.name ?? null,
-                        class: "provider_error",
+                        class: openCodeFailureClass({
+                          message,
+                          code: event.properties.error?.name ?? null,
+                        }),
                       }),
                       threadDisposition:
                         event.properties.sessionID === undefined ? "broken" : "reusable",
@@ -2991,7 +2995,7 @@ export const makeOpenCodeAdapterV2 = Effect.fn("makeOpenCodeAdapterV2")(function
               turn.admissionGeneration !== generation
                 ? Effect.void
                 : finalizeTurn(state, turn, "failed", {
-                    failure: makeProviderFailure({ cause, class: "provider_error" }),
+                    failure: makeProviderFailure({ cause, class: openCodeFailureClass(cause) }),
                   }),
             ),
             Effect.ensuring(
