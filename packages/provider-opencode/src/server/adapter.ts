@@ -65,7 +65,6 @@ import {
 import { mergeProviderInstanceEnvironment } from "@moonfold/provider-core/server/instanceEnvironment";
 import { moonfoldOrchestrationSystemPrompt } from "@moonfold/provider-core/server/orchestrationInstructions";
 import { buildRuntimeInstructions } from "@moonfold/provider-core/server/runtimeInstructions";
-import * as OpenCodeRuntime from "./OpenCodeRuntime.ts";
 import * as IdAllocator from "@moonfold/provider-core/server/IdAllocator";
 import { makeProviderFailure } from "@moonfold/provider-core/server/failure";
 import { turnScopedSelectionTransition } from "@moonfold/provider-core/server/selectionTransition";
@@ -80,6 +79,8 @@ import {
   makeSubagentChildThread,
   subagentThreadTitle,
 } from "@moonfold/provider-core/server/subagentProjection";
+import * as OpenCodeRuntime from "./OpenCodeRuntime.ts";
+import { openCodeFailureClass } from "./usageLimit.ts";
 import { openCodeToolTurnItem } from "./toolItems.ts";
 
 export { openCodeToolProjectionKind } from "./toolItems.ts";
@@ -2695,7 +2696,10 @@ export const makeOpenCodeAdapterV2 = Effect.fn("makeOpenCodeAdapterV2")(function
                       failure: makeProviderFailure({
                         message,
                         code: event.properties.error?.name ?? null,
-                        class: "provider_error",
+                        class: openCodeFailureClass({
+                          message,
+                          code: event.properties.error?.name ?? null,
+                        }),
                       }),
                       threadDisposition:
                         event.properties.sessionID === undefined ? "broken" : "reusable",
@@ -2991,7 +2995,7 @@ export const makeOpenCodeAdapterV2 = Effect.fn("makeOpenCodeAdapterV2")(function
               turn.admissionGeneration !== generation
                 ? Effect.void
                 : finalizeTurn(state, turn, "failed", {
-                    failure: makeProviderFailure({ cause, class: "provider_error" }),
+                    failure: makeProviderFailure({ cause, class: openCodeFailureClass(cause) }),
                   }),
             ),
             Effect.ensuring(
