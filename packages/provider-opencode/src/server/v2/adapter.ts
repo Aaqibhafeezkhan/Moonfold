@@ -91,7 +91,6 @@ import {
 } from "@moonfold/provider-core/server/notification";
 import * as ProviderContinuationRequests from "@moonfold/provider-core/server/ProviderContinuationRequests";
 import { makeProviderFailure } from "@moonfold/provider-core/server/failure";
-import { openCodeFailureClass } from "../usageLimit.ts";
 import {
   makeSubagentChildThread,
   makeSubagentConversationArtifacts,
@@ -99,6 +98,7 @@ import {
 } from "@moonfold/provider-core/server/subagentProjection";
 import * as ProviderAdapter from "@moonfold/provider-core/server/ProviderAdapter";
 import { turnScopedSelectionTransition } from "@moonfold/provider-core/server/selectionTransition";
+import { openCodeFailureClass } from "../usageLimit.ts";
 import { OPENCODE_PROVIDER, openCodePermissionRequestKind } from "../adapter.ts";
 import { openCodeToolTurnItem } from "../toolItems.ts";
 

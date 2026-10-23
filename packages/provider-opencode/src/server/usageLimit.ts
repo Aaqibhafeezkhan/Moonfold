@@ -20,7 +20,10 @@ export function openCodeFailureClass(
       strings.push(value);
       // Some SDKs put a JSON response body inside the message.
       const trimmed = value.trim();
-      if ((trimmed.startsWith("{") || trimmed.startsWith("[")) && trimmed.length < 20_000) {
+      if (
+        (trimmed.startsWith("{") || trimmed.startsWith("[")) &&
+        trimmed.length < 20_000
+      ) {
         try {
           queue.push(JSON.parse(trimmed));
         } catch {
@@ -34,7 +37,16 @@ export function openCodeFailureClass(
     const record = value as Record<string, unknown>;
     // Error.message and Error.cause are often non-enumerable, so read known
     // fields directly as well as traversing enumerable response properties.
-    for (const key of ["message", "detail", "code", "type", "name", "statusText", "body", "cause"]) {
+    for (const key of [
+      "message",
+      "detail",
+      "code",
+      "type",
+      "name",
+      "statusText",
+      "body",
+      "cause",
+    ]) {
       const child = record[key];
       if (typeof child === "string") strings.push(child);
       else if (typeof child === "object" && child !== null) queue.push(child);
