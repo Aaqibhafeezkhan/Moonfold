@@ -37,9 +37,9 @@ The current project uses manual deployments. Its Git integration is disconnected
 The copy is based on `CLAUDE.md`, `BUILD-PLAN.md`, `LAUNCH-PLAN.md`, `PROGRESS.md`, and `docs/BRAND.md`. Provider handoff and Gemini CLI are labeled as planned. The handoff panel is an interactive concept diagram, not a product screenshot or live provider session. Links point to the real public repository and documents. There are no invented statistics, testimonials, downloads, subscriptions, or forms.
 
 - `public/assets/moonfold-mark.svg`: existing project artwork from `assets/brand/`.
-- `public/assets/hero-*`: original artwork generated with the built-in image-generation tool for this site, optimized to responsive AVIF/WebP variants. Brief: a painterly, Renaissance-inspired twilight valley, an observatory, cypress trees, wildflowers, a golden crescent, and spacious blue sky for the headline.
+- `public/assets/hero-art-*.webp`: the hero's halftone landscape, a ringed moon over mountain ranges in peach dots on a transparent canvas (the cobalt background is CSS). It is generated, not drawn: `python art/render-hero-art.py <out-dir>` (needs numpy, scipy and Pillow) rebuilds both sizes from a fixed seed, using Moonfold's own mark for the moon. Copy the two `.webp` files into `public/assets/`. The foreground hill is drawn in the page colour so the hero melts into the section below it.
 - `public/assets/footer-landscape.webp`: original artwork generated with the same tool. Brief: an ivory and Prussian-blue copperplate engraving of a valley, winding river, cypresses, and an observatory, with a clear blue sky.
-- `public/assets/social-card.jpg`: social card composed from the original hero artwork.
+- `public/assets/social-card.jpg`: social card composed from the earlier painterly hero artwork.
 - Manrope and Instrument Serif: self-hosted Google Fonts, licensed under SIL OFL. The corresponding license texts are retained beside the fonts. No third-party provider marks are used.
 
 Original generation outputs remain in the owner's Codex generated-images folder; all assets the website consumes are included in this folder. There are no production runtime packages, analytics, or remote font requests.
