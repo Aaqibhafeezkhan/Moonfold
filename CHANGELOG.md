@@ -3,6 +3,26 @@
 Notable changes to Moonfold. Versions follow [Semantic Versioning](https://semver.org); betas
 carry a `-beta.N` suffix. Each release's notes are in `docs/releases/`.
 
+## 0.1.0-beta.2
+
+Notes: [docs/releases/v0.1.0-beta.2.md](docs/releases/v0.1.0-beta.2.md).
+
+### Added
+
+- OpenCode usage-limit errors start a handoff (#17).
+- "Edit this page" links on the docs site (#16).
+
+### Changed
+
+- New ringed-moon logo across the app, icons, installers and docs site; the CLI installers draw
+  it in the terminal.
+- Betas publish as the latest GitHub release.
+
+### Fixed
+
+- After a handoff the composer follows the thread's new agent.
+- node-pty pinned to the patched version, so fresh installs do not pick up an unpatched beta.
+
 ## 0.1.0-beta.1
 
 The first Moonfold beta, forked from T3 Code (MIT). Notes:
