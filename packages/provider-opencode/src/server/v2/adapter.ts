@@ -98,6 +98,7 @@ import {
 } from "@moonfold/provider-core/server/subagentProjection";
 import * as ProviderAdapter from "@moonfold/provider-core/server/ProviderAdapter";
 import { turnScopedSelectionTransition } from "@moonfold/provider-core/server/selectionTransition";
+import { openCodeFailureClass } from "../usageLimit.ts";
 import { OPENCODE_PROVIDER, openCodePermissionRequestKind } from "../adapter.ts";
 import { openCodeToolTurnItem } from "../toolItems.ts";
 
@@ -2368,7 +2369,7 @@ export const make = Effect.fn("OpenCode2Adapter.make")(function* (instanceId: Pr
             failure: makeProviderFailure({
               message: event.data.error.message,
               code: event.data.error.type,
-              class: "provider_error",
+              class: openCodeFailureClass(event.data.error),
             }),
           });
         default:
@@ -4062,7 +4063,7 @@ export const make = Effect.fn("OpenCode2Adapter.make")(function* (instanceId: Pr
                     if (!CLEAR_PROMPT_REJECTIONS.has(cause._tag)) markUnsettled(state);
                     yield* finishTurn(state, {
                       status: "failed",
-                      failure: makeProviderFailure({ cause, class: "provider_error" }),
+                      failure: makeProviderFailure({ cause, class: openCodeFailureClass(cause) }),
                     });
                   })
                 : Effect.void,
