@@ -1,7 +1,7 @@
 /**
  * Moonfold Website — Client Runtime
- * Handles navigation, the demo reel with modal player, the hero flickering
- * grid, glass folder cards, and the halftone wordmark canvas.
+ * Handles navigation, the demo reel with modal player, glass folder cards,
+ * and the halftone wordmark canvas.
  */
 
 // ---------------------------------------------------------------------------
@@ -63,6 +63,7 @@ for (const link of [...document.querySelectorAll(".fs-links a")]) {
       piece.className = "nv-char";
       const inner = document.createElement("i");
       inner.dataset.c = char;
+      inner.textContent = char;
       inner.style.transitionDelay = `${index * 14}ms`;
       piece.appendChild(inner);
     }
@@ -96,26 +97,30 @@ if (fsToggle && fsNav) {
   });
 }
 
-// The fixed header flips light/dark over dark sections (manifesto, closing).
+// The fixed header takes the hero's cobalt while the hero is under it and turns dark over the
+// dark sections (manifesto, closing); anywhere else it is paper.
 if (fsHeader) {
-  const darkSections = [...document.querySelectorAll("[data-fs-dark]")];
-  if (darkSections.length) {
-    const darkVisible = new Set();
-    const darkObserver = new IntersectionObserver(
+  const track = (selector, className) => {
+    const sections = [...document.querySelectorAll(selector)];
+    if (!sections.length) return;
+    const visible = new Set();
+    const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
-            darkVisible.add(entry.target);
+            visible.add(entry.target);
           } else {
-            darkVisible.delete(entry.target);
+            visible.delete(entry.target);
           }
         }
-        fsHeader.classList.toggle("fs-dark", darkVisible.size > 0);
+        fsHeader.classList.toggle(className, visible.size > 0);
       },
       { rootMargin: "0px 0px -93% 0px", threshold: 0 },
     );
-    for (const section of darkSections) darkObserver.observe(section);
-  }
+    for (const section of sections) observer.observe(section);
+  };
+  track("[data-fs-dark]", "fs-dark");
+  track("[data-fs-blue]", "fs-blue");
 }
 
 // ---------------------------------------------------------------------------
@@ -315,124 +320,6 @@ document.addEventListener("keydown", (e) => {
     });
   }
 });
-
-// ---------------------------------------------------------------------------
-// 4. Flickering Grid in Hero
-// ---------------------------------------------------------------------------
-function initHeroGrid() {
-  const canvas = document.getElementById("hero-grid-canvas");
-  const banner = canvas ? canvas.closest(".hero-banner") : null;
-  if (!canvas || !banner) return;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const squareSize = 5;
-  const gridGap = 7;
-  const cell = squareSize + gridGap;
-  const flickerChance = 0.3; // fraction of cells that re-roll per second
-  const maxOpacity = 0.3;
-  // Squares are blues out of the logo, with rare deeper navy flashes.
-  const blue = [96, 141, 198];
-  const deep = [52, 96, 158];
-
-  let w = 0;
-  let h = 0;
-  let dpr = 1;
-  let cols = 0;
-  let rows = 0;
-  let squares = new Float32Array(0);
-  let tones = new Uint8Array(0);
-  let raf = 0;
-  let lastTime = 0;
-  let inView = false;
-  let resizeRaf = 0;
-
-  const roll = (i) => {
-    squares[i] = Math.random() * maxOpacity;
-    tones[i] = Math.random() < 0.16 ? 1 : 0;
-  };
-
-  function drawCell(col, row) {
-    const i = col * rows + row;
-    ctx.clearRect(col * cell, row * cell, squareSize, squareSize);
-    if (squares[i] <= 0.004) return;
-    const [r, g, b] = tones[i] ? deep : blue;
-    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${squares[i]})`;
-    ctx.fillRect(col * cell, row * cell, squareSize, squareSize);
-  }
-
-  function drawAll() {
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, w, h);
-    for (let col = 0; col < cols; col++) {
-      for (let row = 0; row < rows; row++) drawCell(col, row);
-    }
-  }
-
-  function layout() {
-    const rect = banner.getBoundingClientRect();
-    w = Math.max(1, Math.round(rect.width));
-    h = Math.max(1, Math.round(rect.height));
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.round(w * dpr);
-    canvas.height = Math.round(h * dpr);
-    canvas.style.width = `${w}px`;
-    canvas.style.height = `${h}px`;
-    cols = Math.ceil(w / cell);
-    rows = Math.ceil(h / cell);
-    const count = cols * rows;
-    squares = new Float32Array(count);
-    tones = new Uint8Array(count);
-    for (let i = 0; i < count; i++) roll(i);
-    drawAll();
-  }
-
-  function frame(now) {
-    raf = 0;
-    const dt = Math.min((now - lastTime) / 1000, 0.1);
-    lastTime = now;
-    // Only the squares that re-roll this frame get repainted.
-    for (let col = 0; col < cols; col++) {
-      for (let row = 0; row < rows; row++) {
-        const i = col * rows + row;
-        if (Math.random() < flickerChance * dt) {
-          roll(i);
-          drawCell(col, row);
-        }
-      }
-    }
-    if (inView && !reducedMotion) raf = requestAnimationFrame(frame);
-  }
-
-  function wake() {
-    if (raf || !inView || reducedMotion) return;
-    lastTime = performance.now();
-    raf = requestAnimationFrame(frame);
-  }
-
-  const resizeObserver = new ResizeObserver(() => {
-    if (resizeRaf) return;
-    resizeRaf = requestAnimationFrame(() => {
-      resizeRaf = 0;
-      layout();
-    });
-  });
-  resizeObserver.observe(banner);
-
-  if (!reducedMotion) {
-    const intersectionObserver = new IntersectionObserver(
-      ([entry]) => {
-        inView = entry.isIntersecting;
-        if (inView) wake();
-      },
-      { threshold: 0 },
-    );
-    intersectionObserver.observe(banner);
-  }
-
-  layout();
-}
 
 // ---------------------------------------------------------------------------
 // 5. Favorites Marquee
@@ -804,13 +691,11 @@ async function initReleaseDownloads() {
 
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
-    initHeroGrid();
     initFavoritesMarquee();
     initHalftoneFooter();
     initReleaseDownloads();
   });
 } else {
-  initHeroGrid();
   initFavoritesMarquee();
   initHalftoneFooter();
   initReleaseDownloads();
