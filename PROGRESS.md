@@ -1,5 +1,31 @@
 # Progress
 
+## Brand and launch follow-ups (2026-10-26)
+
+Decisions: D-51, D-52.
+
+### Done
+
+- New ringed-moon mark from one parametric model (`scripts/lib/brand-mark.ts`): every icon,
+  favicon, social preview, docs-site logo and `MoonfoldMark` regenerated from it.
+- CLI installers draw the mark in half-block colour (plain blocks under `NO_COLOR`); the leftover
+  upstream command name in `install.sh` messages is gone.
+- Betas publish as the latest release; v0.1.0-beta.1 edited to match, so GitHub lists it.
+- Removed the stale `production` environment left by the upstream relay workflow's first run.
+- Main CI was red after outside PR #17 (formatting) and the website import (app lint and brand
+  check ran over `moonfold-website/`); fixed and merged.
+- 40 s launch video (`docs/assets/moonfold-launch.mp4`): motion graphics rendered frame by frame
+  in headless Edge from the real app recording, with a synthesized soundtrack.
+- Repository topics added. Launch kit drafted in `.plans/launch-kit.md` (not posted).
+
+### Not verified / open
+
+- Vercel builds of `moonfold-website` fail because the project builds the repository root (log:
+  `vp: command not found`). The fix is the project's Root Directory = `moonfold-website`, an
+  owner account setting.
+- Owner actions: re-upload `assets/brand/social-preview.png` (new mark) in Settings → Social
+  preview; post the launch kit; submit the form-only directories.
+
 ## Phase 8: launch assets (2026-10-20)
 
 Plan: docs/plans/phase-8.md. Decisions: D-49, D-50.

@@ -10,7 +10,8 @@
 
 <p align="center"><sub>Recorded in the app, sped up during agent work. Codex starts a bug fix; the user moves the
 thread to Claude, reads the brief, and Claude fixes it with every edit approved. When an agent hits its
-usage limit, Moonfold offers the same step on its own. <a href="docs/assets/demo-handoff.mp4">MP4</a></sub></p>
+usage limit, Moonfold offers the same step on its own. <a href="docs/assets/demo-handoff.mp4">MP4</a> ·
+<a href="docs/assets/moonfold-launch.mp4">40-second launch video</a></sub></p>
 
 Moonfold is an open-source workspace for the coding agents you already use. It runs Codex,
 Claude Code, Cursor, Grok Build, OpenCode, Antigravity and other agent CLIs on your own machine,
