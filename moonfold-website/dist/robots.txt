@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://moonfold-website.vercel.app/sitemap.xml

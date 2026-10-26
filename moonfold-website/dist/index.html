@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#123b68" />
+    <title>Moonfold — Big ideas. No dead ends.</title>
+    <meta
+      name="description"
+      content="An open-source home for your coding agents. Meet Moonfold: a local-first workspace being built for better flow, more choice, and continuity across providers."
+    />
+    <link rel="canonical" href="https://moonfold-website.vercel.app/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://moonfold-website.vercel.app/" />
+    <meta property="og:title" content="Moonfold — Big ideas. No dead ends." />
+    <meta
+      property="og:description"
+      content="An open-source home for your coding agents. Your tools, your context, your next chapter."
+    />
+    <meta
+      property="og:image"
+      content="https://moonfold-website.vercel.app/assets/social-card.jpg"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" type="image/svg+xml" href="/assets/moonfold-mark.svg" />
+    <link
+      rel="preload"
+      href="/assets/instrument-serif-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/assets/manrope-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/main.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="fs-header" id="fs-header">
+      <a class="fs-brand" href="#main">Moonfold<span class="fs-brand-dot">.</span></a>
+      <button
+        type="button"
+        class="fs-toggle"
+        aria-expanded="false"
+        aria-controls="fs-nav"
+        aria-label="Open navigation"
+      >
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </button>
+    </header>
+    <nav class="fs-nav" id="fs-nav" aria-label="Site navigation" aria-hidden="true">
+      <div class="fs-nav-inner">
+        <div class="fs-nav-top nv-reveal" style="--nv-i: 0">
+          <p class="fs-nav-eyebrow">Moonfold</p>
+          <p class="fs-nav-tagline">Big ideas. <em>No dead ends.</em></p>
+          <div class="fs-nav-quick">
+            <a href="#main">Overview</a>
+            <a href="#download-main">Download</a>
+            <a href="https://github.com/Mr-Dark-debug/Moonfold/releases" target="_blank" rel="noopener noreferrer"
+              >Releases <i aria-hidden="true">↗</i></a
+            >
+            <a href="https://github.com/Mr-Dark-debug/Moonfold/graphs/contributors" target="_blank" rel="noopener noreferrer"
+              >Contributors <i aria-hidden="true">↗</i></a
+            >
+          </div>
+        </div>
+        <div class="fs-nav-mid">
+          <div class="fs-nav-left">
+            <ul class="fs-links">
+              <li class="nv-reveal" style="--nv-i: 1"><a href="#demo" data-fs-close>Demos</a></li>
+              <li class="nv-reveal" style="--nv-i: 2">
+                <a href="#workspace" data-fs-close>The workspace</a>
+              </li>
+              <li class="nv-reveal" style="--nv-i: 3">
+                <a href="#status" data-fs-close>Open source</a>
+              </li>
+              <li class="nv-reveal" style="--nv-i: 4">
+                <a href="#questions" data-fs-close>Questions</a>
+              </li>
+            </ul>
+            <a
+              class="fs-cta nv-reveal"
+              style="--nv-i: 5"
+              href="https://github.com/Mr-Dark-debug/Moonfold/releases"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span>Download for Windows</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </a>
+          </div>
+          <div class="fs-nav-media">
+            <img
+              class="nv-reveal"
+              style="--nv-i: 6"
+              src="/assets/demo-handoff-poster.jpg"
+              alt="Moonfold handing a task off between Codex and Claude"
+              width="1100"
+              height="780"
+            />
+            <img
+              class="nv-reveal"
+              style="--nv-i: 7"
+              src="/assets/demo-browser-and-scheduled-tasks-poster.jpg"
+              alt="Moonfold browser tasks running on a schedule"
+              width="1440"
+              height="900"
+            />
+          </div>
+        </div>
+        <div class="fs-nav-bottom nv-reveal" style="--nv-i: 8">
+          <a
+            class="fs-social"
+            href="https://github.com/Mr-Dark-debug/Moonfold"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 .8a11.2 11.2 0 0 0-3.54 21.83c.56.1.77-.24.77-.54v-2.1c-3.13.68-3.79-1.33-3.79-1.33-.51-1.3-1.25-1.65-1.25-1.65-1.02-.7.08-.69.08-.69 1.13.08 1.73 1.16 1.73 1.16 1 1.72 2.63 1.22 3.27.93.1-.73.39-1.22.71-1.5-2.5-.28-5.13-1.25-5.13-5.57 0-1.23.44-2.23 1.16-3.02-.12-.28-.5-1.43.11-2.98 0 0 .95-.3 3.08 1.15A10.8 10.8 0 0 1 12 6.1c.95 0 1.9.13 2.79.38 2.13-1.45 3.07-1.15 3.07-1.15.62 1.55.24 2.7.12 2.98.72.79 1.16 1.8 1.16 3.02 0 4.33-2.64 5.28-5.15 5.56.4.35.76 1.03.76 2.08v3.12c0 .3.2.65.77.54A11.2 11.2 0 0 0 12 .8Z"
+              />
+            </svg>
+            <span>GitHub <i aria-hidden="true">↗</i></span>
+          </a>
+          <p class="fs-nav-loc">Open source. Built for agents everywhere.</p>
+        </div>
+      </div>
+    </nav>
+    <main id="main">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-banner">
+          <canvas id="hero-grid-canvas" class="hero-grid-canvas" aria-hidden="true"></canvas>
+          <div class="hero-banner-shade" aria-hidden="true"></div>
+          <div class="hero-copy section-wrap">
+            <h1 id="hero-title">Moonfold<span class="period-accent">.</span><br /><em>The open workspace for coding agents.</em></h1>
+            <div class="hero-rail">
+              <p>
+                stolen from
+                <a href="https://github.com/pingdotgg/t3code" target="_blank" rel="noopener noreferrer">T3 Code</a>.
+                When an agent maxes out, the next one picks up mid-thought — plan, diff, and context
+                folded in. Codex, Claude Code, Cursor, Grok, OpenCode and Antigravity, on your
+                machine, with your own logins.
+              </p>
+              <div class="hero-actions">
+                <a
+                  class="button button-ink hero-github-btn"
+                  href="https://github.com/Mr-Dark-debug/Moonfold"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span class="button-idle">
+                    <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        fill="currentColor"
+                        d="M12 .8a11.2 11.2 0 0 0-3.54 21.83c.56.1.77-.24.77-.54v-2.1c-3.13.68-3.79-1.33-3.79-1.33-.51-1.3-1.25-1.65-1.25-1.65-1.02-.7.08-.69.08-.69 1.13.08 1.73 1.16 1.73 1.16 1 1.72 2.63 1.22 3.27.93.1-.73.39-1.22.71-1.5-2.5-.28-5.13-1.25-5.13-5.57 0-1.23.44-2.23 1.16-3.02-.12-.28-.5-1.43.11-2.98 0 0 .95-.3 3.08 1.15A10.8 10.8 0 0 1 12 6.1c.95 0 1.9.13 2.79.38 2.13-1.45 3.07-1.15 3.07-1.15.62 1.55.24 2.7.12 2.98.72.79 1.16 1.8 1.16 3.02 0 4.33-2.64 5.28-5.15 5.56.4.35.76 1.03.76 2.08v3.12c0 .3.2.65.77.54A11.2 11.2 0 0 0 12 .8Z"
+                      />
+                    </svg>
+                    <span class="button-label">Get Moonfold on GitHub</span>
+                  </span>
+                  <span class="button-hover" aria-hidden="true">
+                    <span class="button-label">Get Moonfold on GitHub</span>
+                    <svg class="button-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                  </span>
+                </a>
+                <a class="button button-soft" href="#demo">
+                  <span class="button-idle">
+                    <i class="button-dot" aria-hidden="true"></i>
+                    <span class="button-label">See the handoff</span>
+                  </span>
+                  <span class="button-hover" aria-hidden="true">
+                    <span class="button-label">See the handoff</span>
+                    <svg class="button-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                  </span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <svg class="provider-sprite" aria-hidden="true" focusable="false">
+          <symbol id="p-openai" viewBox="0 0 24 24" fill-rule="evenodd"><path fill="#0d0d0d" d="M9.205 8.658v-2.26c0-.19.072-.333.238-.428l4.543-2.616c.619-.357 1.356-.523 2.117-.523 2.854 0 4.662 2.212 4.662 4.566 0 .167 0 .357-.024.547l-4.71-2.759a.797.797 0 00-.856 0l-5.97 3.473zm10.609 8.8V12.06c0-.333-.143-.57-.429-.737l-5.97-3.473 1.95-1.118a.433.433 0 01.476 0l4.543 2.617c1.309.76 2.189 2.378 2.189 3.948 0 1.808-1.07 3.473-2.76 4.163zM7.802 12.703l-1.95-1.142c-.167-.095-.239-.238-.239-.428V5.899c0-2.545 1.95-4.472 4.591-4.472 1 0 1.927.333 2.712.928L8.23 5.067c-.285.166-.428.404-.428.737v6.898zM12 15.128l-2.795-1.57v-3.33L12 8.658l2.795 1.57v3.33L12 15.128zm1.796 7.23c-1 0-1.927-.332-2.712-.927l4.686-2.712c.285-.166.428-.404.428-.737v-6.898l1.974 1.142c.167.095.238.238.238.428v5.233c0 2.545-1.974 4.472-4.614 4.472zm-5.637-5.303l-4.544-2.617c-1.308-.761-2.188-2.378-2.188-3.948A4.482 4.482 0 014.21 6.327v5.423c0 .333.143.571.428.738l5.947 3.449-1.95 1.118a.432.432 0 01-.476 0zm-.262 3.9c-2.688 0-4.662-2.021-4.662-4.519 0-.19.024-.38.047-.57l4.686 2.71c.286.167.571.167.856 0l5.97-3.448v2.26c0 .19-.07.333-.237.428l-4.543 2.616c-.619.357-1.356.523-2.117.523zm5.899 2.83a5.947 5.947 0 005.827-4.756C22.287 18.339 24 15.84 24 13.296c0-1.665-.713-3.282-1.998-4.448.119-.5.19-.999.19-1.498 0-3.401-2.759-5.947-5.946-5.947-.642 0-1.26.095-1.88.31A5.962 5.962 0 0010.205 0a5.947 5.947 0 00-5.827 4.757C1.713 5.447 0 7.945 0 10.49c0 1.666.713 3.283 1.998 4.448-.119.5-.19 1-.19 1.499 0 3.401 2.759 5.946 5.946 5.946.642 0 1.26-.095 1.88-.309a5.96 5.96 0 004.162 1.713z"/></symbol>
+          <symbol id="p-cursor" viewBox="0 0 24 24" fill-rule="evenodd"><path fill="#111113" d="M22.106 5.68L12.5.135a.998.998 0 00-.998 0L1.893 5.68a.84.84 0 00-.419.726v11.186c0 .3.16.577.42.727l9.607 5.547a.999.999 0 00.998 0l9.608-5.547a.84.84 0 00.42-.727V6.407a.84.84 0 00-.42-.726zm-.603 1.176L12.228 22.92c-.063.108-.228.064-.228-.061V12.34a.59.59 0 00-.295-.51l-9.11-5.26c-.107-.062-.063-.228.062-.228h18.55c.264 0 .428.286.296.514z"/></symbol>
+          <symbol id="p-grok" viewBox="0 0 24 24" fill-rule="evenodd"><path fill="#0b0b0e" d="M9.27 15.29l7.978-5.897c.391-.29.95-.177 1.137.272.98 2.369.542 5.215-1.41 7.169-1.951 1.954-4.667 2.382-7.149 1.406l-2.711 1.257c3.889 2.661 8.611 2.003 11.562-.953 2.341-2.344 3.066-5.539 2.388-8.42l.006.007c-.983-4.232.242-5.924 2.75-9.383.06-.082.12-.164.179-.248l-3.301 3.305v-.01L9.267 15.292M7.623 16.723c-2.792-2.67-2.31-6.801.071-9.184 1.761-1.763 4.647-2.483 7.166-1.425l2.705-1.25a7.808 7.808 0 00-1.829-1A8.975 8.975 0 005.984 5.83c-2.533 2.536-3.33 6.436-1.962 9.764 1.022 2.487-.653 4.246-2.34 6.022-.599.63-1.199 1.259-1.682 1.925l7.62-6.815"/></symbol>
+          <symbol id="p-opencode" viewBox="0 0 24 24" fill-rule="evenodd"><path fill="#16161a" d="M16 6H8v12h8V6zm4 16H4V2h16v20z"/></symbol>
+        </svg>
+        <section class="favorites" aria-label="Coding agents Moonfold works with today">
+          <div class="favorites-bar">
+            <div class="favorites-copy">
+              <p class="favorites-title">All your favorites.</p>
+              <a
+                class="favorites-contrib"
+                href="https://github.com/Mr-Dark-debug/Moonfold/graphs/contributors"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                Top contributors <span aria-hidden="true">↗</span>
+              </a>
+              <div class="avatar-circles">
+                <a href="https://github.com/juliusmarminge" target="_blank" rel="noopener noreferrer"
+                  ><img src="/assets/avatars/juliusmarminge.png" alt="juliusmarminge" width="38" height="38"
+                /></a>
+                <a href="https://github.com/t3dotgg" target="_blank" rel="noopener noreferrer"
+                  ><img src="/assets/avatars/t3dotgg.png" alt="t3dotgg" width="38" height="38"
+                /></a>
+                <a href="https://github.com/maria-rcks" target="_blank" rel="noopener noreferrer"
+                  ><img src="/assets/avatars/maria-rcks.png" alt="maria-rcks" width="38" height="38"
+                /></a>
+                <a href="https://github.com/Mr-Dark-debug" target="_blank" rel="noopener noreferrer"
+                  ><img src="/assets/avatars/Mr-Dark-debug.png" alt="Mr-Dark-debug" width="38" height="38"
+                /></a>
+                <a href="https://github.com/StiensWout" target="_blank" rel="noopener noreferrer"
+                  ><img src="/assets/avatars/StiensWout.png" alt="StiensWout" width="38" height="38"
+                /></a>
+                <a
+                  class="avatar-more"
+                  href="https://github.com/Mr-Dark-debug/Moonfold/graphs/contributors"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="466 more contributors"
+                  >+466</a
+                >
+              </div>
+            </div>
+            <div class="favorites-marquee">
+              <div class="marquee-inner">
+                <ul class="marquee-set">
+                  <li class="marquee-cell"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#p-openai"/></svg><span class="provider-name">Codex</span></li>
+                  <li class="marquee-cell"><img src="/assets/providers/claude-color.svg" alt="" width="34" height="34" aria-hidden="true"><span class="provider-name">Claude Code</span></li>
+                  <li class="marquee-cell"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#p-cursor"/></svg><span class="provider-name">Cursor</span></li>
+                  <li class="marquee-cell"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#p-grok"/></svg><span class="provider-name">Grok</span></li>
+                  <li class="marquee-cell"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#p-opencode"/></svg><span class="provider-name">OpenCode</span></li>
+                  <li class="marquee-cell"><img src="/assets/providers/antigravity-color.svg" alt="" width="34" height="34" aria-hidden="true"><span class="provider-name">Antigravity</span></li>
+                  <li class="marquee-cell is-planned"><img src="/assets/providers/gemini-color.svg" alt="" width="34" height="34" aria-hidden="true"><span class="provider-name">Gemini CLI</span><small class="chip-plan">planned</small></li>
+                </ul>
+                <ul class="marquee-set" aria-hidden="true">
+                  <li class="marquee-cell"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#p-openai"/></svg><span class="provider-name">Codex</span></li>
+                  <li class="marquee-cell"><img src="/assets/providers/claude-color.svg" alt="" width="34" height="34" aria-hidden="true"><span class="provider-name">Claude Code</span></li>
+                  <li class="marquee-cell"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#p-cursor"/></svg><span class="provider-name">Cursor</span></li>
+                  <li class="marquee-cell"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#p-grok"/></svg><span class="provider-name">Grok</span></li>
+                  <li class="marquee-cell"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#p-opencode"/></svg><span class="provider-name">OpenCode</span></li>
+                  <li class="marquee-cell"><img src="/assets/providers/antigravity-color.svg" alt="" width="34" height="34" aria-hidden="true"><span class="provider-name">Antigravity</span></li>
+                  <li class="marquee-cell is-planned"><img src="/assets/providers/gemini-color.svg" alt="" width="34" height="34" aria-hidden="true"><span class="provider-name">Gemini CLI</span><small class="chip-plan">planned</small></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+      <section class="showcase" id="demo" aria-labelledby="demo-title">
+        <div class="showcase-head">
+          <h2 class="showcase-title" id="demo-title">
+            We build handoff-first systems<br />to help
+            <em>your agents</em><br /><em>keep the thread.</em>
+          </h2>
+        </div>
+        <div class="showcase-grid">
+          <div class="demo-item">
+            <button type="button" class="demo-tile" data-demo="/assets/demo-handoff.mp4" data-demo-title="Provider handoff" aria-label="Play demo: provider handoff between coding agents">
+              <video src="/assets/demo-handoff.mp4" muted loop playsinline preload="metadata" poster="/assets/demo-handoff-poster.jpg" aria-hidden="true" data-contain></video>
+            </button>
+            <p class="demo-item-title">Provider handoff</p>
+            <p class="demo-item-sub">One agent hits its limit and the next continues the same thread.</p>
+          </div>
+          <div class="demo-item">
+            <button type="button" class="demo-tile" data-demo="/assets/demo-browser-and-scheduled-tasks.mp4" data-demo-title="Browser and scheduled tasks" aria-label="Play demo: built-in browser and scheduled tasks">
+              <video src="/assets/demo-browser-and-scheduled-tasks.mp4" muted loop playsinline preload="metadata" poster="/assets/demo-browser-and-scheduled-tasks-poster.jpg" aria-hidden="true"></video>
+            </button>
+            <p class="demo-item-title">Browser &amp; scheduled tasks</p>
+            <p class="demo-item-sub">Agents can browse the web and pick up work on a schedule.</p>
+          </div>
+          <div class="demo-item">
+            <button type="button" class="demo-tile" data-demo="/assets/demo-plugins-and-memories.mp4" data-demo-title="Plugins and memories" aria-label="Play demo: plugins and agent memories">
+              <video src="/assets/demo-plugins-and-memories.mp4" muted loop playsinline preload="metadata" poster="/assets/demo-plugins-and-memories-poster.jpg" aria-hidden="true"></video>
+            </button>
+            <p class="demo-item-title">Plugins &amp; memories</p>
+            <p class="demo-item-sub">Extra tools and long-term memory for every agent you run.</p>
+          </div>
+        </div>
+      </section>
+      <section class="manifesto" aria-label="Our philosophy" data-fs-dark>
+        <h2 class="manifesto-title">
+          <span class="sr-only">Your best work deserves a little more possibility.</span>
+          <span class="kt-track" aria-hidden="true">
+            <span class="kt-line">
+              <span class="kt-word"><span class="kt-letter">Y</span><span class="kt-letter">o</span><span class="kt-letter">u</span><span class="kt-letter">r</span></span>
+              <span class="kt-word"><span class="kt-letter">b</span><span class="kt-letter">e</span><span class="kt-letter">s</span><span class="kt-letter">t</span></span>
+              <span class="kt-word"><span class="kt-letter">w</span><span class="kt-letter">o</span><span class="kt-letter">r</span><span class="kt-letter">k</span></span>
+              <span class="kt-word"><span class="kt-letter">d</span><span class="kt-letter">e</span><span class="kt-letter">s</span><span class="kt-letter">e</span><span class="kt-letter">r</span><span class="kt-letter">v</span><span class="kt-letter">e</span><span class="kt-letter">s</span></span>
+            </span>
+            <span class="kt-line">
+              <span class="kt-word"><span class="kt-letter">a</span></span>
+              <span class="kt-word"><span class="kt-letter">l</span><span class="kt-letter">i</span><span class="kt-letter">t</span><span class="kt-letter">t</span><span class="kt-letter">l</span><span class="kt-letter">e</span></span>
+              <span class="kt-word"><span class="kt-letter">m</span><span class="kt-letter">o</span><span class="kt-letter">r</span><span class="kt-letter">e</span></span>
+              <span class="kt-word"><span class="kt-letter">p</span><span class="kt-letter">o</span><span class="kt-letter">s</span><span class="kt-letter">s</span><span class="kt-letter">i</span><span class="kt-letter">b</span><span class="kt-letter">i</span><span class="kt-letter">l</span><span class="kt-letter">i</span><span class="kt-letter">t</span><span class="kt-letter">y</span><span class="kt-letter">.</span></span>
+            </span>
+          </span>
+        </h2>
+        <p>Moonfold is free, open source and fast. Install it, plug in the harness you already pay for, and let your agents get to work.</p>
+        <div class="manifesto-actions">
+          <a class="button" id="download-main" href="https://github.com/Mr-Dark-debug/Moonfold/releases" target="_blank" rel="noopener noreferrer">
+            <span class="button-idle">
+              <svg class="button-icon" viewBox="0 0 12 12" aria-hidden="true"><rect x="0" y="0" width="5.4" height="5.4" fill="currentColor" /><rect x="6.6" y="0" width="5.4" height="5.4" fill="currentColor" /><rect x="0" y="6.6" width="5.4" height="5.4" fill="currentColor" /><rect x="6.6" y="6.6" width="5.4" height="5.4" fill="currentColor" /></svg>
+              <span class="button-label">Download for Windows</span>
+            </span>
+            <span class="button-hover" aria-hidden="true">
+              <span class="button-label">Download for Windows</span>
+              <svg class="button-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </span>
+          </a>
+          <span class="download-toggle-wrap">
+            <button type="button" class="manifesto-platforms download-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="download-menu">
+              <span class="manifesto-platforms-label">Windows · Linux · other</span>
+              <svg class="download-caret" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.6 4.4 6 7.8l3.4-3.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </button>
+            <div class="download-panel" id="download-menu" role="menu" hidden>
+              <p class="download-version" data-download-version>Latest release</p>
+              <a role="menuitem" data-download-pattern="win-x64" href="https://github.com/Mr-Dark-debug/Moonfold/releases" target="_blank" rel="noopener noreferrer">Windows · Installer (.exe)</a>
+              <a role="menuitem" data-download-pattern="win-arm64" href="https://github.com/Mr-Dark-debug/Moonfold/releases" target="_blank" rel="noopener noreferrer">Windows · ARM (.exe)</a>
+              <a role="menuitem" data-download-pattern="linux-appimage" href="https://github.com/Mr-Dark-debug/Moonfold/releases" target="_blank" rel="noopener noreferrer">Linux · AppImage</a>
+              <a role="menuitem" data-download-pattern="linux-deb" href="https://github.com/Mr-Dark-debug/Moonfold/releases" target="_blank" rel="noopener noreferrer">Linux · .deb</a>
+              <a role="menuitem" data-download-pattern="mac-arm64" href="https://github.com/Mr-Dark-debug/Moonfold/releases" target="_blank" rel="noopener noreferrer">macOS · Apple Silicon (.dmg)</a>
+              <a role="menuitem" data-download-pattern="mac-x64" href="https://github.com/Mr-Dark-debug/Moonfold/releases" target="_blank" rel="noopener noreferrer">macOS · Intel (.dmg)</a>
+              <a role="menuitem" href="https://github.com/Mr-Dark-debug/Moonfold/releases" target="_blank" rel="noopener noreferrer">All releases · tar.gz, SHA256 &amp; more</a>
+            </div>
+          </span>
+        </div>
+      </section>
+      <section class="folders" id="workspace" aria-labelledby="folders-title">
+        <div class="glass-folders-showcase">
+          <div class="glass-folders-intro">
+            <h3 class="glass-folders-title" id="folders-title">Folders drawn as living objects.</h3>
+          </div>
+          <div class="glass-folders-desk">
+            <!-- Folder 1: Milk glass over Aurora streak -->
+            <div class="gf-root" data-tone="light" data-art="aurora" data-seed="3" style="width: 320px;">
+              <div class="gf-stage">
+                <div class="gf-tilt">
+                  <div class="gf-shadow" aria-hidden="true"></div>
+                  <div class="gf-back" style="clip-path: path('M0 56A22 22 0 0 1 22 34L146 34C170 34 172 0 198 0L318 0A22 22 0 0 1 340 22L340 250A22 22 0 0 1 318 272L22 272A22 22 0 0 1 0 250Z');" aria-hidden="true">
+                    <canvas class="gf-art" width="344" height="296" data-ready="true"></canvas>
+                    <div class="gf-back-sheen"></div>
+                  </div>
+                  <svg class="gf-rim gf-back-rim" viewBox="0 0 340 272" aria-hidden="true">
+                    <path d="M0 56A22 22 0 0 1 22 34L146 34C170 34 172 0 198 0L318 0A22 22 0 0 1 340 22L340 250A22 22 0 0 1 318 272L22 272A22 22 0 0 1 0 250Z" />
+                  </svg>
+                  <div class="gf-front" style="clip-path: path('M0 22A22 22 0 0 1 22 0L118 0C144 0 146 32 172 32L318 32A22 22 0 0 1 340 54L340 176A22 22 0 0 1 318 198L22 198A22 22 0 0 1 0 176Z');">
+                    <div class="gf-tint" aria-hidden="true"></div>
+                    <div class="gf-spec" aria-hidden="true"></div>
+                    <svg class="gf-rim gf-front-rim" viewBox="0 0 340 198" aria-hidden="true">
+                      <path d="M0 22A22 22 0 0 1 22 0L118 0C144 0 146 32 172 32L318 32A22 22 0 0 1 340 54L340 176A22 22 0 0 1 318 198L22 198A22 22 0 0 1 0 176Z" stroke="rgba(255, 255, 255, 0.7)" />
+                    </svg>
+                    <button type="button" class="gf-hit" aria-label="Open Workspace Files, 3 items" aria-expanded="false"></button>
+                    <div class="gf-label">
+                      <span class="gf-title">Workspace Files</span>
+                      <span class="gf-meta">3 items</span>
+                    </div>
+                  </div>
+                  <div class="gf-files" role="list" aria-label="Workspace Files contents">
+                    <div role="listitem" class="gf-sheet-slot">
+                      <button type="button" class="gf-sheet gf-sheet--art" style="--gf-slot: -1; --gf-depth: 2; z-index: 1;">
+                        <canvas class="gf-sheet-art" width="272" height="184" data-art="ember" data-seed="42" data-ready="true"></canvas>
+                        <span class="gf-sheet-head">
+                          <span class="gf-sheet-name">Architecture.md</span>
+                          <span class="gf-sheet-meta">MD · 4.8 KB</span>
+                        </span>
+                      </button>
+                    </div>
+                    <div role="listitem" class="gf-sheet-slot">
+                      <button type="button" class="gf-sheet gf-sheet--art" style="--gf-slot: 0; --gf-depth: 1; z-index: 2;">
+                        <canvas class="gf-sheet-art" width="272" height="184" data-art="dusk" data-seed="17" data-ready="true"></canvas>
+                        <span class="gf-sheet-head">
+                          <span class="gf-sheet-name">Orchestrator.ts</span>
+                          <span class="gf-sheet-meta">TS · 12 KB</span>
+                        </span>
+                      </button>
+                    </div>
+                    <div role="listitem" class="gf-sheet-slot">
+                      <button type="button" class="gf-sheet" style="--gf-slot: 1; --gf-depth: 0; z-index: 3;">
+                        <span class="gf-lines" aria-hidden="true">
+                          <i style="width: 86%;"></i><i style="width: 92%;"></i><i style="width: 64%;"></i><i style="width: 88%;"></i>
+                        </span>
+                        <span class="gf-sheet-head">
+                          <span class="gf-sheet-name">Brief.pdf</span>
+                          <span class="gf-sheet-meta">PDF · 320 KB</span>
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                  <button type="button" class="gf-key gf-key--add" aria-label="Add file">
+                    <svg class="gf-glyph gf-glyph--plus" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5v15M4.5 12h15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Folder 2: Archive folder with menu -->
+            <div class="gf-root" data-tone="light" data-art="none" data-seed="7" style="width: 320px;">
+              <div class="gf-stage">
+                <div class="gf-tilt">
+                  <div class="gf-shadow" aria-hidden="true"></div>
+                  <div class="gf-back" style="clip-path: path('M0 56A22 22 0 0 1 22 34L146 34C170 34 172 0 198 0L318 0A22 22 0 0 1 340 22L340 250A22 22 0 0 1 318 272L22 272A22 22 0 0 1 0 250Z');" aria-hidden="true">
+                    <div class="gf-back-sheen"></div>
+                  </div>
+                  <svg class="gf-rim gf-back-rim" viewBox="0 0 340 272" aria-hidden="true">
+                    <path d="M0 56A22 22 0 0 1 22 34L146 34C170 34 172 0 198 0L318 0A22 22 0 0 1 340 22L340 250A22 22 0 0 1 318 272L22 272A22 22 0 0 1 0 250Z" />
+                  </svg>
+                  <div class="gf-front" style="clip-path: path('M0 22A22 22 0 0 1 22 0L118 0C144 0 146 32 172 32L318 32A22 22 0 0 1 340 54L340 176A22 22 0 0 1 318 198L22 198A22 22 0 0 1 0 176Z');">
+                    <div class="gf-tint" aria-hidden="true"></div>
+                    <div class="gf-spec" aria-hidden="true"></div>
+                    <svg class="gf-rim gf-front-rim" viewBox="0 0 340 198" aria-hidden="true">
+                      <path d="M0 22A22 22 0 0 1 22 0L118 0C144 0 146 32 172 32L318 32A22 22 0 0 1 340 54L340 176A22 22 0 0 1 318 198L22 198A22 22 0 0 1 0 176Z" stroke="rgba(255, 255, 255, 0.7)" />
+                    </svg>
+                    <button type="button" class="gf-hit" aria-label="Open Agent Threads, 4 sessions" aria-expanded="false"></button>
+                    <div class="gf-label">
+                      <span class="gf-title">Agent Threads</span>
+                      <span class="gf-meta">4 sessions</span>
+                    </div>
+                  </div>
+                  <div class="gf-files" role="list" aria-label="Agent Threads contents">
+                    <div role="listitem" class="gf-sheet-slot">
+                      <button type="button" class="gf-sheet gf-sheet--art" style="--gf-slot: -1; --gf-depth: 3; z-index: 1;">
+                        <canvas class="gf-sheet-art" width="272" height="184" data-art="dusk" data-seed="88" data-ready="true"></canvas>
+                        <span class="gf-sheet-head">
+                          <span class="gf-sheet-name">Claude — Core Refactor</span>
+                          <span class="gf-sheet-meta">Turn 14</span>
+                        </span>
+                      </button>
+                    </div>
+                    <div role="listitem" class="gf-sheet-slot">
+                      <button type="button" class="gf-sheet" style="--gf-slot: -0.33; --gf-depth: 2; z-index: 2;">
+                        <span class="gf-lines" aria-hidden="true">
+                          <i style="width: 86%;"></i><i style="width: 90%;"></i><i style="width: 70%;"></i>
+                        </span>
+                        <span class="gf-sheet-head">
+                          <span class="gf-sheet-name">Codex — Test Worker</span>
+                          <span class="gf-sheet-meta">Turn 8</span>
+                        </span>
+                      </button>
+                    </div>
+                    <div role="listitem" class="gf-sheet-slot">
+                      <button type="button" class="gf-sheet gf-sheet--art" style="--gf-slot: 0.33; --gf-depth: 1; z-index: 3;">
+                        <canvas class="gf-sheet-art" width="272" height="184" data-art="ember" data-seed="33" data-ready="true"></canvas>
+                        <span class="gf-sheet-head">
+                          <span class="gf-sheet-name">Cursor — Shell UI</span>
+                          <span class="gf-sheet-meta">Turn 21</span>
+                        </span>
+                      </button>
+                    </div>
+                    <div role="listitem" class="gf-sheet-slot">
+                      <button type="button" class="gf-sheet" style="--gf-slot: 1; --gf-depth: 0; z-index: 4;">
+                        <span class="gf-lines" aria-hidden="true">
+                          <i style="width: 75%;"></i><i style="width: 85%;"></i>
+                        </span>
+                        <span class="gf-sheet-head">
+                          <span class="gf-sheet-name">Handoff Brief.md</span>
+                          <span class="gf-sheet-meta">Preserved</span>
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                  <button type="button" class="gf-key gf-key--more" aria-label="More options">
+                    <svg class="gf-glyph gf-glyph--more" viewBox="0 0 30 12" aria-hidden="true">
+                      <rect x="1" y="1.5" width="8" height="9" rx="3.4" fill="none" stroke="currentColor" stroke-width="1.8" />
+                      <rect x="11" y="1.5" width="8" height="9" rx="3.4" fill="none" stroke="currentColor" stroke-width="1.8" />
+                      <rect x="21" y="1.5" width="8" height="9" rx="3.4" fill="none" stroke="currentColor" stroke-width="1.8" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Folder 3: Smoked glass Checkpoints folder -->
+            <div class="gf-root" data-tone="dark" data-art="ember" data-seed="11" style="width: 320px;">
+              <div class="gf-stage">
+                <div class="gf-tilt">
+                  <div class="gf-shadow" aria-hidden="true"></div>
+                  <div class="gf-back" style="clip-path: path('M0 56A22 22 0 0 1 22 34L146 34C170 34 172 0 198 0L318 0A22 22 0 0 1 340 22L340 250A22 22 0 0 1 318 272L22 272A22 22 0 0 1 0 250Z');" aria-hidden="true">
+                    <canvas class="gf-art" width="344" height="296" data-ready="true"></canvas>
+                    <div class="gf-back-sheen"></div>
+                  </div>
+                  <svg class="gf-rim gf-back-rim" viewBox="0 0 340 272" aria-hidden="true">
+                    <path d="M0 56A22 22 0 0 1 22 34L146 34C170 34 172 0 198 0L318 0A22 22 0 0 1 340 22L340 250A22 22 0 0 1 318 272L22 272A22 22 0 0 1 0 250Z" />
+                  </svg>
+                  <div class="gf-front" style="clip-path: path('M0 22A22 22 0 0 1 22 0L118 0C144 0 146 32 172 32L318 32A22 22 0 0 1 340 54L340 176A22 22 0 0 1 318 198L22 198A22 22 0 0 1 0 176Z');">
+                    <div class="gf-tint" aria-hidden="true"></div>
+                    <div class="gf-spec" aria-hidden="true"></div>
+                    <svg class="gf-rim gf-front-rim" viewBox="0 0 340 198" aria-hidden="true">
+                      <path d="M0 22A22 22 0 0 1 22 0L118 0C144 0 146 32 172 32L318 32A22 22 0 0 1 340 54L340 176A22 22 0 0 1 318 198L22 198A22 22 0 0 1 0 176Z" stroke="rgba(255, 255, 255, 0.4)" />
+                    </svg>
+                    <button type="button" class="gf-hit" aria-label="Open Checkpoints, 3 revisions" aria-expanded="false"></button>
+                    <div class="gf-label">
+                      <span class="gf-title">Checkpoints</span>
+                      <span class="gf-meta">3 revisions</span>
+                    </div>
+                  </div>
+                  <div class="gf-files" role="list" aria-label="Checkpoints contents">
+                    <div role="listitem" class="gf-sheet-slot">
+                      <button type="button" class="gf-sheet gf-sheet--art" style="--gf-slot: -1; --gf-depth: 2; z-index: 1;">
+                        <canvas class="gf-sheet-art" width="272" height="184" data-art="verdant" data-seed="99" data-ready="true"></canvas>
+                        <span class="gf-sheet-head">
+                          <span class="gf-sheet-name">Git Ref: 7b8f2a</span>
+                          <span class="gf-sheet-meta">Clean tree</span>
+                        </span>
+                      </button>
+                    </div>
+                    <div role="listitem" class="gf-sheet-slot">
+                      <button type="button" class="gf-sheet" style="--gf-slot: 0; --gf-depth: 1; z-index: 2;">
+                        <span class="gf-lines" aria-hidden="true">
+                          <i style="width: 88%;"></i><i style="width: 72%;"></i><i style="width: 90%;"></i>
+                        </span>
+                        <span class="gf-sheet-head">
+                          <span class="gf-sheet-name">Diff review.patch</span>
+                          <span class="gf-sheet-meta">+142 -28</span>
+                        </span>
+                      </button>
+                    </div>
+                    <div role="listitem" class="gf-sheet-slot">
+                      <button type="button" class="gf-sheet gf-sheet--art" style="--gf-slot: 1; --gf-depth: 0; z-index: 3;">
+                        <canvas class="gf-sheet-art" width="272" height="184" data-art="aurora" data-seed="54" data-ready="true"></canvas>
+                        <span class="gf-sheet-head">
+                          <span class="gf-sheet-name">Snapshot: pre-switch</span>
+                          <span class="gf-sheet-meta">Restorable</span>
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                  <button type="button" class="gf-key gf-key--add" aria-label="Add checkpoint">
+                    <svg class="gf-glyph gf-glyph--plus" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5v15M4.5 12h15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="open-source section-wrap" id="status" aria-labelledby="open-title">
+        <div class="open-art">
+          <img
+            class="open-flower"
+            src="/assets/open-flower.svg"
+            alt=""
+            width="440"
+            height="520"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+        <div class="open-copy">
+          <p>
+            Moonfold is an independent, MIT-licensed project built on T3 Code. You can read the
+            source, follow the decisions, and help shape what comes next.
+          </p>
+          <p>
+            We’re early. The foundation is here; the Moonfold experience and cross-provider handoff
+            are still being built. Follow along as the next chapter takes shape.
+          </p>
+          <h2 id="open-title">Good things grow<br /><em>when they’re shared.</em></h2>
+          <a
+            class="open-cta"
+            href="https://github.com/Mr-Dark-debug/Moonfold"
+            target="_blank"
+            rel="noopener noreferrer"
+            ><span>Come build with us</span><span aria-hidden="true">↗</span></a
+          >
+        </div>
+      </section>
+      <section class="questions section-wrap" id="questions" aria-labelledby="questions-title">
+        <div class="questions-heading">
+          <h2 id="questions-title">Questions People<br />Often Ask</h2>
+        </div>
+        <div class="faq-list">
+          <details name="faq" open>
+            <summary>What exactly is Moonfold?<span class="faq-icon" aria-hidden="true">+</span></summary>
+            <div class="faq-answer">
+              <p>
+                Moonfold is an open-source, local-first workspace for coding agents, built on T3
+                Code. It brings projects, agent conversations, worktrees, and code review together.
+                Its headline goal is continuity across providers when an agent reaches a usage
+                limit.
+              </p>
+            </div>
+          </details>
+          <details name="faq">
+            <summary>Can I use it today?<span class="faq-icon" aria-hidden="true">+</span></summary>
+            <div class="faq-answer">
+              <p>
+                The source is available for developers to explore and build. Moonfold is still in
+                early development; a packaged beta and the provider handoff experience are planned.
+                For current setup instructions and progress,
+                <a
+                  href="https://github.com/Mr-Dark-debug/Moonfold/blob/main/docs/DEV.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >read the development guide</a
+                >.
+              </p>
+            </div>
+          </details>
+          <details name="faq">
+            <summary>
+              Which coding agents does it work with?<span class="faq-icon" aria-hidden="true">+</span>
+            </summary>
+            <div class="faq-answer">
+              <p>
+                The T3 Code foundation includes adapters for Codex, Claude Code, Cursor, OpenCode,
+                Grok, and Antigravity. Gemini CLI is planned for Moonfold. Availability and
+                verification vary by provider; the
+                <a
+                  href="https://github.com/Mr-Dark-debug/Moonfold/blob/main/PROGRESS.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >progress log</a
+                >
+                records what has actually been tested.
+              </p>
+            </div>
+          </details>
+          <details name="faq">
+            <summary>Do I need my own subscriptions?<span class="faq-icon" aria-hidden="true">+</span></summary>
+            <div class="faq-answer">
+              <p>
+                Yes. You use your own provider accounts and authenticated local tools. Moonfold is a
+                workspace around those tools; it doesn’t include model credits or pool, share, or
+                resell provider access. Each provider’s pricing and terms still apply.
+              </p>
+            </div>
+          </details>
+          <details name="faq">
+            <summary>How will provider handoff work?<span class="faq-icon" aria-hidden="true">+</span></summary>
+            <div class="faq-answer">
+              <p>
+                The planned workflow preserves a task brief with the goal, decisions, code changes,
+                and open questions, so another provider can continue. Review before switching is the
+                intended default. This is a roadmap feature, and native provider sessions aren’t
+                interchangeable.
+              </p>
+            </div>
+          </details>
+          <details name="faq">
+            <summary>Is this an official provider app?<span class="faq-icon" aria-hidden="true">+</span></summary>
+            <div class="faq-answer">
+              <p>
+                No. Moonfold is an independent project and a fork of T3 Code. It is not affiliated
+                with or endorsed by OpenAI, Anthropic, Google, Cursor, or T3. Provider names are
+                used only to identify integrations.
+              </p>
+            </div>
+          </details>
+        </div>
+      </section>
+      <section class="closing" aria-labelledby="closing-title" data-fs-dark>
+        <div class="closing-copy">
+          <h2 id="closing-title">Make room for <em>what’s possible.</em></h2>
+          <p>A new home for the tools you love<br />and the things you haven’t built yet.</p>
+        </div>
+        <a
+          class="button button-cream"
+          href="https://github.com/Mr-Dark-debug/Moonfold"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span class="button-idle">
+            <i class="button-dot" aria-hidden="true"></i>
+            <span class="button-label">Find us on GitHub</span>
+          </span>
+          <span class="button-hover" aria-hidden="true">
+            <span class="button-label">Find us on GitHub</span>
+            <svg class="button-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          </span>
+        </a>
+      </section>
+    </main>
+    <div class="demo-modal" id="demo-modal" role="dialog" aria-modal="true" aria-label="Moonfold demo video" hidden>
+      <div class="demo-modal-blur" aria-hidden="true"></div>
+      <div class="demo-modal-frame">
+        <button type="button" class="demo-modal-close" aria-label="Close demo video">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+        </button>
+        <video id="demo-modal-video" controls playsinline preload="metadata"></video>
+        <p class="demo-modal-title"></p>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="footer-landscape" aria-hidden="true">
+        <canvas id="halftone-footer-canvas" class="footer-halftone-canvas" aria-hidden="true"></canvas>
+      </div>
+    </footer>
+  </body>
+</html>

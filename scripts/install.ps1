@@ -99,19 +99,48 @@ function Fetch([string] $uri, [string] $destination, [switch] $progress) {
   }
 }
 if ($interactive) {
+  # The Moonfold mark as pixel rows, drawn two rows per line with half blocks. '.' is empty and
+  # each letter is a colour from $markColors (mid-tones that read on dark and light terminals).
   # Block characters are constructed so this file also loads correctly in PowerShell 5.1.
-  $mark = @(
-    "########## ######## ",
-    "    ###       _##^  ",
-    "    ###       ####_ ",
-    "    ###    _     ###",
-    "    ###    #######^ "
+  $markColors = @{ a = "167;177;253"; b = "148;161;250"; c = "140;155;254"; d = "130;144;244"; e = "100;116;238"; f = "85;101;235" }
+  $markRows = @(
+    "..........................",
+    "....................a.....",
+    "..........abb.......aa....",
+    "........aab........aaaab..",
+    ".......abb.........aaabccc",
+    "......abbb..........aa...c",
+    ".....bbbb...........a..cc.",
+    ".....bbbb.............cc..",
+    "....bbbbc...........ccc...",
+    "....bbccd.........ccc.....",
+    "....cccdd.......ccc.......",
+    "..cccddddd....ccc....e....",
+    ".cc.ddddd..cccc.....ff....",
+    "cc..d...cccc........f.....",
+    "cc..ccccc.........fff.....",
+    ".cccc...eeeeeeeefffff.....",
+    "......eeeeeeeeffffff......",
+    ".......eeeeeeffffff.......",
+    "........eeefffffff........",
+    "..........ffffff.........."
   )
+  $upper = [char]0x2580; $lower = [char]0x2584; $full = [char]0x2588
   [Console]::Error.WriteLine()
-  for ($i = 0; $i -lt $mark.Length; $i++) {
-    $row = $mark[$i].Replace('#', [char]0x2588).Replace('^', [char]0x2580).Replace('_', [char]0x2584)
-    $label = if ($i -eq 1) { "     ${bold}Moonfold$reset" } elseif ($i -eq 2) { "     ${muted}CLI installer$reset" } else { "" }
-    [Console]::Error.WriteLine("  $bold$row$reset$label")
+  for ($y = 0; $y -lt $markRows.Length; $y += 2) {
+    $line = New-Object System.Text.StringBuilder
+    for ($x = 0; $x -lt $markRows[$y].Length; $x++) {
+      $top = [string]$markRows[$y][$x]
+      $bottom = [string]$markRows[$y + 1][$x]
+      $cell = if ($top -eq "." -and $bottom -eq ".") { " " }
+      elseif ($env:NO_COLOR) { if ($top -eq ".") { $lower } elseif ($bottom -eq ".") { $upper } else { $full } }
+      elseif ($bottom -eq ".") { "$esc[38;2;$($markColors[$top])m$upper$esc[0m" }
+      elseif ($top -eq ".") { "$esc[38;2;$($markColors[$bottom])m$lower$esc[0m" }
+      else { "$esc[38;2;$($markColors[$top]);48;2;$($markColors[$bottom])m$upper$esc[0m" }
+      [void]$line.Append($cell)
+    }
+    $label = if ($y -eq 8) { "    ${bold}Moonfold$reset" } elseif ($y -eq 10) { "    ${muted}CLI installer$reset" } else { "" }
+    [Console]::Error.WriteLine("  $line$label")
   }
   [Console]::Error.WriteLine()
 }

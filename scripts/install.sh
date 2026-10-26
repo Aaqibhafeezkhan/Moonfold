@@ -23,7 +23,7 @@ moonfold_home="${MOONFOLD_HOME:-$HOME/.moonfold}"
 bin_dir="${MOONFOLD_INSTALL_BIN_DIR:-$HOME/.local/bin}"
 
 fail() {
-  printf '\nt3 install: %s\n' "$1" >&2
+  printf '\nmoonfold install: %s\n' "$1" >&2
   exit 1
 }
 
@@ -39,15 +39,63 @@ step() {
   if "$interactive"; then printf '\r\033[2K  %s%s%s' "$muted" "$1" "$reset" >&2
   else printf '  %s\n' "$1" >&2; fi
 }
-if "$interactive"; then
-  printf '\n%s' "$bold" >&2
-  printf '  %s\n' '██████████ ████████ ' >&2
-  printf '  %s\n' '    ███       ▄██▀       Moonfold' >&2
-  printf '  %s%s     %sCLI installer%s\n' '    ███       ████▄ ' "$reset" "$muted" "$reset$bold" >&2
-  printf '  %s\n' '    ███    ▄     ███' >&2
-  printf '  %s\n' '    ███    ███████▀ ' >&2
-  printf '%s\n' "$reset" >&2
-fi
+# The Moonfold mark as pixel rows, drawn two rows per line with half blocks. '.' is empty and each
+# letter is a colour (mid-tones that read on dark and light terminals): 24-bit where COLORTERM
+# says so, otherwise the nearest of the 256-colour palette.
+draw_mark() {
+  case "${COLORTERM:-}" in
+    truecolor | 24bit)
+      mark_a='2;167;177;253' mark_b='2;148;161;250' mark_c='2;140;155;254'
+      mark_d='2;130;144;244' mark_e='2;100;116;238' mark_f='2;85;101;235' ;;
+    *) mark_a='5;147' mark_b='5;111' mark_c='5;105' mark_d='5;105' mark_e='5;69' mark_f='5;62' ;;
+  esac
+  esc="$(printf '\033')"
+  line_number=0
+  printf '\n' >&2
+  while read -r top && read -r bottom; do
+    line=''
+    while [ -n "$top" ]; do
+      t="${top%"${top#?}"}" b="${bottom%"${bottom#?}"}"
+      top="${top#?}" bottom="${bottom#?}"
+      if [ "$t$b" = .. ]; then line="$line "
+      elif [ -n "${NO_COLOR:-}" ]; then
+        if [ "$t" = . ]; then line="$line▄"; elif [ "$b" = . ]; then line="$line▀"; else line="$line█"; fi
+      elif [ "$b" = . ]; then eval "fg=\$mark_$t"; line="$line$esc[38;${fg}m▀$esc[0m"
+      elif [ "$t" = . ]; then eval "fg=\$mark_$b"; line="$line$esc[38;${fg}m▄$esc[0m"
+      else eval "fg=\$mark_$t bg=\$mark_$b"; line="$line$esc[38;${fg};48;${bg}m▀$esc[0m"
+      fi
+    done
+    case "$line_number" in
+      4) line="$line    ${bold}Moonfold$reset" ;;
+      5) line="$line    ${muted}CLI installer$reset" ;;
+    esac
+    printf '  %s\n' "$line" >&2
+    line_number=$((line_number + 1))
+  done <<'MARK'
+..........................
+....................a.....
+..........abb.......aa....
+........aab........aaaab..
+.......abb.........aaabccc
+......abbb..........aa...c
+.....bbbb...........a..cc.
+.....bbbb.............cc..
+....bbbbc...........ccc...
+....bbccd.........ccc.....
+....cccdd.......ccc.......
+..cccddddd....ccc....e....
+.cc.ddddd..cccc.....ff....
+cc..d...cccc........f.....
+cc..ccccc.........fff.....
+.cccc...eeeeeeeefffff.....
+......eeeeeeeeffffff......
+.......eeeeeeffffff.......
+........eeefffffff........
+..........ffffff..........
+MARK
+  printf '\n' >&2
+}
+if "$interactive"; then draw_mark; fi
 step "Finding your release..."
 
 # Exit 44 on a 404 so callers can tell "no such asset" from a network failure.
@@ -222,6 +270,6 @@ ln -sfn "${target_dir}/moonfold" "${bin_dir}/moonfold"
 if "$interactive"; then printf '\r\033[2K' >&2; fi
 printf '  %sInstalled Moonfold %s%s\n\n' "$green" "$version" "$reset" >&2
 case ":${PATH}:" in
-  *":${bin_dir}:"*) printf '  Run %st3%s to get started.\n\n' "$bold" "$reset" ;;
-  *) printf '  Add %s to your PATH, then run %st3%s.\n\n' "$bin_dir" "$bold" "$reset" ;;
+  *":${bin_dir}:"*) printf '  Run %smoonfold%s to get started.\n\n' "$bold" "$reset" ;;
+  *) printf '  Add %s to your PATH, then run %smoonfold%s.\n\n' "$bin_dir" "$bold" "$reset" ;;
 esac

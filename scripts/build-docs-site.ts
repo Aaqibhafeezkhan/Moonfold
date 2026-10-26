@@ -12,6 +12,8 @@ import * as NodeURL from "node:url";
 
 import { Marked } from "marked";
 
+import { monoMark, MOONFOLD_COLORS, placeMark } from "./lib/brand-mark.ts";
+
 const REPOSITORY_URL = "https://github.com/Mr-Dark-debug/Moonfold";
 
 /** Sidebar sections; pages not listed fall into "More". */
@@ -127,8 +129,8 @@ function navigation(pages: ReadonlyArray<DocPage>, current: string): string {
     .join("");
 }
 
-const STYLE = `:root{--bg:#fbfaf6;--fg:#1b2254;--muted:#4a5288;--accent:#9a6512;--line:#e6e2d6;--code:#f1eee4}
-@media (prefers-color-scheme:dark){:root{--bg:#0a0e26;--fg:#ece9de;--muted:#a3abd6;--accent:#f4b740;--line:#252c5e;--code:#141a3d}}
+const STYLE = `:root{--bg:#fbfaf6;--fg:#1b2254;--muted:#4a5288;--accent:#3d4fe6;--line:#e6e2d6;--code:#f1eee4}
+@media (prefers-color-scheme:dark){:root{--bg:#0a0e26;--fg:#ece9de;--muted:#a3abd6;--accent:#8c9bff;--line:#252c5e;--code:#141a3d}}
 *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
 a{color:var(--accent)}a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -146,7 +148,7 @@ blockquote{margin:0;padding-left:12px;border-left:3px solid var(--line);color:va
 footer{max-width:1180px;margin:0 auto;padding:16px;color:var(--muted);font-size:14px;border-top:1px solid var(--line)}
 @media (max-width:760px){.layout{grid-template-columns:1fr}nav{border-right:0;border-bottom:1px solid var(--line)}main{padding:16px}}`;
 
-const MARK = `<svg viewBox="0 0 1024 1024" aria-hidden="true"><g transform="translate(581.68 498.81) rotate(-32)"><path d="M 103.4 -458.48 A 470 470 0 1 0 103.4 458.48 A 470 470 0 0 1 103.4 -458.48 Z" fill="#F4B740"/><path d="M 103.4 -458.48 A 470 470 0 0 0 103.4 458.48 Z" fill="#FFE2A3"/><path d="M 103.4 -458.48 L 103.4 458.48" stroke="#C8891C" stroke-width="11.75" stroke-linecap="round"/></g></svg>`;
+const MARK = `<svg viewBox="0 0 1024 1024" aria-hidden="true">${monoMark(placeMark(960, 512, 512), MOONFOLD_COLORS.periwinkle)}</svg>`;
 
 function page(input: { title: string; nav: string; body: string; editUrl?: string }): string {
   return `<!doctype html>
