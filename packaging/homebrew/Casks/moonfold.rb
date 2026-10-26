@@ -1,9 +1,9 @@
 cask "moonfold" do
   arch arm: "arm64", intel: "x64"
 
-  version "0.1.0-beta.1"
-  sha256 arm:   "d7e4ad58465ff3d2facdd91233966095412a6ab5465602b921743bf9d7a184ac",
-         intel: "dcd6ce00727eb09e79c630f61d7d986fb12716c4967124bb06bc5cfe10222933"
+  version "0.1.0-beta.2"
+  sha256 arm:   "beb81cc1a1ab761a2fe7b0823f6a4cb641a5422d8fdb7b40245b9e2e44ff686f",
+         intel: "7e8f99fa2363c8acf9d22b025d2b855cc4a4a2a5509f2def20210f91788d6edb"
 
   url "https://github.com/Mr-Dark-debug/Moonfold/releases/download/v#{version}/Moonfold-#{version}-#{arch}.dmg"
   name "Moonfold"

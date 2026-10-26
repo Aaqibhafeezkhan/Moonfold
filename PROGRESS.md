@@ -17,9 +17,17 @@ Decisions: D-51, D-52.
 - 40 s launch video (`docs/assets/moonfold-launch.mp4`): motion graphics rendered frame by frame
   in headless Edge from the real app recording, with a synthesized soundtrack.
 - Repository topics added. Launch kit drafted in `.plans/launch-kit.md` (not posted).
+- v0.1.0-beta.2 published (27 assets, marked Latest). Main CI green after pinning node-pty to the
+  patched 1.2.0-beta.15 (newer betas broke the release smoke check). `install.ps1` from main
+  installed it into a scratch folder: `moonfold --version` printed `moonfold v0.1.0-beta.2`, and
+  the banner drew in a real PowerShell terminal. `latest.yml` and GitHub's latest release both
+  point at beta.2. Homebrew and winget manifests regenerated (not submitted).
 
 ### Not verified / open
 
+- The in-app update from beta.1 to beta.2 was not run: the owner's own beta.1 install is on this
+  machine and a second install would replace its registration. Only the feed was checked.
+- No new dependency or third-party artifact since beta.1, so the REA gate was not re-run.
 - Vercel builds of `moonfold-website` fail because the project builds the repository root (log:
   `vp: command not found`). The fix is the project's Root Directory = `moonfold-website`, an
   owner account setting.
