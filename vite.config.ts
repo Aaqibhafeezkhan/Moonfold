@@ -110,6 +110,8 @@ export default defineConfig({
     ignorePatterns: [
       ".repos",
       ".repos/**",
+      // A standalone static site with its own `npm run check`; app lint rules do not apply.
+      "moonfold-website/**",
       "dist",
       "dist-electron",
       "node_modules",

@@ -1,3 +1,4 @@
+/* oxlint-disable shadcn/no-raw-colors -- Mask luminance, not colours: white shows, black hides. */
 import { useId, type SVGProps } from "react";
 
 /**

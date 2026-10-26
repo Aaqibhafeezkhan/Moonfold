@@ -33,6 +33,8 @@ const ALLOWED_FILES: ReadonlyArray<RegExp> = [
   /^scripts\/brand-codemod\.ts$/,
   /^scripts\/check-brand\.ts$/,
   /^apps\/web\/src\/components\/settings\/AboutMoonfold\.tsx$/,
+  // The website's credits and FAQ name the upstream project, like the README.
+  /^moonfold-website\/(?:src|dist)\/index\.html$/,
 ];
 
 // Allowed inside any file: references to upstream history.
