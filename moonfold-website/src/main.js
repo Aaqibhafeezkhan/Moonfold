@@ -322,6 +322,23 @@ document.addEventListener("keydown", (e) => {
 });
 
 // ---------------------------------------------------------------------------
+// 4b. Agent belt: the SVG animation only runs while its card is on screen
+// ---------------------------------------------------------------------------
+function initAgentBelt() {
+  const belt = document.querySelector(".belt");
+  if (!belt || typeof belt.pauseAnimations !== "function") return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  belt.pauseAnimations();
+  new IntersectionObserver(
+    ([entry]) => {
+      if (entry.isIntersecting) belt.unpauseAnimations();
+      else belt.pauseAnimations();
+    },
+    { threshold: 0 },
+  ).observe(belt);
+}
+
+// ---------------------------------------------------------------------------
 // 5. Favorites Marquee
 // ---------------------------------------------------------------------------
 function initFavoritesMarquee() {
@@ -692,11 +709,13 @@ async function initReleaseDownloads() {
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
     initFavoritesMarquee();
+    initAgentBelt();
     initHalftoneFooter();
     initReleaseDownloads();
   });
 } else {
   initFavoritesMarquee();
+  initAgentBelt();
   initHalftoneFooter();
   initReleaseDownloads();
 }
