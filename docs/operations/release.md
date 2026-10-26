@@ -12,9 +12,10 @@ accounts; those upstream workflows were removed in Phase 1.
    `git push origin HEAD:refs/heads/release-dry-run/0.1.0-beta.2`. It builds every target and
    uploads the result as a workflow artifact named `release-<version>`, without publishing.
 3. Run the REA gate on the dry-run artifacts (docs/REA.md) and record it in `docs/REA-<tag>.md`.
-4. Tag and push: `git tag v0.1.0-beta.2 && git push origin v0.1.0-beta.2`. A version with a
-   prerelease part (`-beta.N`, `-rc.N`) is published as a GitHub prerelease; `X.Y.Z` becomes the
-   latest release.
+4. Tag and push: `git tag v0.1.0-beta.2 && git push origin v0.1.0-beta.2`. Until 1.0,
+   `X.Y.Z-beta.N` and `X.Y.Z` publish as full releases marked latest, so the repository page
+   lists them; only `-alpha.N` and `-rc.N` versions publish as GitHub prereleases. Clients find
+   versions by listing releases, so this flag only changes how GitHub displays a release.
 
 The workflow can also be started by hand from the Actions tab with a version and a `publish`
 switch, once it is on `main`.

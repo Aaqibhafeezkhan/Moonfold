@@ -3,8 +3,9 @@ name: Release
 # Builds every desktop target and CLI archive, then publishes a GitHub Release with checksums, an
 # SBOM, and the electron-updater manifests the desktop app reads (docs/operations/release.md).
 #
-# - Pushing a tag `vX.Y.Z` or `vX.Y.Z-beta.N` builds and publishes that version. A version with a
-#   prerelease part is published as a GitHub prerelease.
+# - Pushing a tag `vX.Y.Z` or `vX.Y.Z-beta.N` builds and publishes that version.
+#   Until 1.0, beta builds are Moonfold's public line, so they publish as full releases marked
+#   latest; only `-alpha.N` and `-rc.N` versions publish as GitHub prereleases.
 # - Running it by hand builds a version without publishing unless `publish` is checked.
 # - Pushing a branch `release-dry-run/<version>` builds that version without publishing, which
 #   tests the pipeline before the workflow reaches main.
@@ -77,7 +78,7 @@ jobs:
             echo "version=$version"
             echo "tag=v$version"
             echo "publish=$publish"
-            if [[ "$version" == *-* ]]; then
+            if [[ "$version" =~ -(alpha|rc)\. ]]; then
               echo "is_prerelease=true"
             else
               echo "is_prerelease=false"

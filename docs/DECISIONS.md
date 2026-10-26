@@ -407,3 +407,19 @@ into plain HTML with one stylesheet, and `pages.yml` deploys it. A site framewor
 toolchain and dependencies for 45 pages of Markdown; the script keeps the user guides as the one
 source, rewrites links between them, and links everything else to GitHub. Internal docs
 (`docs/internals`, plans, QA records) are not published there.
+
+## D-51 A new mark drawn from one parametric model
+
+The logo is now a crescent moon inside a tilted orbit ring with a four-point star, drawn by
+`scripts/lib/brand-mark.ts`. Every icon, favicon, the social image, the docs site and the in-app
+`MoonfoldMark` come from that model, so they cannot drift apart. Small sizes use a flat variant
+with a thicker ring; one-colour uses a gap cut along the ring. The CLI installers draw the same
+mark in half-block pixels, in mid-tone colours that read on dark and light terminals.
+
+## D-52 Betas publish as the latest release
+
+GitHub hides prereleases from the repository sidebar, so the first beta showed only as a tag.
+Until 1.0, betas are the public line: `release.yml` publishes `-beta.N` and plain versions as full
+releases marked latest, and only `-alpha.N` and `-rc.N` as prereleases. The installers, the CLI
+and the desktop updater list releases rather than asking for "latest", so the flag changes only
+what GitHub displays. v0.1.0-beta.1 was edited to match.
