@@ -37,9 +37,6 @@ describe("openCodeFailureClass", () => {
       openCodeFailureClass({ status: 401, message: "Invalid API key" }),
       "provider_error",
     );
-    assert.strictEqual(
-      openCodeFailureClass(new Error("Model not found")),
-      "provider_error",
-    );
+    assert.strictEqual(openCodeFailureClass(new Error("Model not found")), "provider_error");
   });
 });

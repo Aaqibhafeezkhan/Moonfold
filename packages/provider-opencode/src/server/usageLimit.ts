@@ -6,9 +6,7 @@
  * again later." Inspect nested response bodies too, since some providers wrap
  * the original error in a generic API error.
  */
-export function openCodeFailureClass(
-  input: unknown,
-): "usage_limit" | "provider_error" {
+export function openCodeFailureClass(input: unknown): "usage_limit" | "provider_error" {
   const seen = new Set<object>();
   const queue: unknown[] = [input];
   const strings: string[] = [];
@@ -20,10 +18,7 @@ export function openCodeFailureClass(
       strings.push(value);
       // Some SDKs put a JSON response body inside the message.
       const trimmed = value.trim();
-      if (
-        (trimmed.startsWith("{") || trimmed.startsWith("[")) &&
-        trimmed.length < 20_000
-      ) {
+      if ((trimmed.startsWith("{") || trimmed.startsWith("[")) && trimmed.length < 20_000) {
         try {
           queue.push(JSON.parse(trimmed));
         } catch {
@@ -59,9 +54,7 @@ export function openCodeFailureClass(
         has429Status = true;
       }
       if (typeof child === "string") {
-        if (
-          ["message", "detail", "code", "type", "name", "statusText", "body"].includes(key)
-        ) {
+        if (["message", "detail", "code", "type", "name", "statusText", "body"].includes(key)) {
           strings.push(child);
         }
         // Read nested JSON body strings even when the field name varies by SDK.
