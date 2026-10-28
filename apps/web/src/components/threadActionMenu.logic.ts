@@ -20,6 +20,8 @@ export type ThreadActionMenuId =
   | "memories"
   | "memories:on"
   | "memories:off"
+  | "prompt-profile"
+  | `prompt-profile:${string}`
   | "snooze"
   | `snooze:${string}`
   | "unsnooze"
@@ -98,6 +100,15 @@ export interface ThreadActionMenuState {
    * answer is unknown (an older server, or the read failed), which hides the item.
    */
   readonly memoriesOptedOut?: boolean | null;
+  /**
+   * The thread's prompt profile choice (D-54): the profiles to offer, the default's name, and the
+   * thread's own pick (null follows the default). Absent hides the item.
+   */
+  readonly promptProfile?: {
+    readonly threadProfileId: string | null;
+    readonly defaultName: string;
+    readonly options: ReadonlyArray<{ readonly id: string; readonly name: string }>;
+  } | null;
   readonly isSnoozed: boolean;
   readonly canSnoozeNow: boolean;
   readonly isRegeneratingTitle: boolean;
@@ -269,6 +280,27 @@ export function buildThreadActionMenuItems(
                 label: "Don't use memories",
                 checked: state.memoriesOptedOut,
               },
+            ],
+          },
+        ]),
+    ...(state.promptProfile === undefined || state.promptProfile === null
+      ? []
+      : [
+          {
+            id: "prompt-profile" as const,
+            label: "Prompt profile",
+            icon: "message-square-quote",
+            children: [
+              {
+                id: "prompt-profile:" as const,
+                label: `Default (${state.promptProfile.defaultName})`,
+                checked: state.promptProfile.threadProfileId === null,
+              },
+              ...state.promptProfile.options.map((option) => ({
+                id: `prompt-profile:${option.id}` as const,
+                label: option.name,
+                checked: state.promptProfile?.threadProfileId === option.id,
+              })),
             ],
           },
         ]),

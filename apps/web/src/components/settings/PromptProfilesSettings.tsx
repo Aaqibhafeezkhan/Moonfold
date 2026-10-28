@@ -1,0 +1,273 @@
+import {
+  DEFAULT_PROMPT_PROFILE_ID,
+  PROMPT_PROFILE_MAX_CUSTOM,
+  PROMPT_PROFILE_MAX_INSTRUCTIONS,
+  PromptProfileId,
+  listPromptProfiles,
+  type PromptProfile,
+} from "@moonfold/contracts";
+import { PlusIcon, Trash2Icon } from "lucide-react";
+import { useState } from "react";
+
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
+import { Textarea } from "../ui/textarea";
+import {
+  SettingResetButton,
+  SettingsPageContainer,
+  SettingsRow,
+  SettingsSection,
+} from "./settingsLayout";
+import { useSettingsScope } from "./SettingsScopeContext";
+import { searchableSetting } from "./settingsSearch";
+import {
+  useScopedSettings,
+  useScopedSettingsMixed,
+  useUpdateScopedSettings,
+} from "./useScopedSettings";
+
+/** A fresh id that cannot collide with a built-in or another custom profile. */
+function newProfileId(existing: ReadonlyArray<PromptProfile>): PromptProfile["id"] {
+  const taken = new Set<string>(existing.map((profile) => profile.id));
+  for (let attempt = 0; ; attempt += 1) {
+    const id = `custom-${Date.now().toString(36)}${attempt === 0 ? "" : `-${attempt}`}`;
+    if (!taken.has(id)) return PromptProfileId.make(id);
+  }
+}
+
+/**
+ * Settings > Prompt Profiles (D-54): which standing instructions Moonfold sends with every turn,
+ * and the user's own profiles. Threads can pick another profile from the composer.
+ */
+export function PromptProfilesSettingsPanel() {
+  const { scope } = useSettingsScope();
+  const settings = useScopedSettings();
+  const updateSettings = useUpdateScopedSettings();
+  const defaultMixed = useScopedSettingsMixed(["defaultPromptProfileId"]);
+  const customMixed = useScopedSettingsMixed(["promptProfiles"]);
+  const isProjectScope = scope.kind === "project" || scope.kind === "checkout";
+  const profiles = listPromptProfiles(settings.promptProfiles);
+  const current = profiles.find((profile) => profile.id === settings.defaultPromptProfileId);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const saveCustom = (next: ReadonlyArray<PromptProfile>) =>
+    updateSettings({ promptProfiles: next });
+
+  return (
+    <SettingsPageContainer>
+      <SettingsSection id="prompt-profiles" title="Prompt profiles">
+        <SettingsRow
+          {...searchableSetting("prompt-profile-default")}
+          serverScoped
+          settingKeys={["defaultPromptProfileId"]}
+          mixed={defaultMixed}
+          description={
+            current === undefined || current.id === DEFAULT_PROMPT_PROFILE_ID
+              ? "Moonfold adds no standing instructions; each agent works the way its own harness tells it to. Threads can pick a profile from the composer."
+              : `${current.description} Sent with every turn, to every agent, on top of AGENTS.md and CLAUDE.md.`
+          }
+          resetAction={
+            settings.defaultPromptProfileId !== DEFAULT_PROMPT_PROFILE_ID ? (
+              <SettingResetButton
+                label="default prompt profile"
+                onClick={() =>
+                  updateSettings({ defaultPromptProfileId: DEFAULT_PROMPT_PROFILE_ID })
+                }
+              />
+            ) : null
+          }
+          control={
+            <Select
+              value={defaultMixed ? null : settings.defaultPromptProfileId}
+              onValueChange={(value) => {
+                const profile = profiles.find((candidate) => candidate.id === value);
+                if (profile) updateSettings({ defaultPromptProfileId: profile.id });
+              }}
+            >
+              <SelectTrigger size="sm" aria-label="Default prompt profile">
+                <SelectValue>
+                  {(value: string | null) =>
+                    value === null
+                      ? "Mixed"
+                      : (profiles.find((profile) => profile.id === value)?.name ??
+                        "Moonfold default")
+                  }
+                </SelectValue>
+              </SelectTrigger>
+              <SelectPopup align="end" alignItemWithTrigger={false}>
+                {profiles.map((profile) => (
+                  <SelectItem key={profile.id} value={profile.id}>
+                    {profile.name}
+                  </SelectItem>
+                ))}
+              </SelectPopup>
+            </Select>
+          }
+        />
+        <SettingsRow
+          {...searchableSetting("prompt-profiles-custom")}
+          serverScoped
+          settingKeys={["promptProfiles"]}
+          mixed={customMixed}
+          description={
+            isProjectScope
+              ? "Profiles belong to the environment. Choose an environment above to add or edit them; a project can still pick its default."
+              : "Built-in profiles are read-only. Your own profiles are stored in this environment's settings."
+          }
+        >
+          <ul className="mt-2 space-y-2">
+            {profiles.map((profile) => {
+              const expanded = expandedId === profile.id;
+              return (
+                <li key={profile.id} className="rounded-md border px-3 py-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium">{profile.name}</p>
+                      <p className="truncate text-muted-foreground text-xs">
+                        {profile.builtIn ? "Built in" : "Yours"}
+                        {profile.description ? ` · ${profile.description}` : ""}
+                      </p>
+                    </div>
+                    <Button
+                      size="compact"
+                      variant="ghost"
+                      aria-expanded={expanded}
+                      onClick={() => setExpandedId(expanded ? null : profile.id)}
+                    >
+                      {expanded ? "Close" : profile.builtIn || isProjectScope ? "View" : "Edit"}
+                    </Button>
+                    {!profile.builtIn && !isProjectScope ? (
+                      <Button
+                        size="icon-xs"
+                        variant="ghost"
+                        aria-label={`Delete ${profile.name}`}
+                        onClick={() =>
+                          saveCustom(
+                            settings.promptProfiles.filter((other) => other.id !== profile.id),
+                          )
+                        }
+                      >
+                        <Trash2Icon />
+                      </Button>
+                    ) : null}
+                  </div>
+                  {expanded ? (
+                    profile.builtIn || isProjectScope ? (
+                      <pre className="mt-2 whitespace-pre-wrap rounded bg-muted/50 p-2 text-muted-foreground text-xs">
+                        {profile.instructions === ""
+                          ? "No instructions: this profile adds nothing to a turn."
+                          : profile.instructions}
+                      </pre>
+                    ) : (
+                      <CustomProfileEditor
+                        key={profile.id}
+                        profile={profile}
+                        onSave={(next) =>
+                          saveCustom(
+                            settings.promptProfiles.map((other) =>
+                              other.id === next.id ? next : other,
+                            ),
+                          )
+                        }
+                      />
+                    )
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+          {isProjectScope ? null : (
+            <div className="mt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={settings.promptProfiles.length >= PROMPT_PROFILE_MAX_CUSTOM}
+                onClick={() => {
+                  const profile: PromptProfile = {
+                    id: newProfileId(profiles),
+                    name: "My profile",
+                    description: "",
+                    instructions: "",
+                  };
+                  saveCustom([...settings.promptProfiles, profile]);
+                  setExpandedId(profile.id);
+                }}
+              >
+                <PlusIcon />
+                New profile
+              </Button>
+            </div>
+          )}
+        </SettingsRow>
+      </SettingsSection>
+    </SettingsPageContainer>
+  );
+}
+
+function CustomProfileEditor({
+  profile,
+  onSave,
+}: {
+  profile: PromptProfile;
+  onSave: (profile: PromptProfile) => void;
+}) {
+  const [name, setName] = useState(profile.name);
+  const [description, setDescription] = useState(profile.description);
+  const [instructions, setInstructions] = useState(profile.instructions);
+  const trimmedName = name.trim();
+  const changed =
+    trimmedName !== profile.name ||
+    description.trim() !== profile.description ||
+    instructions !== profile.instructions;
+  const valid =
+    trimmedName.length > 0 &&
+    trimmedName.length <= 80 &&
+    description.trim().length <= 240 &&
+    instructions.length <= PROMPT_PROFILE_MAX_INSTRUCTIONS;
+
+  return (
+    <div className="mt-2 space-y-2">
+      <Input
+        aria-label="Profile name"
+        value={name}
+        maxLength={80}
+        onChange={(event) => setName(event.target.value)}
+      />
+      <Input
+        aria-label="Profile description"
+        placeholder="One line about what this profile is for"
+        value={description}
+        maxLength={240}
+        onChange={(event) => setDescription(event.target.value)}
+      />
+      <Textarea
+        aria-label="Profile instructions"
+        placeholder="Standing instructions every agent receives with each turn, for example: Prefer small commits and explain each change."
+        rows={8}
+        value={instructions}
+        onChange={(event) => setInstructions(event.target.value)}
+      />
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-muted-foreground text-xs tabular-nums">
+          {instructions.length.toLocaleString()} /{" "}
+          {PROMPT_PROFILE_MAX_INSTRUCTIONS.toLocaleString()}
+        </span>
+        <Button
+          size="sm"
+          disabled={!changed || !valid}
+          onClick={() =>
+            onSave({
+              ...profile,
+              name: trimmedName,
+              description: description.trim(),
+              instructions,
+            })
+          }
+        >
+          Save profile
+        </Button>
+      </div>
+    </div>
+  );
+}

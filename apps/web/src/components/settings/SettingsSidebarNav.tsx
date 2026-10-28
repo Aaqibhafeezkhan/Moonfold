@@ -12,6 +12,7 @@ import {
 import {
   ArchiveIcon,
   ArrowRightLeftIcon,
+  MessageSquareQuoteIcon,
   BlocksIcon,
   BookmarkIcon,
   BotIcon,
@@ -94,6 +95,7 @@ const SETTINGS_SECTION_ICONS: Readonly<
   "/settings/plugins": PuzzleIcon,
   "/settings/memories": BookmarkIcon,
   "/settings/handoff": ArrowRightLeftIcon,
+  "/settings/prompt-profiles": MessageSquareQuoteIcon,
   "/settings/computer-use": MonitorIcon,
   "/settings/scheduled-tasks": CalendarClockIcon,
   "/settings/source-control": GitBranchIcon,

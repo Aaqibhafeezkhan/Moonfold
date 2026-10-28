@@ -1,5 +1,6 @@
 import { remapComposerContextAttachments } from "@moonfold/shared/composerContextReferences";
 import {
+  PromptProfileId,
   type ThreadLinkedPullRequest,
   CommandId,
   CheckpointId,
@@ -134,6 +135,8 @@ export interface UpdateThreadMetadataInput extends ThreadCommandInput {
   readonly linkedPullRequest?: ThreadLinkedPullRequest | null;
   /** Apply only while no message or run has landed on the thread. */
   readonly expectedEmpty?: boolean;
+  /** Pick a prompt profile for the thread, or null to use the default again (D-54). */
+  readonly promptProfileId?: string | null;
 }
 
 export interface SetThreadRuntimeModeInput extends ThreadCommandInput {
@@ -571,7 +574,8 @@ export const updateThreadMetadata = Effect.fn("EnvironmentCommands.updateThreadM
       input.worktreePath !== undefined ||
       input.regenerateTitle !== undefined ||
       input.linkedPullRequest !== undefined ||
-      input.limitRecovery !== undefined
+      input.limitRecovery !== undefined ||
+      input.promptProfileId !== undefined
     ) {
       result = yield* dispatch({
         type: "thread.metadata.update",
@@ -586,6 +590,12 @@ export const updateThreadMetadata = Effect.fn("EnvironmentCommands.updateThreadM
         ...(input.linkedPullRequest === undefined
           ? {}
           : { linkedPullRequest: input.linkedPullRequest }),
+        ...(input.promptProfileId === undefined
+          ? {}
+          : {
+              promptProfileId:
+                input.promptProfileId === null ? null : PromptProfileId.make(input.promptProfileId),
+            }),
       });
     }
     if (input.modelSelection !== undefined) {
