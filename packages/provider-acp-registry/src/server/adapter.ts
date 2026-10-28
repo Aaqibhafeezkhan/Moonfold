@@ -120,10 +120,11 @@ export function registerMistralVibeAcpExtensions(context: AcpAdapterV2ExtensionC
 /**
  * Whether an agent's error message reports an exhausted quota or rate limit. Agent-agnostic: ACP
  * has no limit code, so the wording agents pass through from their model APIs is the signal
- * (Gemini's `RESOURCE_EXHAUSTED`, HTTP 429, "quota exceeded", "usage limit", "rate limit").
+ * (Gemini's `RESOURCE_EXHAUSTED`, HTTP 429, "quota exceeded", "usage limit", "rate limit"), and
+ * the exhausted-balance wording of pay-as-you-go APIs such as DeepSeek's "Insufficient Balance".
  */
-function messageReportsUsageLimit(message: string): boolean {
-  return /\bRESOURCE_EXHAUSTED\b|\b429\b|quota (?:exceeded|exhausted)|exceeded (?:your |the )?quota|usage limit|rate[- ]limit(?:ed)?\b|too many requests/i.test(
+export function messageReportsUsageLimit(message: string): boolean {
+  return /\bRESOURCE_EXHAUSTED\b|\b429\b|quota (?:exceeded|exhausted|reached)|exceeded (?:your |the )?quota|usage limit|rate[- ]limit(?:ed)?\b|too many requests|insufficient[ _-](?:balance|quota|credits?)\b|(?:balance|credits?) (?:exhausted|depleted)/i.test(
     message,
   );
 }

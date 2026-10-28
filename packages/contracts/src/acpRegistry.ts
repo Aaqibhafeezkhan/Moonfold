@@ -13,11 +13,22 @@ const AcpRegistryAgentId = TrimmedNonEmptyString.check(
 const ACP_REGISTRY_CDN_HOSTNAME = "cdn.agentclientprotocol.com";
 const ACP_REGISTRY_AGENT_ID_PATTERN = /^[a-z0-9][a-z0-9._-]*$/;
 
+/**
+ * Agents Moonfold lists beside the public Registry (provider-acp-registry catalogSupplement.ts).
+ * The Registry CDN has no icon for them, so they use the generic ACP glyph.
+ */
+export const MOONFOLD_ACP_CATALOG_AGENT_IDS: ReadonlyArray<string> = ["deepseek-harness"];
+
 /** Derives the official Registry icon URL without trusting stored URL metadata. */
 export function officialAcpRegistryIconUrlForAgentId(
   agentId: string | null | undefined,
 ): string | null {
-  if (agentId === null || agentId === undefined || !ACP_REGISTRY_AGENT_ID_PATTERN.test(agentId)) {
+  if (
+    agentId === null ||
+    agentId === undefined ||
+    !ACP_REGISTRY_AGENT_ID_PATTERN.test(agentId) ||
+    MOONFOLD_ACP_CATALOG_AGENT_IDS.includes(agentId)
+  ) {
     return null;
   }
   return `https://${ACP_REGISTRY_CDN_HOSTNAME}/registry/v1/latest/${agentId}.svg`;
