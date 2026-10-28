@@ -1,4 +1,4 @@
-import { memo, type MouseEventHandler, type PointerEventHandler } from "react";
+import { memo, useRef, type MouseEventHandler, type PointerEventHandler } from "react";
 import { CheckIcon, ChevronDownIcon, ChevronLeftIcon, Minimize2Icon, PlayIcon } from "lucide-react";
 import { CornerUpRight, ListPlus } from "lucide";
 import { MorphIcon } from "~/components/MorphIcon";
@@ -56,7 +56,12 @@ interface ComposerPrimaryActionsProps {
   /** The Compact chip is turned off, so the next send keeps full history. */
   keepFullHistory?: boolean;
   onToggleKeepFullHistory?: () => void;
+  /** Right-click or long-press on Send opens "Schedule send" (D-55); absent where it cannot. */
+  onScheduleSend?: () => void;
 }
+
+/** How long a touch must rest on Send before it opens "Schedule send". */
+const LONG_PRESS_MS = 550;
 
 const formatPendingPrimaryActionLabel = (input: {
   compact: boolean;
@@ -112,7 +117,16 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
   compactBeforeSendTokens = null,
   keepFullHistory = false,
   onToggleKeepFullHistory,
+  onScheduleSend,
 }: ComposerPrimaryActionsProps) {
+  const longPress = useRef<{ timer: ReturnType<typeof setTimeout> | null; fired: boolean }>({
+    timer: null,
+    fired: false,
+  });
+  const cancelLongPress = () => {
+    if (longPress.current.timer !== null) clearTimeout(longPress.current.timer);
+    longPress.current.timer = null;
+  };
   const pointerFocusProps = preserveComposerFocusOnPointerDown
     ? { onPointerDown: preventPointerFocus }
     : undefined;
@@ -305,7 +319,11 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
       ? `Summarize ${compactTokens} tokens of history, then send`
       : isRunning && !isEditingQueuedMessage
         ? `Click to ${followUpBehavior}, Ctrl/⌘-click${alternateShortcutLabel ? ` or ${alternateShortcutLabel}` : ""} to ${alternateAction}`
-        : submitLabel);
+        : submitLabel) +
+      (onScheduleSend && !showResume && !isEditingQueuedMessage
+        ? " · Right-click to schedule"
+        : "");
+  const canSchedule = onScheduleSend !== undefined && !showResume && !isEditingQueuedMessage;
 
   const sendButton = (
     <button
@@ -317,7 +335,37 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
           : "bg-message-action text-message-action-foreground enabled:shadow-message-action/24 hover:bg-message-action-hover",
       )}
       {...pointerFocusProps}
-      onClick={showResume ? onResume : onSubmitMessage}
+      onClick={(event) => {
+        // A long press already opened "Schedule send"; the release must not also send.
+        if (longPress.current.fired) {
+          longPress.current.fired = false;
+          event.preventDefault();
+          return;
+        }
+        (showResume ? onResume : onSubmitMessage)?.(event);
+      }}
+      onContextMenu={
+        canSchedule
+          ? (event) => {
+              event.preventDefault();
+              onScheduleSend?.();
+            }
+          : undefined
+      }
+      onPointerDown={(event) => {
+        pointerFocusProps?.onPointerDown(event);
+        if (!canSchedule || event.pointerType !== "touch") return;
+        cancelLongPress();
+        longPress.current.fired = false;
+        longPress.current.timer = setTimeout(() => {
+          longPress.current.timer = null;
+          longPress.current.fired = true;
+          onScheduleSend?.();
+        }, LONG_PRESS_MS);
+      }}
+      onPointerUp={cancelLongPress}
+      onPointerLeave={cancelLongPress}
+      onPointerCancel={cancelLongPress}
       disabled={
         isSendBusy ||
         isSendDisabled ||

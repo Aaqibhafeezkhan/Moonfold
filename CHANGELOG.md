@@ -3,6 +3,24 @@
 Notable changes to Moonfold. Versions follow [Semantic Versioning](https://semver.org); betas
 carry a `-beta.N` suffix. Each release's notes are in `docs/releases/`.
 
+## 0.1.0-beta.3
+
+Notes: [docs/releases/v0.1.0-beta.3.md](docs/releases/v0.1.0-beta.3.md).
+
+### Added
+
+- DeepSeek Harness in the agent search, installed with a pinned npx package; its quota and
+  balance errors start a handoff.
+- Local models for Pi: Ollama and LM Studio models on the same machine, with no edits to `~/.pi`.
+- Prompt profiles: standing instructions for every agent, as a default or per thread.
+- Scheduled messages: right-click Send, `/timed`, or **Schedule a message for reset** on a usage
+  limit.
+
+### Fixed
+
+- A prompt profile picked mid-thread now reaches Claude Code, whose session keeps its first system
+  prompt.
+
 ## 0.1.0-beta.2
 
 Notes: [docs/releases/v0.1.0-beta.2.md](docs/releases/v0.1.0-beta.2.md).

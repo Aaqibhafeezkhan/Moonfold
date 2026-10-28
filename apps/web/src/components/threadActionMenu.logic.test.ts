@@ -198,6 +198,31 @@ describe("buildThreadActionMenuItems", () => {
     expect(ids({ ...baseState, memoriesOptedOut: null })).not.toContain("memories");
   });
 
+  it("offers the prompt profiles with the thread's pick checked, and Default otherwise", () => {
+    const promptProfile = {
+      defaultName: "Careful engineer",
+      options: [
+        { id: "moonfold-default", name: "Moonfold default" },
+        { id: "minimal", name: "Minimal" },
+      ],
+    };
+    const following = buildThreadActionMenuItems({
+      ...baseState,
+      promptProfile: { ...promptProfile, threadProfileId: null },
+    }).find((item) => item.id === "prompt-profile");
+    expect(following?.children?.[0]).toEqual({
+      id: "prompt-profile:",
+      label: "Default (Careful engineer)",
+      checked: true,
+    });
+    const picked = buildThreadActionMenuItems({
+      ...baseState,
+      promptProfile: { ...promptProfile, threadProfileId: "minimal" },
+    }).find((item) => item.id === "prompt-profile");
+    expect(picked?.children?.find((child) => child.checked)?.id).toBe("prompt-profile:minimal");
+    expect(ids({ ...baseState, promptProfile: null })).not.toContain("prompt-profile");
+  });
+
   it("includes branch items only for threads with a branch", () => {
     const withBranch = allIds({ ...baseState, branch: "feat/menu" });
     expect(withBranch).toContain("new-thread-on-branch");

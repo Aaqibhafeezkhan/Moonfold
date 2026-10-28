@@ -457,6 +457,8 @@ import {
 } from "../state/entities";
 import { environmentShell } from "../state/shell";
 import { ChatComposer, type ChatComposerHandle } from "./chat/ChatComposer";
+import { isTimedCommand, parseTimedCommand } from "./chat/scheduledSend.logic";
+import { useScheduledSendBannerItem } from "./chat/scheduledSendBanner";
 import { createPageScrollController, type PageScrollKey } from "./chat/pageScrollController";
 import { isTimelineScrollTarget } from "./chat/timelineScrollTarget";
 import { DraftHeroHeadline } from "./chat/DraftHeroHeadline";
@@ -7846,6 +7848,12 @@ export default function ChatView(props: ChatViewProps) {
           recovery: activeThreadShell.limitRecovery ?? null,
           snoozedUntil: activeThreadShell.snoozedUntil,
           handoff: limitHandoff,
+          scheduleAtReset: (resetAt) =>
+            composerRef.current?.openScheduleSend({
+              // A minute after the reset, so the provider has let go of the limit.
+              at: new Date(Date.parse(resetAt) + 60_000),
+              text: promptRef.current.trim() === "" ? "Continue." : promptRef.current,
+            }),
           onChange: async (limitRecovery) => {
             const result = await updateThreadMetadata({
               environmentId,
@@ -7855,7 +7863,12 @@ export default function ChatView(props: ChatViewProps) {
           },
         })
       : null;
+  const scheduledSendBanner = useScheduledSendBannerItem(
+    environmentId,
+    activeThreadShell?.id ?? null,
+  );
   const composerBannerItems = useMemo<ComposerBannerStackItem[]>(() => {
+    const scheduledSendItems = scheduledSendBanner === null ? [] : [scheduledSendBanner];
     const limitRecoveryItems = [
       ...(limitRecoveryBanner === null ? [] : [limitRecoveryBanner]),
       ...(usageHandoffBanner === null ? [] : [usageHandoffBanner]),
@@ -7876,6 +7889,7 @@ export default function ChatView(props: ChatViewProps) {
         ...projectCloneItems,
         ...systemComposerBannerItems,
         ...backgroundWorkItems,
+        ...scheduledSendItems,
       ];
     }
     return [
@@ -7885,6 +7899,7 @@ export default function ChatView(props: ChatViewProps) {
       ...projectCloneItems,
       ...systemComposerBannerItems,
       ...backgroundWorkItems,
+      ...scheduledSendItems,
       {
         id: `branch-mismatch:${activeBranchMismatchKey}`,
         variant: "info",
@@ -7933,6 +7948,7 @@ export default function ChatView(props: ChatViewProps) {
     feedbackBannerItems,
     limitRecoveryBanner,
     usageHandoffBanner,
+    scheduledSendBanner,
     handleRestoreThreadBranchStable,
     isRestoringThreadBranch,
     backgroundWorkBannerItem,
@@ -9226,6 +9242,12 @@ export default function ChatView(props: ChatViewProps) {
       ) {
         handleNewThreadInActiveProject();
       }
+      return;
+    }
+    // "/timed <when> <message>" schedules instead of sending (D-55).
+    const timed = isTimedCommand(trimmed) ? parseTimedCommand(trimmed, new Date()) : null;
+    if (timed !== null && multipleModelSelections === null) {
+      composerRef.current?.openScheduleSend({ text: timed.text, at: timed.at });
       return;
     }
     // Providers without the legacy toggle receive their native commands unchanged.

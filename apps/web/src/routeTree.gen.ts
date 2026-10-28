@@ -22,6 +22,7 @@ import { Route as SettingsSourceControlRouteImport } from './routes/settings.sou
 import { Route as SettingsSnapShotRouteImport } from './routes/settings.snap-shot'
 import { Route as SettingsScheduledTasksRouteImport } from './routes/settings.scheduled-tasks'
 import { Route as SettingsProvidersRouteImport } from './routes/settings.providers'
+import { Route as SettingsPromptProfilesRouteImport } from './routes/settings.prompt-profiles'
 import { Route as SettingsProjectsRouteImport } from './routes/settings.projects'
 import { Route as SettingsPluginsRouteImport } from './routes/settings.plugins'
 import { Route as SettingsPersonalizationRouteImport } from './routes/settings.personalization'
@@ -104,6 +105,11 @@ const SettingsScheduledTasksRoute = SettingsScheduledTasksRouteImport.update({
 const SettingsProvidersRoute = SettingsProvidersRouteImport.update({
   id: '/providers',
   path: '/providers',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsPromptProfilesRoute = SettingsPromptProfilesRouteImport.update({
+  id: '/prompt-profiles',
+  path: '/prompt-profiles',
   getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsProjectsRoute = SettingsProjectsRouteImport.update({
@@ -229,6 +235,7 @@ export interface FileRoutesByFullPath {
   '/settings/personalization': typeof SettingsPersonalizationRoute
   '/settings/plugins': typeof SettingsPluginsRoute
   '/settings/projects': typeof SettingsProjectsRoute
+  '/settings/prompt-profiles': typeof SettingsPromptProfilesRoute
   '/settings/providers': typeof SettingsProvidersRoute
   '/settings/scheduled-tasks': typeof SettingsScheduledTasksRoute
   '/settings/snap-shot': typeof SettingsSnapShotRoute
@@ -261,6 +268,7 @@ export interface FileRoutesByTo {
   '/settings/personalization': typeof SettingsPersonalizationRoute
   '/settings/plugins': typeof SettingsPluginsRoute
   '/settings/projects': typeof SettingsProjectsRoute
+  '/settings/prompt-profiles': typeof SettingsPromptProfilesRoute
   '/settings/providers': typeof SettingsProvidersRoute
   '/settings/scheduled-tasks': typeof SettingsScheduledTasksRoute
   '/settings/snap-shot': typeof SettingsSnapShotRoute
@@ -296,6 +304,7 @@ export interface FileRoutesById {
   '/settings/personalization': typeof SettingsPersonalizationRoute
   '/settings/plugins': typeof SettingsPluginsRoute
   '/settings/projects': typeof SettingsProjectsRoute
+  '/settings/prompt-profiles': typeof SettingsPromptProfilesRoute
   '/settings/providers': typeof SettingsProvidersRoute
   '/settings/scheduled-tasks': typeof SettingsScheduledTasksRoute
   '/settings/snap-shot': typeof SettingsSnapShotRoute
@@ -332,6 +341,7 @@ export interface FileRouteTypes {
     | '/settings/personalization'
     | '/settings/plugins'
     | '/settings/projects'
+    | '/settings/prompt-profiles'
     | '/settings/providers'
     | '/settings/scheduled-tasks'
     | '/settings/snap-shot'
@@ -364,6 +374,7 @@ export interface FileRouteTypes {
     | '/settings/personalization'
     | '/settings/plugins'
     | '/settings/projects'
+    | '/settings/prompt-profiles'
     | '/settings/providers'
     | '/settings/scheduled-tasks'
     | '/settings/snap-shot'
@@ -398,6 +409,7 @@ export interface FileRouteTypes {
     | '/settings/personalization'
     | '/settings/plugins'
     | '/settings/projects'
+    | '/settings/prompt-profiles'
     | '/settings/providers'
     | '/settings/scheduled-tasks'
     | '/settings/snap-shot'
@@ -510,6 +522,13 @@ declare module '@tanstack/react-router' {
       path: '/providers'
       fullPath: '/settings/providers'
       preLoaderRoute: typeof SettingsProvidersRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/prompt-profiles': {
+      id: '/settings/prompt-profiles'
+      path: '/prompt-profiles'
+      fullPath: '/settings/prompt-profiles'
+      preLoaderRoute: typeof SettingsPromptProfilesRouteImport
       parentRoute: typeof SettingsRoute
     }
     '/settings/projects': {
@@ -681,6 +700,7 @@ interface SettingsRouteChildren {
   SettingsPersonalizationRoute: typeof SettingsPersonalizationRoute
   SettingsPluginsRoute: typeof SettingsPluginsRoute
   SettingsProjectsRoute: typeof SettingsProjectsRoute
+  SettingsPromptProfilesRoute: typeof SettingsPromptProfilesRoute
   SettingsProvidersRoute: typeof SettingsProvidersRoute
   SettingsScheduledTasksRoute: typeof SettingsScheduledTasksRoute
   SettingsSnapShotRoute: typeof SettingsSnapShotRoute
@@ -703,6 +723,7 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsPersonalizationRoute: SettingsPersonalizationRoute,
   SettingsPluginsRoute: SettingsPluginsRoute,
   SettingsProjectsRoute: SettingsProjectsRoute,
+  SettingsPromptProfilesRoute: SettingsPromptProfilesRoute,
   SettingsProvidersRoute: SettingsProvidersRoute,
   SettingsScheduledTasksRoute: SettingsScheduledTasksRoute,
   SettingsSnapShotRoute: SettingsSnapShotRoute,

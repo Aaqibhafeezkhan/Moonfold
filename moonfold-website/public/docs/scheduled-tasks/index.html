@@ -82,6 +82,7 @@
                 <li><a href="/docs/composer/">Messages and context</a></li>
                 <li><a href="/docs/permission-modes/">Permission modes</a></li>
                 <li><a href="/docs/provider-handoff/">Provider handoff</a></li>
+                <li><a href="/docs/prompt-profiles/">Prompt profiles</a></li>
                 <li><a href="/docs/portable-handoffs/">Context in portable handoffs</a></li>
                 <li><a href="/docs/usage/">Usage and limits</a></li>
                 <li><a href="/docs/scheduled-tasks/" aria-current="page">Scheduled tasks</a></li>
@@ -105,6 +106,7 @@
                 <li><a href="/docs/providers-antigravity/">Antigravity</a></li>
                 <li><a href="/docs/providers-pi/">Pi</a></li>
                 <li><a href="/docs/providers-muse/">Muse Code</a></li>
+                <li><a href="/docs/providers-deepseek-harness/">DeepSeek Harness</a></li>
               </ul>
             </section>
             <section class="doc-nav-group">
@@ -163,6 +165,25 @@
         <p>
           <strong>Add a skill</strong> under the prompt inserts a <code>$skill</code> mention for
           the chosen model&#39;s provider, so each run uses that skill.
+        </p>
+        <h2 id="schedule-a-message">
+          <a class="anchor" href="#schedule-a-message">Schedule a message</a>
+        </h2>
+        <p>
+          To send a message later instead of now, right-click <strong>Send</strong> (or press and
+          hold it on a touch screen) and choose a date and time, or type
+          <code>/timed</code> followed by the time and the message, for example
+          <code>/timed tomorrow 9am run the tests</code> or <code>/timed in 2h continue</code>.
+          <code>/timed</code> understands <code>in 30m</code>, <code>in 2 hours</code>,
+          <code>at 9pm</code>, <code>14:30</code>, and <code>today</code> or
+          <code>tomorrow</code> before a time.
+        </p>
+        <p>
+          The message goes to the same thread with the agent and model you pick, survives a restart,
+          and waits behind any work still running. A banner above the composer shows what is
+          waiting, with <strong>Send now</strong> and <strong>Cancel</strong>. When an agent stops
+          at its usage limit, the limit notice offers <strong>Schedule a message for reset</strong>.
+          Scheduled messages carry text only, so attachments stay in the composer.
         </p>
         <h2 id="choose-when-a-task-runs">
           <a class="anchor" href="#choose-when-a-task-runs">Choose when a task runs</a>
@@ -252,6 +273,7 @@
           <h2>On this page</h2>
           <ul>
             <li><a href="#keep-a-thread-going">Keep a thread going</a></li>
+            <li><a href="#schedule-a-message">Schedule a message</a></li>
             <li><a href="#choose-when-a-task-runs">Choose when a task runs</a></li>
             <li><a href="#see-what-each-run-did">See what each run did</a></li>
             <li><a href="#choose-when-you-hear-about-runs">Choose when you hear about runs</a></li>

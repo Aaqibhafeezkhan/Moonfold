@@ -30,6 +30,11 @@ in [docs/DECISIONS.md](docs/DECISIONS.md).
 
 ## Later
 
+- A native local-model provider with Moonfold's own agent loop (today local models run through
+  Pi), and a strict local-only mode that blocks cloud providers.
+- A VS Code extension that shows a thread's diffs in the editor.
+- Admin lock-down settings for teams (allowed providers, file and network limits).
+
 - Handoff between machines: continue a task on another environment, not only another agent.
 - A self-hosted relay guide for Moonfold Connect, so remote access works without Tailscale or SSH.
 - More providers as they ship command-line agents that run under the user's own login.

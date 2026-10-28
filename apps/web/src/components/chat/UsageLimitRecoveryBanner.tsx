@@ -17,6 +17,8 @@ type RecoveryProps = {
   onChange: (recovery: OrchestrationV2LimitRecoveryUpdate) => Promise<void>;
   /** Opens the handoff preview; its label names the first fallback when there is one. */
   handoff?: { readonly label: string; readonly open: () => void } | undefined;
+  /** Opens "Schedule send" for just after the reset (D-55). */
+  scheduleAtReset?: ((resetAt: string) => void) | undefined;
 };
 
 export function usageLimitRecoveryBannerItem(props: RecoveryProps): ComposerBannerStackItem {
@@ -37,6 +39,11 @@ export function usageLimitRecoveryBannerItem(props: RecoveryProps): ComposerBann
           {props.handoff !== undefined ? (
             <Button size="xs" variant="ghost" onClick={props.handoff.open}>
               {props.handoff.label}
+            </Button>
+          ) : null}
+          {canSchedule && props.scheduleAtReset !== undefined ? (
+            <Button size="xs" variant="ghost" onClick={() => props.scheduleAtReset?.(resetAt!)}>
+              Schedule a message for reset
             </Button>
           ) : null}
           {canSchedule ? <RecoveryActions key={`${runId}:${resetAt}`} {...props} /> : null}

@@ -10,7 +10,13 @@ import {
   type ThreadHistoryMeta,
 } from "@moonfold/client-runtime/state/threads";
 import type { ScopedProjectRef, ScopedThreadRef, ServerConfig } from "@moonfold/contracts";
-import type { EnvironmentId, OrchestrationV2ProjectedTurnItem } from "@moonfold/contracts";
+import type {
+  EnvironmentId,
+  OrchestrationV2ProjectedTurnItem,
+  ProjectId,
+} from "@moonfold/contracts";
+import { listPromptProfiles, resolvePromptProfile } from "@moonfold/contracts";
+import { resolveProjectSettings } from "@moonfold/shared/projectSettings";
 import { Atom } from "effect/reactivity";
 import { appAtomRegistry } from "../rpc/atomRegistry";
 import { environmentProjects } from "./projects";
@@ -287,6 +293,27 @@ export function readEnvironmentSupportsSettlement(environmentId: EnvironmentId):
     appAtomRegistry.get(environmentServerConfigsAtom).get(environmentId)?.environment.capabilities
       .threadSettlement === true
   );
+}
+
+/**
+ * The prompt profiles a thread menu offers (D-54), and the name of the default the thread's
+ * project uses. Null when the environment's settings have not arrived.
+ */
+export function readEnvironmentPromptProfileChoices(
+  environmentId: EnvironmentId,
+  projectId: ProjectId,
+): { defaultName: string; options: ReadonlyArray<{ id: string; name: string }> } | null {
+  const settings = appAtomRegistry.get(environmentServerConfigsAtom).get(environmentId)?.settings;
+  if (settings === undefined) return null;
+  const options = listPromptProfiles(settings.promptProfiles);
+  const defaultProfile = resolvePromptProfile({
+    customProfiles: settings.promptProfiles,
+    defaultProfileId: resolveProjectSettings(settings, projectId).settings.defaultPromptProfileId,
+  });
+  return {
+    defaultName: defaultProfile.name,
+    options: options.map((profile) => ({ id: profile.id, name: profile.name })),
+  };
 }
 
 /** Whether the environment's server understands thread.snooze/unsnooze.

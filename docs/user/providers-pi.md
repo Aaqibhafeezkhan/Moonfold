@@ -33,6 +33,19 @@ Update installer-managed Pi with `pi update`. If another package manager owns th
 update it through that manager instead. For example, a Nix profile installation uses
 `nix profile upgrade pi`.
 
+## Local Models
+
+Turn on **Local models** in the Pi instance's settings to use models served on the same machine by
+[Ollama](https://ollama.com) (port 11434) or [LM Studio](https://lmstudio.ai) (port 1234). Moonfold
+looks for them when it checks Pi and when a thread starts; it never downloads models or starts the
+servers. Their models appear in the model picker as `ollama-local/<model>` or
+`lmstudio-local/<model>` and run through Pi's own tools and approvals. Your `~/.pi` files are not
+changed.
+
+Small local models often struggle with tool calls; a coding model of 7B parameters or more works
+better. A local model never hits a usage limit, so it is a good last entry in
+**Settings → Handoff → Fallback order**.
+
 ## What Carries Over
 
 Moonfold discovers the models reported by Pi and exposes their supported thinking levels. The

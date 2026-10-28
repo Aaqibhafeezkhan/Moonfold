@@ -1100,6 +1100,7 @@ import { Button } from "../ui/button";
 import { Select, SelectItem, SelectPopup, SelectValue } from "../ui/select";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { toastManager } from "../ui/toast";
+import { requestScheduleSend } from "../ScheduleSendDialog";
 import {
   FileIcon,
   BotIcon,
@@ -1418,6 +1419,7 @@ const ComposerFooterPrimaryActions = memo(function ComposerFooterPrimaryActions(
   compactBeforeSendTokens: number | null;
   keepFullHistory: boolean;
   onToggleKeepFullHistory: () => void;
+  onScheduleSend?: () => void;
 }) {
   return (
     <>
@@ -1459,6 +1461,7 @@ const ComposerFooterPrimaryActions = memo(function ComposerFooterPrimaryActions(
         compactBeforeSendTokens={props.compactBeforeSendTokens}
         keepFullHistory={props.keepFullHistory}
         onToggleKeepFullHistory={props.onToggleKeepFullHistory}
+        {...(props.onScheduleSend ? { onScheduleSend: props.onScheduleSend } : {})}
       />
     </>
   );
@@ -1494,6 +1497,8 @@ export interface ChatComposerHandle {
   /** True when a collapsed caret sits before everything in the draft, including when it is empty. */
   isCaretAtStart: () => boolean;
   compactContext: () => void;
+  /** Open "Schedule send" (D-55) with the draft, or with `/timed`'s parsed text and time. */
+  openScheduleSend: (initial?: { text?: string; at?: Date | null }) => void;
   readSnapshot: () => {
     value: string;
     cursor: number;
@@ -2721,6 +2726,8 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     [pullRequestProjectId, threadPullRequests],
   );
 
+  // Scheduled send needs a thread the scheduler can post into (D-55).
+  const canScheduleSend = routeKind === "server" && activeThread !== undefined;
   const composerMenuItems = useMemo<ComposerCommandItem[]>(() => {
     if (!composerTrigger) return [];
     if (composerTrigger.kind === "path") {
@@ -2752,6 +2759,17 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
           label: "/model",
           description: "Switch response model for this thread",
         },
+        ...(canScheduleSend
+          ? ([
+              {
+                id: "slash:timed",
+                type: "slash-command",
+                command: "timed",
+                label: "/timed",
+                description: "Schedule this message for later, e.g. /timed tomorrow 9am …",
+              },
+            ] as const)
+          : []),
         ...(planModeUiEnabled
           ? ([
               {
@@ -2878,6 +2896,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     return [];
   }, [
     activeThreadId,
+    canScheduleSend,
     compactSlashCommandAvailable,
     composerTrigger,
     environmentId,
@@ -4023,6 +4042,18 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
         if (applied) {
           setComposerHighlightedItemId(null);
           setIsComposerModelPickerOpen(true);
+        }
+        return;
+      }
+      if (item.command === "timed") {
+        const applied = applyPromptReplacement(trigger.rangeStart, trigger.rangeEnd, "", {
+          expectedText: snapshot.value.slice(trigger.rangeStart, trigger.rangeEnd),
+          focusEditorAfterReplace: false,
+        });
+        if (applied) {
+          setComposerHighlightedItemId(null);
+          // After the replacement lands, so the dialog gets the draft without the command.
+          setTimeout(() => openScheduleSend(), 0);
         }
         return;
       }
@@ -6306,6 +6337,55 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
   };
   const openModelPickerStable = useStableCallback(openModelPicker);
 
+  const clearComposerDraftContent = useComposerDraftStore((store) => store.clearComposerContent);
+  const openScheduleSend = useCallback(
+    (initial?: { text?: string; at?: Date | null }) => {
+      if (routeKind !== "server" || !activeThread) {
+        toastManager.add({
+          type: "info",
+          title: "Send the first message first",
+          description: "A message can be scheduled once the thread has started.",
+        });
+        return;
+      }
+      const hasAttachments =
+        composerImages.length > 0 ||
+        composerFiles.length > 0 ||
+        composerTerminalContexts.length > 0;
+      requestScheduleSend({
+        environmentId,
+        threadId: activeThread.id,
+        projectId: activeThread.projectId,
+        text: initial?.text ?? promptRef.current,
+        at: initial?.at ?? null,
+        modelSelection: selectedModelSelection,
+        runtimeMode,
+        interactionMode,
+        hasAttachments,
+        onScheduled: () => {
+          // Attachments stay in the composer, since the scheduled message does not carry them.
+          if (hasAttachments) return;
+          promptRef.current = "";
+          clearComposerDraftContent(composerDraftTarget);
+        },
+      });
+    },
+    [
+      activeThread,
+      clearComposerDraftContent,
+      composerDraftTarget,
+      composerFiles.length,
+      composerImages.length,
+      composerTerminalContexts.length,
+      environmentId,
+      interactionMode,
+      promptRef,
+      routeKind,
+      runtimeMode,
+      selectedModelSelection,
+    ],
+  );
+  const openScheduleSendFromButton = useCallback(() => openScheduleSend(), [openScheduleSend]);
   useImperativeHandle(
     composerRef,
     () => ({
@@ -6424,6 +6504,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
         trigger.click();
       },
       compactContext: compactThreadContextStable,
+      openScheduleSend: (initial) => openScheduleSend(initial),
       isModelPickerOpen: () => isComposerModelPickerOpen,
       isCaretAtStart: () => {
         const range = composerEditorRef.current?.readSelectionRange();
@@ -6531,6 +6612,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     [
       activeThread,
       addComposerAttachments,
+      openScheduleSend,
       foldPastedText,
       composerDraftTarget,
       composerCursor,
@@ -7642,6 +7724,9 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                     compactBeforeSendTokens={props.resumeCompactionTokens}
                     keepFullHistory={props.keepFullHistory}
                     onToggleKeepFullHistory={props.onToggleKeepFullHistory}
+                    {...(routeKind === "server" && activeThread
+                      ? { onScheduleSend: openScheduleSendFromButton }
+                      : {})}
                     compactDisabled={
                       compactDisabled || noProviderAvailable || isSendBusy || isConnecting
                     }

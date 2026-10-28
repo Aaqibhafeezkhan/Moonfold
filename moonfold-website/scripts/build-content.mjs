@@ -83,7 +83,11 @@ function frontmatter(source) {
   const data = {};
   for (const line of match[1].split("\n")) {
     const at = line.indexOf(":");
-    if (at > 0) data[line.slice(0, at).trim()] = line.slice(at + 1).trim();
+    if (at > 0) {
+      // A value may be quoted (YAML style) when it contains a colon.
+      const value = line.slice(at + 1).trim();
+      data[line.slice(0, at).trim()] = /^(["']).*\1$/.test(value) ? value.slice(1, -1) : value;
+    }
   }
   return { data, body: source.replace(/\r\n/g, "\n").slice(match[0].length) };
 }
@@ -180,6 +184,7 @@ const SECTIONS = [
       "composer",
       "permission-modes",
       "provider-handoff",
+      "prompt-profiles",
       "portable-handoffs",
       "usage",
       "scheduled-tasks",
@@ -204,6 +209,7 @@ const SECTIONS = [
       "providers-antigravity",
       "providers-pi",
       "providers-muse",
+      "providers-deepseek-harness",
     ],
   },
 ];

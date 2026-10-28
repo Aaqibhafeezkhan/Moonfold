@@ -139,6 +139,8 @@ export interface EnvironmentThreadShell {
   readonly activeOrderKey: string | null;
   readonly pullRequests: ReadonlyArray<import("@moonfold/contracts").ThreadPullRequestLink>;
   readonly linkedPullRequest?: ThreadLinkedPullRequest | null;
+  /** The prompt profile the thread picked (D-54); null or absent follows the default. */
+  readonly promptProfileId?: string | null;
   readonly branchPullRequest?: ThreadLinkedPullRequest | null;
   /**
    * Server-tracked visited watermark. `undefined` means the environment's
@@ -250,6 +252,7 @@ export function presentThreadShell(
     worktreePath: thread.worktreePath,
     pullRequests: threadPullRequestsOf(thread),
     linkedPullRequest: thread.linkedPullRequest ?? null,
+    promptProfileId: thread.promptProfileId ?? null,
     branchPullRequest: thread.branchPullRequest ?? null,
     lineage: thread.lineage,
     forkedFrom: thread.forkedFrom,

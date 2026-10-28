@@ -26,6 +26,7 @@ export type SettingsPath =
   | "/settings/plugins"
   | "/settings/memories"
   | "/settings/handoff"
+  | "/settings/prompt-profiles"
   | "/settings/computer-use"
   | "/settings/scheduled-tasks"
   | "/settings/source-control"
@@ -110,6 +111,7 @@ export const SETTINGS_SECTION_LABELS: Readonly<Record<SettingsPath, string>> = {
   "/settings/plugins": "Plugins",
   "/settings/memories": "Memories",
   "/settings/handoff": "Handoff",
+  "/settings/prompt-profiles": "Prompt Profiles",
   "/settings/computer-use": "Computer Use",
   "/settings/scheduled-tasks": "Scheduled Tasks",
   "/settings/source-control": "Source Control",
@@ -1102,6 +1104,20 @@ export const SETTINGS_SEARCH_ITEMS = [
     to: "/settings/archived",
     searchTerms: ["restore reopen deleted history projects"],
   },
+  {
+    id: "prompt-profile-default",
+    title: "Default prompt profile",
+    to: "/settings/prompt-profiles",
+    scope: "project-defaults",
+    searchTerms: ["prompt profile system prompt instructions wrapper style default agents"],
+  },
+  {
+    id: "prompt-profiles-custom",
+    title: "Your prompt profiles",
+    to: "/settings/prompt-profiles",
+    scope: "project-defaults",
+    searchTerms: ["custom prompt profile instructions create edit delete system prompt"],
+  },
 ] as const satisfies ReadonlyArray<SettingsSearchItem>;
 
 export type SettingsSearchItemId = (typeof SETTINGS_SEARCH_ITEMS)[number]["id"];
@@ -1130,6 +1146,7 @@ const SETTINGS_CATEGORY_SCOPES: Readonly<Record<SettingsPath, SettingsSearchScop
   // Picks its own environment; memories live in the environment's database.
   "/settings/memories": null,
   "/settings/handoff": "project-defaults",
+  "/settings/prompt-profiles": "project-defaults",
   // Picks its own environment; computer use runs on the environment's machine.
   "/settings/computer-use": null,
   "/settings/archived": "project-defaults",

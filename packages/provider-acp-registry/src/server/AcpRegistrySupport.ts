@@ -10,6 +10,7 @@ import {
   type AcpRegistrySearchResult,
   type AcpRegistryDistribution as AcpRegistryDistributionKind,
 } from "@moonfold/contracts";
+import { ACP_CATALOG_SUPPLEMENT, withCatalogSupplement } from "./catalogSupplement.ts";
 import type { AcpRegistryDistributionPreference } from "../settings.ts";
 import type { AcpRegistrySettings } from "../settings.ts";
 import { cliArchiveTarCommand } from "@moonfold/shared/cliRelease";
@@ -179,6 +180,13 @@ export interface AcpRegistryIndex {
 
 const decodeRegistryIndexEnvelope = Schema.decodeUnknownEffect(AcpRegistryIndexEnvelope);
 const decodeRegistryAgent = Schema.decodeUnknownOption(AcpRegistryAgent);
+/** Moonfold's own catalog entries, decoded with the Registry schema so invalid ones fail tests. */
+const catalogSupplementAgents: ReadonlyArray<AcpRegistryAgent> = ACP_CATALOG_SUPPLEMENT.flatMap(
+  (candidate) => {
+    const decoded = decodeRegistryAgent(candidate);
+    return Option.isSome(decoded) ? [decoded.value] : [];
+  },
+);
 const decodeJson = Schema.decodeUnknownEffect(Schema.fromJsonString(Schema.Unknown));
 const decodeNpmPackageManifest = Schema.decodeUnknownEffect(
   Schema.fromJsonString(NpmPackageManifest),
@@ -376,6 +384,7 @@ export const acpRegistryManagedBinaryDirectories = Effect.fn("acpRegistryManaged
           }),
         ),
         Effect.orElseSucceed((): ReadonlyArray<AcpRegistryAgent> => []),
+        Effect.map((agents) => withCatalogSupplement(agents, catalogSupplementAgents)),
       );
     const cachedAgentByInstall = new Map(
       // Install directories are named by the URI-encoded version.
@@ -761,11 +770,12 @@ export const makeAcpRegistryCatalog = Effect.fn("AcpRegistryCatalog.make")(funct
           }),
       ),
     );
-    const agents = envelope.agents.flatMap((candidate) => {
+    const registryAgents = envelope.agents.flatMap((candidate) => {
       const decodedAgent = decodeRegistryAgent(candidate);
       return Option.isSome(decodedAgent) ? [decodedAgent.value] : [];
     });
-    const discarded = envelope.agents.length - agents.length;
+    const discarded = envelope.agents.length - registryAgents.length;
+    const agents = withCatalogSupplement(registryAgents, catalogSupplementAgents);
     if (discarded > 0) {
       yield* Effect.logWarning("ignored invalid ACP Registry entries", { discarded });
     }

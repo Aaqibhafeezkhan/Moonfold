@@ -35,6 +35,7 @@ import {
   readEnvironmentSupportsSnooze,
   readEnvironmentSupportsTitleRegeneration,
   readThreadShell,
+  readEnvironmentPromptProfileChoices,
   useProjects,
 } from "../state/entities";
 import { usePrimaryEnvironmentId } from "../state/environments";
@@ -156,6 +157,10 @@ export function useThreadActionMenu(input: {
         const isRegeneratingTitle = thread.titleRegeneration != null;
         const snoozePresets = resolveSnoozePresets(now, timestampFormat);
         const memoriesOptedOut = await threadMemoryChoice.read(threadRef);
+        const promptProfileChoices = readEnvironmentPromptProfileChoices(
+          threadRef.environmentId,
+          thread.projectId,
+        );
         const items = buildThreadActionMenuItems({
           canOperate: readEnvironmentScope(threadRef.environmentId, AuthOrchestrationOperateScope),
           branch: thread.branch ?? null,
@@ -164,6 +169,10 @@ export function useThreadActionMenu(input: {
           isSettled: supports.settlement && thread.settledOverride === "settled",
           autoSettleEnabled: thread.autoSettleDisabledAt == null,
           memoriesOptedOut,
+          promptProfile:
+            promptProfileChoices === null
+              ? null
+              : { ...promptProfileChoices, threadProfileId: thread.promptProfileId ?? null },
           isSnoozed: supports.snooze && effectiveSnoozed(thread, { now: now.toISOString() }),
           canSnoozeNow: canSnooze(thread, { now: now.toISOString() }),
           isRegeneratingTitle,
@@ -198,6 +207,21 @@ export function useThreadActionMenu(input: {
           const result = await snoozeThread(threadRef, preset.snoozedUntil);
           if (result._tag === "Failure" && !isAtomCommandInterrupted(result)) {
             failureToast("Failed to snooze thread", squashAtomCommandFailure(result));
+          }
+          return;
+        }
+        if (action.startsWith("prompt-profile:")) {
+          // An empty id is "Default": the thread follows the environment or project default again.
+          const profileId = action.slice("prompt-profile:".length);
+          const result = await updateThreadMetadata({
+            environmentId: threadRef.environmentId,
+            input: {
+              threadId: threadRef.threadId,
+              promptProfileId: profileId === "" ? null : profileId,
+            },
+          });
+          if (result._tag === "Failure" && !isAtomCommandInterrupted(result)) {
+            failureToast("Could not change the prompt profile", squashAtomCommandFailure(result));
           }
           return;
         }
@@ -259,6 +283,8 @@ export function useThreadActionMenu(input: {
             await reportFailure("Failed to unpin thread", () => confirmAndUnpinThread(threadRef));
             return;
           }
+          case "prompt-profile":
+            return;
           case "memories:on":
           case "memories:off":
             if (!(await threadMemoryChoice.choose(threadRef, action === "memories:off"))) {

@@ -17,6 +17,19 @@ request's thread under **Run in**. It never touches the project's main checkout.
 **Add a skill** under the prompt inserts a `$skill` mention for the chosen model's provider, so
 each run uses that skill.
 
+## Schedule a message
+
+To send a message later instead of now, right-click **Send** (or press and hold it on a touch
+screen) and choose a date and time, or type `/timed` followed by the time and the message, for
+example `/timed tomorrow 9am run the tests` or `/timed in 2h continue`. `/timed` understands
+`in 30m`, `in 2 hours`, `at 9pm`, `14:30`, and `today` or `tomorrow` before a time.
+
+The message goes to the same thread with the agent and model you pick, survives a restart, and
+waits behind any work still running. A banner above the composer shows what is waiting, with
+**Send now** and **Cancel**. When an agent stops at its usage limit, the limit notice offers
+**Schedule a message for reset**. Scheduled messages carry text only, so attachments stay in the
+composer.
+
 ## Choose when a task runs
 
 - **At a time** runs at a time of day on the weekdays you pick, in the server's time zone.

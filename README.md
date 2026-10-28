@@ -106,15 +106,17 @@ Moonfold never proxies, pools or shares provider logins. Each agent runs as your
 
 <!-- provider-matrix:start -->
 
-| Provider             | Status       | CLI checked          | Install | Sign-in | Models | Turn | Limit signal | Handoff | Where, when                |
-| -------------------- | ------------ | -------------------- | ------- | ------- | ------ | ---- | ------------ | ------- | -------------------------- |
-| **Codex**            | Verified     | codex-cli 0.163.0    | ✅      | ✅      | ✅     | ✅   | ✅           | ✅      | Windows 11 x64, 2026-10-20 |
-| **Claude Code**      | Verified     | 2.1.303              | ✅      | ✅      | ✅     | ✅   | ✅           | ✅      | Windows 11 x64, 2026-10-20 |
-| **Gemini CLI (ACP)** | Not verified | 0.43.0               | ✅      | ❌      | —      | —    | tests        | —       | Windows 11 x64, 2026-10-20 |
-| **Antigravity**      | Not verified | agy 1.3.5 (CLI only) | ❌      | —       | —      | —    | tests        | —       | Windows 11 x64, 2026-10-20 |
-| **Cursor**           | Not verified | not installed        | —       | —       | —      | —    | none         | —       | Windows 11 x64, 2026-10-20 |
-| **OpenCode**         | Not verified | not installed        | —       | —       | —      | —    | none         | —       | Windows 11 x64, 2026-10-20 |
-| **Grok Build**       | Not verified | not installed        | —       | —       | —      | —    | tests        | —       | Windows 11 x64, 2026-10-20 |
+| Provider                   | Status       | CLI checked                 | Install | Sign-in | Models | Turn | Limit signal | Handoff | Where, when                |
+| -------------------------- | ------------ | --------------------------- | ------- | ------- | ------ | ---- | ------------ | ------- | -------------------------- |
+| **Codex**                  | Verified     | codex-cli 0.163.0           | ✅      | ✅      | ✅     | ✅   | ✅           | ✅      | Windows 11 x64, 2026-10-20 |
+| **Claude Code**            | Verified     | 2.1.303                     | ✅      | ✅      | ✅     | ✅   | ✅           | ✅      | Windows 11 x64, 2026-10-20 |
+| **Gemini CLI (ACP)**       | Not verified | 0.43.0                      | ✅      | ❌      | —      | —    | tests        | —       | Windows 11 x64, 2026-10-20 |
+| **Antigravity**            | Not verified | agy 1.3.5 (CLI only)        | ❌      | —       | —      | —    | tests        | —       | Windows 11 x64, 2026-10-20 |
+| **Cursor**                 | Not verified | not installed               | —       | —       | —      | —    | none         | —       | Windows 11 x64, 2026-10-20 |
+| **OpenCode**               | Not verified | not installed               | —       | —       | —      | —    | none         | —       | Windows 11 x64, 2026-10-20 |
+| **Grok Build**             | Not verified | not installed               | —       | —       | —      | —    | tests        | —       | Windows 11 x64, 2026-10-20 |
+| **DeepSeek Harness (ACP)** | Not verified | @deepseek-ai/dsh 0.2.1-rc.2 | ✅      | —       | ✅     | ✅   | tests        | —       | Windows 11 x64, 2026-10-28 |
+| **Pi + local Ollama**      | Not verified | pi 1.4.0, Ollama 0.30.11    | ✅      | —       | ✅     | ✅   | —            | —       | Windows 11 x64, 2026-10-28 |
 
 Generated from [docs/provider-checks.json](./docs/provider-checks.json), which records only
 checks that ran on a real install. Notes for each provider are in that file.

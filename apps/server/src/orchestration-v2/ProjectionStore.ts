@@ -1538,6 +1538,9 @@ export function threadShellFromProjection(
     ...(projection.thread.linkedPullRequest === undefined
       ? {}
       : { linkedPullRequest: projection.thread.linkedPullRequest }),
+    ...(projection.thread.promptProfileId === undefined
+      ? {}
+      : { promptProfileId: projection.thread.promptProfileId }),
     ...(projection.thread.branchPullRequest === undefined
       ? {}
       : { branchPullRequest: projection.thread.branchPullRequest }),
@@ -1806,6 +1809,9 @@ function shellFromState(input: {
     ...(input.state.thread.linkedPullRequest === undefined
       ? {}
       : { linkedPullRequest: input.state.thread.linkedPullRequest }),
+    ...(input.state.thread.promptProfileId === undefined
+      ? {}
+      : { promptProfileId: input.state.thread.promptProfileId }),
     ...(input.state.thread.branchPullRequest === undefined
       ? {}
       : { branchPullRequest: input.state.thread.branchPullRequest }),

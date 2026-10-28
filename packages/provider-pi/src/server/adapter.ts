@@ -97,6 +97,18 @@ import {
   resolvePiLaunchArgs,
 } from "./mcpInjection.ts";
 import { PI_FILE_CHANGE_TOOLS } from "./mcpExtensionSource.ts";
+import {
+  detectLocalModelServers,
+  localModelsLaunch,
+  materializePiLocalModelsExtension,
+  type LocalModelServer,
+} from "./localModels.ts";
+import * as HttpClient from "effect/http/HttpClient";
+import {
+  promptProfileChangeNote,
+  promptProfileKey,
+  withPromptProfileNote,
+} from "@moonfold/provider-core/server/promptProfileInstructions";
 
 export const PI_PROVIDER = ProviderDriverKind.make("pi");
 const PI_DRIVER_KIND = PI_PROVIDER;
@@ -226,6 +238,8 @@ export interface PiAdapterV2Options {
   readonly instanceId: ProviderInstanceId;
   readonly settings: PiSettings;
   readonly environment: NodeJS.ProcessEnv;
+  /** Finds running local model servers (D-56); none when the host has no HTTP client. */
+  readonly detectLocalModels?: Effect.Effect<ReadonlyArray<LocalModelServer>>;
   /**
    * Where to offer a wake turn for provider-initiated work. Without one, such
    * work has no owner and the adapter stops it.
@@ -480,6 +494,20 @@ function piApprovalRequestKind(title: string): "command" | "file-change" {
 interface PiThreadState {
   providerThread: OrchestrationV2ProviderThread;
   activeTurn: ActivePiTurn | null;
+  /** Which prompt profile text this Pi process last received (D-54); "" for none. */
+  deliveredPromptProfileKey?: string;
+}
+
+/** Pi has no system-prompt RPC, so the thread's prompt profile (D-54) rides on the prompt. */
+function piPromptProfileNote(
+  state: PiThreadState,
+  turnInput: ProviderAdapter.ProviderAdapterV2TurnInput,
+): string | undefined {
+  return promptProfileChangeNote({
+    profile: turnInput.promptProfile,
+    deliveredKey: state.deliveredPromptProfileKey ?? "",
+    messageText: turnInput.message.text,
+  });
 }
 
 interface PiWake {
@@ -540,9 +568,18 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
       if (!resolvedLaunchArgs.ok) {
         return yield* protocolError(resolvedLaunchArgs.message);
       }
+      // Local model servers (D-56) are looked up per session, so one started later is offered.
+      const local = options.settings.localModels
+        ? localModelsLaunch(
+            yield* provideCacheFs(
+              materializePiLocalModelsExtension(host.paths.providerStatusCacheDir),
+            ).pipe(Effect.orElseSucceed(() => undefined)),
+            yield* options.detectLocalModels ?? Effect.succeed([]),
+          )
+        : localModelsLaunch(undefined, []);
       const launch = buildPiRpcLaunch({
-        launchArgs: resolvedLaunchArgs.args,
-        environment: options.environment,
+        launchArgs: [...resolvedLaunchArgs.args, ...local.args],
+        environment: { ...options.environment, ...local.env },
         mcpSession,
         extensionPath,
         runtimeMode: input.runtimePolicy.runtimeMode,
@@ -2699,12 +2736,16 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
               } else if (payload !== null) {
                 // Pi may already be streaming before its wake reaches Moonfold.
                 // Let Pi atomically queue the prompt or start an idle run.
+                const profileNote = piPromptProfileNote(state, turnInput);
                 yield* connection.send({
                   type: "prompt",
-                  message: payload.message,
+                  message: withPromptProfileNote(profileNote, payload.message),
                   streamingBehavior: "steer",
                   ...(payload.images.length === 0 ? {} : { images: payload.images }),
                 });
+                if (profileNote !== undefined) {
+                  state.deliveredPromptProfileKey = promptProfileKey(turnInput.promptProfile);
+                }
                 pendingPromptResponses.push({
                   providerTurnId: providerTurn.id,
                   kind: "turn_start",
@@ -3439,11 +3480,19 @@ export const PiAdapterV2Driver: ProviderAdapterDriver<PiSettings, PiAdapterV2Dri
     function* (input: ProviderAdapterDriverCreateInput<PiSettings>) {
       const hostEnvironment = yield* HostProcess.Environment;
       const continuationRequests = yield* ProviderContinuationRequests.ProviderContinuationRequests;
+      const http = yield* Effect.serviceOption(HttpClient.HttpClient);
       return yield* makePiAdapterV2({
         instanceId: input.instanceId,
         settings: { ...input.config, enabled: input.enabled },
         environment: yield* mergeProviderInstanceEnvironment(input.environment, hostEnvironment),
         continuationRequests,
+        ...(Option.isSome(http)
+          ? {
+              detectLocalModels: detectLocalModelServers().pipe(
+                Effect.provideService(HttpClient.HttpClient, http.value),
+              ),
+            }
+          : {}),
       });
     },
     (effect, input) =>

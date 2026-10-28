@@ -82,6 +82,7 @@
                 <li><a href="/docs/composer/">Messages and context</a></li>
                 <li><a href="/docs/permission-modes/">Permission modes</a></li>
                 <li><a href="/docs/provider-handoff/">Provider handoff</a></li>
+                <li><a href="/docs/prompt-profiles/">Prompt profiles</a></li>
                 <li><a href="/docs/portable-handoffs/">Context in portable handoffs</a></li>
                 <li><a href="/docs/usage/">Usage and limits</a></li>
                 <li><a href="/docs/scheduled-tasks/">Scheduled tasks</a></li>
@@ -105,6 +106,7 @@
                 <li><a href="/docs/providers-antigravity/">Antigravity</a></li>
                 <li><a href="/docs/providers-pi/" aria-current="page">Pi</a></li>
                 <li><a href="/docs/providers-muse/">Muse Code</a></li>
+                <li><a href="/docs/providers-deepseek-harness/">DeepSeek Harness</a></li>
               </ul>
             </section>
             <section class="doc-nav-group">
@@ -176,6 +178,24 @@
           Update installer-managed Pi with <code>pi update</code>. If another package manager owns
           the installation, update it through that manager instead. For example, a Nix profile
           installation uses <code>nix profile upgrade pi</code>.
+        </p>
+        <h2 id="local-models"><a class="anchor" href="#local-models">Local Models</a></h2>
+        <p>
+          Turn on <strong>Local models</strong> in the Pi instance&#39;s settings to use models
+          served on the same machine by
+          <a href="https://ollama.com" target="_blank" rel="noopener noreferrer">Ollama</a> (port
+          11434) or
+          <a href="https://lmstudio.ai" target="_blank" rel="noopener noreferrer">LM Studio</a>
+          (port 1234). Moonfold looks for them when it checks Pi and when a thread starts; it never
+          downloads models or starts the servers. Their models appear in the model picker as
+          <code>ollama-local/&lt;model&gt;</code> or <code>lmstudio-local/&lt;model&gt;</code> and
+          run through Pi&#39;s own tools and approvals. Your <code>~/.pi</code> files are not
+          changed.
+        </p>
+        <p>
+          Small local models often struggle with tool calls; a coding model of 7B parameters or more
+          works better. A local model never hits a usage limit, so it is a good last entry in
+          <strong>Settings → Handoff → Fallback order</strong>.
         </p>
         <h2 id="what-carries-over">
           <a class="anchor" href="#what-carries-over">What Carries Over</a>
@@ -282,6 +302,7 @@
           <h2>On this page</h2>
           <ul>
             <li><a href="#set-up-pi">Set Up Pi</a></li>
+            <li><a href="#local-models">Local Models</a></li>
             <li><a href="#what-carries-over">What Carries Over</a></li>
             <li><a href="#permission-modes">Permission Modes</a></li>
             <li><a href="#troubleshooting">Troubleshooting</a></li>
