@@ -15,7 +15,7 @@ import * as HttpClient from "effect/http/HttpClient";
 import * as HttpClientRequest from "effect/http/HttpClientRequest";
 
 export const MOONFOLD_PI_LOCAL_PROVIDERS_ENV = "MOONFOLD_PI_LOCAL_PROVIDERS";
-export const PI_LOCAL_MODELS_EXTENSION_FILENAME = "pi-moonfold-local-models.ts";
+const PI_LOCAL_MODELS_EXTENSION_FILENAME = "pi-moonfold-local-models.ts";
 
 export interface LocalModelServerDefinition {
   /** Pi provider id; models show as `<id>/<model>`. */
@@ -29,7 +29,7 @@ export interface LocalModelServer extends LocalModelServerDefinition {
   readonly models: ReadonlyArray<string>;
 }
 
-export const LOCAL_MODEL_SERVERS: ReadonlyArray<LocalModelServerDefinition> = [
+const LOCAL_MODEL_SERVERS: ReadonlyArray<LocalModelServerDefinition> = [
   { id: "ollama-local", name: "Ollama (local)", baseUrl: "http://127.0.0.1:11434/v1" },
   { id: "lmstudio-local", name: "LM Studio (local)", baseUrl: "http://127.0.0.1:1234/v1" },
 ];
@@ -82,7 +82,7 @@ export const detectLocalModelServers = (
   });
 
 /** The env value the extension reads: only what it needs, so nothing else leaks into Pi. */
-export function localProvidersEnvValue(servers: ReadonlyArray<LocalModelServer>): string {
+function localProvidersEnvValue(servers: ReadonlyArray<LocalModelServer>): string {
   return JSON.stringify(
     servers.map((server) => ({
       id: server.id,

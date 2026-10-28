@@ -35,6 +35,9 @@ const ALLOWED_FILES: ReadonlyArray<RegExp> = [
   /^apps\/web\/src\/components\/settings\/AboutMoonfold\.tsx$/,
   // The website's credits and FAQ name the upstream project, like the README.
   /^moonfold-website\/(?:src|dist)\/index\.html$/,
+  // Its generated docs and blog pages carry the same credit in their footer, and the blog
+  // describes the fork's history.
+  /^moonfold-website\/(?:content\/blog\/|public\/(?:docs|blog)\/|scripts\/build-content\.mjs$)/,
 ];
 
 // Allowed inside any file: references to upstream history.
