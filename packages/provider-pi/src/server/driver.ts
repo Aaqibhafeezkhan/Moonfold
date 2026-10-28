@@ -27,6 +27,7 @@ import {
   discoverPiCommandsForCwd,
   enrichPiSnapshot,
 } from "./status.ts";
+import { detectLocalModelServers, materializePiLocalModelsExtension } from "./localModels.ts";
 import { makeManagedServerProvider } from "@moonfold/provider-core/server/managedProvider";
 import {
   defaultProviderContinuationIdentity,
@@ -142,7 +143,26 @@ export const PiDriver: ProviderDriver<PiSettings, PiDriverEnv, Path.Path> = {
       );
       const textGeneration = yield* makePiTextGeneration(effectiveConfig, processEnv);
 
-      const checkProvider = checkPiProviderStatus(effectiveConfig, processEnv, cwd).pipe(
+      // Written once per instance; only loaded into Pi when "Local models" is on (D-56).
+      const localModelsExtensionPath = yield* materializePiLocalModelsExtension(
+        host.paths.providerStatusCacheDir,
+      ).pipe(
+        Effect.provideService(FileSystem.FileSystem, fileSystem),
+        Effect.orElseSucceed(() => undefined),
+      );
+      const checkProvider = checkPiProviderStatus(
+        effectiveConfig,
+        processEnv,
+        cwd,
+        localModelsExtensionPath === undefined
+          ? undefined
+          : {
+              extensionPath: localModelsExtensionPath,
+              detect: detectLocalModelServers().pipe(
+                Effect.provideService(HttpClient.HttpClient, httpClient),
+              ),
+            },
+      ).pipe(
         Effect.map(stampIdentity),
         Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
       );

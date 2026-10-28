@@ -28,6 +28,13 @@ import * as ChildProcess from "effect/process/ChildProcess";
 import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
 
 import { buildPiRpcLaunch, resolvePiLaunchArgs } from "./mcpInjection.ts";
+import { localModelsLaunch, type LocalModelServer } from "./localModels.ts";
+
+/** The local-models extension and a way to find running servers (D-56). */
+export interface PiLocalModelsDiscovery {
+  readonly extensionPath: string;
+  readonly detect: Effect.Effect<ReadonlyArray<LocalModelServer>>;
+}
 import {
   makePiRpcConnection,
   PiRpcError,
@@ -137,10 +144,15 @@ const makePiDiscoveryConnection = Effect.fnUntraced(function* (
   environment: NodeJS.ProcessEnv,
   launchArgs: ReadonlyArray<string>,
   cwd?: string,
+  localModels?: PiLocalModelsDiscovery,
 ) {
+  const local =
+    piSettings.localModels && localModels !== undefined
+      ? localModelsLaunch(localModels.extensionPath, yield* localModels.detect)
+      : localModelsLaunch(undefined, []);
   const launch = buildPiRpcLaunch({
-    launchArgs,
-    environment,
+    launchArgs: [...launchArgs, ...local.args],
+    environment: { ...environment, ...local.env },
     mcpSession: undefined,
     extensionPath: undefined,
     ephemeral: true,
@@ -164,9 +176,16 @@ const discoverPiViaRpc = (
   environment: NodeJS.ProcessEnv,
   launchArgs: ReadonlyArray<string>,
   cwd?: string,
+  localModels?: PiLocalModelsDiscovery,
 ) =>
   Effect.gen(function* () {
-    const connection = yield* makePiDiscoveryConnection(piSettings, environment, launchArgs, cwd);
+    const connection = yield* makePiDiscoveryConnection(
+      piSettings,
+      environment,
+      launchArgs,
+      cwd,
+      localModels,
+    );
     const stateData = yield* connection.request({ type: "get_state" });
     const modelsData = yield* connection.request({ type: "get_available_models" });
     const commandsData = yield* connection
@@ -266,6 +285,8 @@ export const checkPiProviderStatus = Effect.fn("checkPiProviderStatus")(function
   piSettings: PiSettings,
   environment: NodeJS.ProcessEnv = process.env,
   cwd?: string,
+  /** How to offer local models (D-56); without it, local models are not offered. */
+  localModels?: PiLocalModelsDiscovery,
 ): Effect.fn.Return<ServerProviderDraft, never, ChildProcessSpawner.ChildProcessSpawner> {
   const checkedAt = DateTime.formatIso(yield* DateTime.now);
   const fallbackModels = piModelsFromSettings(piSettings.customModels);
@@ -399,6 +420,7 @@ export const checkPiProviderStatus = Effect.fn("checkPiProviderStatus")(function
     environment,
     resolvedLaunchArgs.args,
     cwd,
+    localModels,
   ).pipe(Effect.timeoutOption(PI_RPC_DISCOVERY_TIMEOUT_MS), Effect.exit);
   if (Exit.isFailure(discoveryExit)) {
     yield* Effect.logWarning("Pi RPC discovery failed.", {

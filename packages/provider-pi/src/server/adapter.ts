@@ -98,6 +98,13 @@ import {
 } from "./mcpInjection.ts";
 import { PI_FILE_CHANGE_TOOLS } from "./mcpExtensionSource.ts";
 import {
+  detectLocalModelServers,
+  localModelsLaunch,
+  materializePiLocalModelsExtension,
+  type LocalModelServer,
+} from "./localModels.ts";
+import * as HttpClient from "effect/http/HttpClient";
+import {
   promptProfileKey,
   promptProfileText,
 } from "@moonfold/provider-core/server/promptProfileInstructions";
@@ -230,6 +237,8 @@ export interface PiAdapterV2Options {
   readonly instanceId: ProviderInstanceId;
   readonly settings: PiSettings;
   readonly environment: NodeJS.ProcessEnv;
+  /** Finds running local model servers (D-56); none when the host has no HTTP client. */
+  readonly detectLocalModels?: Effect.Effect<ReadonlyArray<LocalModelServer>>;
   /**
    * Where to offer a wake turn for provider-initiated work. Without one, such
    * work has no owner and the adapter stops it.
@@ -564,9 +573,18 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
       if (!resolvedLaunchArgs.ok) {
         return yield* protocolError(resolvedLaunchArgs.message);
       }
+      // Local model servers (D-56) are looked up per session, so one started later is offered.
+      const local = options.settings.localModels
+        ? localModelsLaunch(
+            yield* provideCacheFs(
+              materializePiLocalModelsExtension(host.paths.providerStatusCacheDir),
+            ).pipe(Effect.orElseSucceed(() => undefined)),
+            yield* options.detectLocalModels ?? Effect.succeed([]),
+          )
+        : localModelsLaunch(undefined, []);
       const launch = buildPiRpcLaunch({
-        launchArgs: resolvedLaunchArgs.args,
-        environment: options.environment,
+        launchArgs: [...resolvedLaunchArgs.args, ...local.args],
+        environment: { ...options.environment, ...local.env },
         mcpSession,
         extensionPath,
         runtimeMode: input.runtimePolicy.runtimeMode,
@@ -3471,11 +3489,19 @@ export const PiAdapterV2Driver: ProviderAdapterDriver<PiSettings, PiAdapterV2Dri
     function* (input: ProviderAdapterDriverCreateInput<PiSettings>) {
       const hostEnvironment = yield* HostProcess.Environment;
       const continuationRequests = yield* ProviderContinuationRequests.ProviderContinuationRequests;
+      const http = yield* Effect.serviceOption(HttpClient.HttpClient);
       return yield* makePiAdapterV2({
         instanceId: input.instanceId,
         settings: { ...input.config, enabled: input.enabled },
         environment: yield* mergeProviderInstanceEnvironment(input.environment, hostEnvironment),
         continuationRequests,
+        ...(Option.isSome(http)
+          ? {
+              detectLocalModels: detectLocalModelServers().pipe(
+                Effect.provideService(HttpClient.HttpClient, http.value),
+              ),
+            }
+          : {}),
       });
     },
     (effect, input) =>
