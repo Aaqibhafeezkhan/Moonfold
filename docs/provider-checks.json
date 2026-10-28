@@ -91,6 +91,32 @@
       "limitSignal": "unit test only",
       "handoff": "not run",
       "notes": "Adapter inherited from upstream; not verified by Moonfold."
+    },
+    {
+      "provider": "DeepSeek Harness (ACP)",
+      "cli": "@deepseek-ai/dsh 0.2.1-rc.2",
+      "platform": "Windows 11 x64",
+      "date": "2026-10-28",
+      "install": "pass",
+      "login": "not run",
+      "models": "pass",
+      "turn": "pass",
+      "limitSignal": "unit test only",
+      "handoff": "not run",
+      "notes": "Installed from the agent search with npx; live model list and effort picker; a turn completed with dsh routed to local Ollama (qwen2.5:1.5b). No DeepSeek API key on this machine."
+    },
+    {
+      "provider": "Pi + local Ollama",
+      "cli": "pi 1.4.0, Ollama 0.30.11",
+      "platform": "Windows 11 x64",
+      "date": "2026-10-28",
+      "install": "pass",
+      "login": "not run",
+      "models": "pass",
+      "turn": "pass",
+      "limitSignal": "not run",
+      "handoff": "not run",
+      "notes": "Local models switch: qwen2.5:1.5b listed and completed a turn through Pi with no Pi login."
     }
   ]
 }

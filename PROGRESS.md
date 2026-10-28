@@ -1,5 +1,63 @@
 # Progress
 
+## Beta 3 (2026-10-28)
+
+Plan: docs/plans/beta-3.md. Decisions: D-53 to D-56. QA: docs/QA-BETA3.md. REA gate:
+docs/REA-BETA3.md.
+
+### Done
+
+- Repository: the merged `brand-and-launch` branch deleted locally and on GitHub; work on `beta-3`.
+- DeepSeek Harness in the agent search through a built-in supplement to the ACP Registry catalog
+  (pinned `npx` package, generic ACP adapter, no per-agent branch). Exhausted-balance and quota
+  wording now ends ACP runs as usage limits.
+- Prompt profiles: built-ins plus custom profiles in settings.json, environment or project
+  default, per-thread override from the thread menu; delivered through each adapter's existing
+  instruction channel (Codex additionalContext, Claude system append plus a note when it changes
+  mid-session, runtime block for ACP agents, Cursor, Muse and OpenCode, a note for Pi).
+- Scheduled send: right-click or long-press Send, `/timed` with a small time parser, "Schedule a
+  message for reset" on the usage-limit notice, a waiting-message banner with Send now and Cancel.
+  One-off scheduled tasks bound to the thread.
+- Local models for Pi: Ollama and LM Studio detected on loopback when the instance's Local models
+  switch is on; a Moonfold-owned Pi extension registers them for the process, so `~/.pi` is never
+  edited.
+- Website: docs and blog pages (previous change) plus the new guides and a beta 3 post. Main CI
+  had failed on that change (brand check over the generated pages, and one timing test); the
+  brand-check allowlist now covers the generated pages.
+
+### Verification (real output, Windows 11, 2026-10-28)
+
+- Live (QA-BETA3): prompt profile marker returned by Claude Haiku 5.5 after the mid-session fix;
+  a message scheduled with Claude fired on time from a Codex thread at its real limit and was
+  answered after an automatic handoff; `/timed` and right-click open the dialog; Pi 1.4.0 listed
+  and ran a local Ollama model; DeepSeek Harness 0.2.1-rc.2 installed from the agent search and
+  answered through local Ollama.
+- Typechecks clean: contracts, provider-core, provider-pi, provider-acp, provider-acp-registry,
+  provider-cursor, provider-muse, provider-opencode, client-runtime, server, web.
+- Tests: contracts 676/676, client-runtime 2088/2088, provider-pi 143/143, Claude adapter 264/264,
+  web touched files (settings search 64, thread menu 23, composer logic and primary actions 108,
+  scheduled send 10) all pass. provider-core 8 and provider-acp 3 failures are Windows-only cases
+  in files not touched (POSIX install paths, symlinks, shell); acp-registry 18 Windows failures
+  identical before and after (checked with a stash).
+- `vp check` 0 errors; `vp fmt --check` clean; `vp run knip:check` clean; brand and icon checks
+  clean.
+
+### Not verified / open
+
+- Prompt profiles live on Codex (account limited until 19 November), Cursor, OpenCode, Muse, Grok
+  and Antigravity: tests only.
+- DeepSeek Harness with a DeepSeek account and its real limit messages; LM Studio; long-press on a
+  touch device; macOS and Linux.
+- With the default `DSH_HOME`, Moonfold's first probe of DeepSeek Harness writes an `acp` profile
+  into `~/.dsh` (dsh's own behaviour). Documented, not changed.
+- Out of scope for beta 3, recorded in the plan: native Ollama agent, Pieces, VS Code extension,
+  `moonfold.json` lock-down, strict local-only mode, OAuth connectors, hosted plugin store.
+
+### Next step
+
+Merge `beta-3`, confirm main CI, tag `v0.1.0-beta.3`. After that: the cold-start budget (ROADMAP),
+and prompt profiles live on Codex once its limit resets.
+
 ## Brand and launch follow-ups (2026-10-26)
 
 Decisions: D-51, D-52.
