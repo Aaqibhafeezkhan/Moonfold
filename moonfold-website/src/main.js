@@ -1,6 +1,6 @@
 /**
  * Moonfold Website — Client Runtime
- * Handles navigation, the demo reel with modal player, glass folder cards,
+ * Handles navigation, the demo reel with modal player, and
  * and the halftone wordmark canvas.
  */
 
@@ -214,112 +214,6 @@ const yearEl = document.querySelector("#year");
 if (yearEl) {
   yearEl.textContent = String(new Date().getFullYear());
 }
-
-// ---------------------------------------------------------------------------
-// 3. Glass Folder Cards: 3D Perspective Tilt, Open/Close & Artwork Painting
-// ---------------------------------------------------------------------------
-const ART_PALETTES = {
-  aurora: ["#22395e", "#6f97c2", "#e9c2b8", "#c2433f", "#2a1e2a"],
-  ember: ["#07090c", "#16252c", "#3d5f68", "#a3201a", "#ef4a2b", "#ff8a5c"],
-  dusk: ["#120c18", "#3e2850", "#8f6c9c", "#b3502f", "#eab08a"],
-  verdant: ["#070b08", "#173024", "#4f7a5a", "#a7843a", "#e9cf87"],
-};
-
-function renderFolderArt(canvas, presetName) {
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-  const w = canvas.width;
-  const h = canvas.height;
-  const colors = ART_PALETTES[presetName] || ART_PALETTES.aurora;
-
-  const grad = ctx.createLinearGradient(0, 0, w, h);
-  colors.forEach((c, i) => {
-    grad.addColorStop(i / (colors.length - 1), c);
-  });
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, w, h);
-
-  // Soft marbling curves
-  ctx.save();
-  ctx.globalCompositeOperation = "overlay";
-  ctx.filter = "blur(18px)";
-  for (let i = 0; i < 4; i++) {
-    ctx.beginPath();
-    ctx.arc(
-      w * (0.2 + 0.6 * Math.sin(i * 1.7)),
-      h * (0.3 + 0.5 * Math.cos(i * 2.1)),
-      w * 0.45,
-      0,
-      Math.PI * 2,
-    );
-    ctx.fillStyle = colors[(i * 2) % colors.length];
-    ctx.fill();
-  }
-  ctx.restore();
-}
-
-document.querySelectorAll(".gf-root").forEach((folder) => {
-  // Paint canvas artwork for back panel and sheets
-  folder.querySelectorAll("canvas.gf-art, canvas.gf-sheet-art").forEach((canvas) => {
-    const artName = canvas.getAttribute("data-art") || folder.getAttribute("data-art") || "aurora";
-    renderFolderArt(canvas, artName);
-  });
-
-  // Pointer tracking for tilt and specular shine
-  let raf = 0;
-  let px = 0;
-  let py = 0;
-  const writeTilt = () => {
-    raf = 0;
-    folder.style.setProperty("--gf-px", px.toFixed(3));
-    folder.style.setProperty("--gf-py", py.toFixed(3));
-  };
-
-  folder.addEventListener("pointermove", (e) => {
-    if (e.pointerType === "touch") return;
-    const rect = folder.getBoundingClientRect();
-    px = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    py = ((e.clientY - rect.top) / rect.height) * 2 - 1;
-    if (!raf) raf = requestAnimationFrame(writeTilt);
-  });
-
-  folder.addEventListener("pointerleave", () => {
-    px = 0;
-    py = 0;
-    if (!raf) raf = requestAnimationFrame(writeTilt);
-  });
-
-  // Open / Close toggle via hit area
-  const hitBtn = folder.querySelector(".gf-hit");
-  const folderLabel = folder.querySelector(".gf-title")?.textContent || "Folder";
-  const folderMeta = folder.querySelector(".gf-meta")?.textContent || "";
-
-  if (hitBtn) {
-    hitBtn.addEventListener("click", () => {
-      const isOpen = folder.hasAttribute("data-open");
-      if (isOpen) {
-        folder.removeAttribute("data-open");
-        hitBtn.setAttribute("aria-expanded", "false");
-        hitBtn.setAttribute("aria-label", `Open ${folderLabel}, ${folderMeta}`);
-      } else {
-        folder.setAttribute("data-open", "");
-        hitBtn.setAttribute("aria-expanded", "true");
-        hitBtn.setAttribute("aria-label", `Close ${folderLabel}, ${folderMeta}`);
-      }
-    });
-  }
-});
-
-// Escape key to close any open folders
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") {
-    document.querySelectorAll(".gf-root[data-open]").forEach((f) => {
-      f.removeAttribute("data-open");
-      const hit = f.querySelector(".gf-hit");
-      if (hit) hit.setAttribute("aria-expanded", "false");
-    });
-  }
-});
 
 // ---------------------------------------------------------------------------
 // 4b. Agent belt: the SVG animation only runs while its card is on screen
