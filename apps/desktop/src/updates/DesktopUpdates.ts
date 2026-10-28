@@ -34,7 +34,10 @@ import * as ElectronWindow from "../electron/ElectronWindow.ts";
 import * as IpcChannels from "../ipc/channels.ts";
 import * as DesktopAppSettings from "../settings/DesktopAppSettings.ts";
 import { normalizeDesktopUpdateReleaseNotes } from "./releaseNotes.ts";
-import { isTestingReleaseVersion, resolveDefaultDesktopUpdateChannel } from "./updateChannels.ts";
+import {
+  electronUpdaterChannelSettings,
+  resolveDefaultDesktopUpdateChannel,
+} from "./updateChannels.ts";
 import {
   createInitialDesktopUpdateState,
   reduceDesktopUpdateStateOnCheckFailure,
@@ -459,18 +462,18 @@ export const make = Effect.gen(function* () {
     channel: DesktopUpdateChannel,
   ) {
     yield* Effect.annotateCurrentSpan({ channel });
-    const allowsPrerelease = channel === "nightly";
-    yield* electronUpdater.setChannel(channel);
-    yield* electronUpdater.setAllowPrerelease(
-      allowsPrerelease || isTestingReleaseVersion(environment.appVersion),
-    );
-    yield* electronUpdater.setAllowDowngrade(allowsPrerelease);
-    yield* electronUpdater.setFullChangelog(allowsPrerelease);
+    const updaterSettings = electronUpdaterChannelSettings(channel, environment.appVersion);
+    if (updaterSettings.channel !== null)
+      yield* electronUpdater.setChannel(updaterSettings.channel);
+    yield* electronUpdater.setAllowPrerelease(updaterSettings.allowPrerelease);
+    yield* electronUpdater.setAllowDowngrade(updaterSettings.allowDowngrade);
+    yield* electronUpdater.setFullChangelog(updaterSettings.fullChangelog);
     yield* logUpdaterInfo("using update channel", {
       channel,
-      allowPrerelease: allowsPrerelease,
-      allowDowngrade: allowsPrerelease,
-      fullChangelog: allowsPrerelease,
+      updaterChannel: updaterSettings.channel ?? "from version",
+      allowPrerelease: updaterSettings.allowPrerelease,
+      allowDowngrade: updaterSettings.allowDowngrade,
+      fullChangelog: updaterSettings.fullChangelog,
     });
   });
 

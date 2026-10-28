@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import {
+  electronUpdaterChannelSettings,
   isNightlyDesktopVersion,
   isTestingReleaseVersion,
   resolveDefaultDesktopUpdateChannel,
@@ -19,6 +20,25 @@ describe("updateChannels", () => {
     expect(isTestingReleaseVersion("0.1.0")).toBe(false);
     expect(isTestingReleaseVersion("0.1.0-nightly.20261020.1")).toBe(false);
     expect(resolveDefaultDesktopUpdateChannel("0.1.0-beta.1")).toBe("latest");
+  });
+
+  it("leaves electron-updater's channel unset for a beta on the latest channel", () => {
+    // An explicit "latest" makes electron-updater skip every -beta.N release on GitHub.
+    expect(electronUpdaterChannelSettings("latest", "0.1.0-beta.1")).toEqual({
+      channel: null,
+      allowPrerelease: true,
+      allowDowngrade: false,
+      fullChangelog: false,
+    });
+    expect(electronUpdaterChannelSettings("latest", "0.1.0")).toMatchObject({
+      channel: "latest",
+      allowPrerelease: false,
+    });
+    expect(electronUpdaterChannelSettings("nightly", "0.1.0-beta.1")).toMatchObject({
+      channel: "nightly",
+      allowPrerelease: true,
+      allowDowngrade: true,
+    });
   });
 
   it("only matches the first prerelease identifier", () => {
