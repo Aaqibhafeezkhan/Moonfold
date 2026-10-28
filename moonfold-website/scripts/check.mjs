@@ -37,6 +37,37 @@ for (const file of ["styles.css", "main.js"]) await access(path.join(root, "src"
 assert(css.includes("prefers-reduced-motion"), "Reduced motion styles missing");
 const config = JSON.parse(await readFile(path.join(root, "vercel.json"), "utf8"));
 assert.equal(config.outputDirectory, "dist");
+// Generated docs and blog pages: every internal link must resolve to a file.
+const { readdir, stat } = await import("node:fs/promises");
+async function pages(dir) {
+  const out = [];
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...(await pages(full)));
+    else if (entry.name === "index.html") out.push(full);
+  }
+  return out;
+}
+let contentPages = 0;
+for (const section of ["docs", "blog"]) {
+  for (const file of await pages(path.join(root, "public", section))) {
+    contentPages++;
+    const text = await readFile(file, "utf8");
+    assert.equal((text.match(/<h1[\s>]/g) || []).length, 1, `${file}: expected exactly one h1`);
+    for (const [, href] of text.matchAll(/href="(\/[^"#?]*)/g)) {
+      const candidates = href.endsWith("/")
+        ? [
+            path.join(root, "public", href, "index.html"),
+            path.join(root, "src", href, "index.html"),
+          ]
+        : [path.join(root, "public", href), path.join(root, "src", href)];
+      const found = await Promise.any(
+        candidates.map((candidate) => stat(candidate).then((s) => s.isFile() || Promise.reject())),
+      ).catch(() => false);
+      assert(found, `${file}: broken internal link ${href}`);
+    }
+  }
+}
 console.log(
   `Source checks passed: ${ids.length} unique IDs, ${assets.size} local assets, valid section and ARIA targets, image dimensions, metadata, reduced motion, and Vercel output configuration.`,
 );

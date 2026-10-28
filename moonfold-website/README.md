@@ -4,7 +4,7 @@ Standalone marketing site for Moonfold. Production: **https://moonfold-website.v
 
 ## Develop
 
-Use Node.js 22 or newer. There are no dependencies to install.
+Use Node.js 22 or newer. The site has no runtime dependencies. Only the docs and blog generator needs `npm install` (it uses `marked`, MIT).
 
 ```powershell
 cd D:\projects\Moonfold\moonfold-website
@@ -20,6 +20,15 @@ npm run preview
 ```
 
 `src/` contains the page, stylesheet, and small interaction script. `public/` contains self-hosted assets. The build copies these into `dist/`. The source validator checks local assets, navigation and ARIA references, unique IDs, image dimensions, external link attributes, and deployment configuration. JavaScript syntax is checked by Node.
+
+## Docs and blog
+
+`/docs/` and `/blog/` are generated static pages, committed under `public/` so the Vercel build stays a plain copy.
+
+- Docs come from `../docs/user/*.md`, the same files the GitHub Pages docs use. Edit the Markdown there, not the generated HTML.
+- Blog posts are Markdown files in `content/blog/` with `title`, `description`, `category` and `date` frontmatter (add `featured: true` to one post). Posts dated in the future fail the build. Write only what is true of the shipped product.
+- Run `npm install` once, then `npm run content` after changing either source, and commit the regenerated `public/docs`, `public/blog` and `public/sitemap.xml`. `npm run check` verifies every internal link in them.
+- Styles live in `src/content.css` and the small filter script in `src/content.js`.
 
 ## Deploy
 

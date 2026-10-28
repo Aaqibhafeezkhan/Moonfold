@@ -22,12 +22,16 @@ const types = {
 const server = createServer(async (request, response) => {
   try {
     const route = decodeURIComponent(new URL(request.url, "http://localhost").pathname);
-    const relative = route === "/" ? "index.html" : route.replace(/^\/+/, "");
+    const stripped = route.replace(/^\/+/, "");
+    const relative = route.endsWith("/") ? `${stripped}index.html` : stripped;
     const base = production
       ? path.join(root, "dist")
       : path.join(
           root,
-          relative.startsWith("assets/") || ["robots.txt", "sitemap.xml"].includes(relative)
+          relative.startsWith("assets/") ||
+            relative.startsWith("docs/") ||
+            relative.startsWith("blog/") ||
+            ["robots.txt", "sitemap.xml"].includes(relative)
             ? "public"
             : "src",
         );

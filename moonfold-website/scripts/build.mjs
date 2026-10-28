@@ -6,7 +6,14 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const output = path.join(root, "dist");
 await mkdir(output, { recursive: true });
 await cp(path.join(root, "public"), output, { recursive: true });
-for (const file of ["index.html", "styles.css", "main.js", "folders.js"]) {
+for (const file of [
+  "index.html",
+  "styles.css",
+  "main.js",
+  "folders.js",
+  "content.css",
+  "content.js",
+]) {
   await cp(path.join(root, "src", file), path.join(output, file));
 }
 async function size(directory) {
