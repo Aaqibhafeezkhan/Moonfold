@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@effect/vitest";
 
 import { messageReportsUsageLimit } from "./adapter.ts";
 import { ACP_CATALOG_SUPPLEMENT, withCatalogSupplement } from "./catalogSupplement.ts";
@@ -40,13 +40,13 @@ describe("messageReportsUsageLimit", () => {
     "turn failed: 429 Rate Limit Reached",
     "Quota reached for the current window",
     "RESOURCE_EXHAUSTED",
-  ])("treats %j as a usage limit", (message) => {
+  ])("treats %j as a usage limit", (message: string) => {
     expect(messageReportsUsageLimit(message)).toBe(true);
   });
 
   it.each(["turn failed: connection reset", "insufficient permissions to write file", "429x"])(
     "does not treat %j as a usage limit",
-    (message) => {
+    (message: string) => {
       expect(messageReportsUsageLimit(message)).toBe(false);
     },
   );

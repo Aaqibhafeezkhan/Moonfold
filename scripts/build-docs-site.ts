@@ -29,6 +29,7 @@ const SECTIONS: ReadonlyArray<{ readonly title: string; readonly pages: Readonly
       "composer",
       "permission-modes",
       "provider-handoff",
+      "prompt-profiles",
       "usage",
       "scheduled-tasks",
       "memories",
@@ -51,6 +52,7 @@ const SECTIONS: ReadonlyArray<{ readonly title: string; readonly pages: Readonly
       "providers-antigravity",
       "providers-pi",
       "providers-muse",
+      "providers-deepseek-harness",
     ],
   },
 ];
