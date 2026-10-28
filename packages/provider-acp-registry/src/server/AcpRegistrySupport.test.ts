@@ -1077,6 +1077,8 @@ describe("AcpRegistrySupport", () => {
         cacheDir,
         toolsDir: `${cacheDir}/tools`,
         registryUrl,
+        // Only the Registry's own entries, so the assertion sees exactly what it decoded.
+        catalogSupplement: [],
       });
       const result = yield* resolver.search({ query: "" });
 
@@ -1112,6 +1114,8 @@ describe("AcpRegistrySupport", () => {
         cacheDir,
         toolsDir: `${cacheDir}/tools`,
         registryUrl,
+        // Only the Registry's own entries, so the assertion sees exactly what it decoded.
+        catalogSupplement: [],
       });
       const result = yield* resolver.search({ query: "" });
 

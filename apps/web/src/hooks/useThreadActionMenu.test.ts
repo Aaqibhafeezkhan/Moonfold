@@ -53,6 +53,7 @@ vi.mock("../state/entities", () => ({
   readEnvironmentSupportsSettlement: () => true,
   readEnvironmentSupportsSnooze: () => true,
   readEnvironmentSupportsTitleRegeneration: () => true,
+  readEnvironmentPromptProfileChoices: () => null,
   readThreadShell: () => ({
     id: "thread",
     environmentId: "secondary",
