@@ -423,3 +423,40 @@ Until 1.0, betas are the public line: `release.yml` publishes `-beta.N` and plai
 releases marked latest, and only `-alpha.N` and `-rc.N` as prereleases. The installers, the CLI
 and the desktop updater list releases rather than asking for "latest", so the flag changes only
 what GitHub displays. v0.1.0-beta.1 was edited to match.
+
+## D-53 DeepSeek Harness joins through a small catalog supplement
+
+DeepSeek Harness (`@deepseek-ai/dsh`, MIT) serves standard ACP with `dsh --profile acp` but is not
+in the public ACP Registry. Moonfold adds a built-in supplement to the registry catalog: entries in
+the registry's own schema, listed, installed (`npx` with a pinned version) and launched exactly
+like registry agents. It is data, not a per-agent adapter branch. `npx` also avoids the Windows
+`.cmd` shim that local commands refuse. dsh's quota and balance errors join the shared ACP
+usage-limit wording, so handoff works without agent-specific code. Moonfold does not add a
+"DeepSeek opener" to prompts: dsh builds its own system prompt.
+
+## D-54 Prompt profiles ride the existing instruction channels
+
+A prompt profile is a named block of standing instructions: built-ins written in our own words
+(no provider's proprietary prompt text is copied), plus user profiles in `settings.json`. The
+environment has a default, a thread can override it (`promptProfileId` on the thread, set through
+`thread.metadata.update`). Each turn resolves the profile next to memories and every adapter sends
+it the way it already sends Moonfold's runtime instructions: Codex `additionalContext`, Claude's
+appended system prompt, the runtime block for ACP agents, Cursor, Muse, OpenCode and Pi. It never
+edits AGENTS.md or CLAUDE.md, and it is not a way to replace a provider's own system prompt.
+
+## D-55 Scheduled send is a one-off task bound to the thread
+
+"Schedule send" (right-click on Send, or `/timed`) creates a scheduled task with a `once`
+schedule and the thread's id. The scheduler already survives restarts, queues behind running
+work and records runs, so there is no second scheduling system. Scheduled runs carry text only,
+so a draft with attachments cannot be scheduled. Natural-language times ("tomorrow 9am") are
+parsed in the web client with our own small parser and tests.
+
+## D-56 Local models go through agents that already have a loop
+
+Ollama and LM Studio serve models, not coding agents. Moonfold detects them on loopback and
+offers their models to Pi (and documents the same for DeepSeek Harness and OpenCode), which
+already have tools, approvals and an agent loop. Moonfold writes the endpoint into an agent
+directory it owns for that Pi instance and never edits the user's own `~/.pi` unasked. A local
+model is then an ordinary provider/model pair and can be the last step of the handoff fallback
+order. A native Ollama provider with Moonfold's own agent loop is not planned.
