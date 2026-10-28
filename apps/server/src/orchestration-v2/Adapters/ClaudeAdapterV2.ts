@@ -1,4 +1,9 @@
-import type { TurnPromptProfile } from "@moonfold/provider-core/server/promptProfileInstructions";
+import {
+  promptProfileChangeNote,
+  promptProfileKey,
+  withPromptProfileNote,
+  type TurnPromptProfile,
+} from "@moonfold/provider-core/server/promptProfileInstructions";
 import { makeProviderTextDeltaCoalescer } from "./ProviderTextDeltaCoalescer.ts";
 import {
   dynamicToolTitle,
@@ -1982,7 +1987,6 @@ export function claudeEffectiveQueryPolicyKey(
   },
   pluginOverrides: ClaudePluginQueryOverrides = {},
   memories?: TurnMemories,
-  promptProfile?: TurnPromptProfile,
 ): string {
   return JSON.stringify({
     runtimePolicy: claudeRuntimeQueryPolicyKey({
@@ -1997,8 +2001,6 @@ export function claudeEffectiveQueryPolicyKey(
       : { plugins: pluginOverrides }),
     // The system prompt carries memories, so a change reopens the query.
     ...(memories === undefined ? {} : { memories }),
-    // So does the prompt profile.
-    ...(promptProfile === undefined ? {} : { promptProfile }),
   });
 }
 
@@ -3610,6 +3612,10 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
         });
         const events = yield* Queue.unbounded<ProviderAdapter.ProviderAdapterV2Event>();
         const activeTurn = yield* Ref.make<ActiveClaudeTurnContext | null>(null);
+        // Which prompt profile (D-54) this thread's Claude session has seen; null until known.
+        // Claude records the system prompt on a session's first request, so a profile picked
+        // later reaches it as a note on the next message instead.
+        const deliveredPromptProfileKey = yield* Ref.make<string | null>(null);
         const sdkMessageLock = yield* Semaphore.make(1);
         // Survives turn settle: members mostly finish after the launching
         // turn has ended, and each transition must be emitted exactly once.
@@ -8552,7 +8558,6 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
             mcpOverrides,
             pluginOverrides,
             turnInput.memories,
-            turnInput.promptProfile,
           );
           const compiledSelection = compileClaudeModelSelection(turnInput.modelSelection);
           const resumeSessionAt = yield* getNativeConversationHeadId(turnInput.providerThread);
@@ -8881,12 +8886,28 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
             // produced instead of prompting it again: drain the buffered wake
             // messages into this turn and let any still-streaming messages
             // follow live. The continuation prompt text never reaches the CLI.
+            const profileKey = promptProfileKey(turnInput.promptProfile);
+            const knownProfileKey = yield* Ref.get(deliveredPromptProfileKey);
+            // A fresh session's first request carries the profile in its system prompt.
+            const freshSession =
+              turnInput.providerTurnOrdinal <= 1 && turnInput.nativeThreadHasTurns !== true;
+            const profileNote =
+              knownProfileKey === null && freshSession
+                ? undefined
+                : promptProfileChangeNote({
+                    profile: turnInput.promptProfile,
+                    deliveredKey: knownProfileKey ?? "",
+                    messageText: turnInput.message.text,
+                  });
+            if (profileNote !== undefined || (knownProfileKey === null && freshSession)) {
+              yield* Ref.set(deliveredPromptProfileKey, profileKey);
+            }
             const userMessage =
               promptUuid === null
                 ? null
                 : yield* makeClaudeUserMessageWithAttachments({
                     text: applyClaudePromptEffortPrefix(
-                      turnInput.message.text,
+                      withPromptProfileNote(profileNote, turnInput.message.text),
                       compileClaudeModelSelection(turnInput.modelSelection).promptEffort,
                     ),
                     attachments: turnInput.message.attachments,

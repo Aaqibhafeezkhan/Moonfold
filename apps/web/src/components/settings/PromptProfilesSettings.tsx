@@ -64,7 +64,7 @@ export function PromptProfilesSettingsPanel() {
           mixed={defaultMixed}
           description={
             current === undefined || current.id === DEFAULT_PROMPT_PROFILE_ID
-              ? "Moonfold adds no standing instructions; each agent works the way its own harness tells it to. Threads can pick a profile from the composer."
+              ? "Moonfold adds no standing instructions; each agent works the way its own harness tells it to. Pick another for one thread from its thread menu."
               : `${current.description} Sent with every turn, to every agent, on top of AGENTS.md and CLAUDE.md.`
           }
           resetAction={

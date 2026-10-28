@@ -105,8 +105,9 @@ import {
 } from "./localModels.ts";
 import * as HttpClient from "effect/http/HttpClient";
 import {
+  promptProfileChangeNote,
   promptProfileKey,
-  promptProfileText,
+  withPromptProfileNote,
 } from "@moonfold/provider-core/server/promptProfileInstructions";
 
 export const PI_PROVIDER = ProviderDriverKind.make("pi");
@@ -497,22 +498,16 @@ interface PiThreadState {
   deliveredPromptProfileKey?: string;
 }
 
-/**
- * Pi has no system-prompt RPC, so the thread's prompt profile (D-54) rides on the first prompt
- * after it changes; Pi keeps it in the session history from then on. Slash commands are sent
- * untouched, since a prefix would stop Pi expanding them.
- */
+/** Pi has no system-prompt RPC, so the thread's prompt profile (D-54) rides on the prompt. */
 function piPromptProfileNote(
   state: PiThreadState,
   turnInput: ProviderAdapter.ProviderAdapterV2TurnInput,
 ): string | undefined {
-  const key = promptProfileKey(turnInput.promptProfile);
-  const delivered = state.deliveredPromptProfileKey ?? "";
-  if (key === delivered || turnInput.message.text.trimStart().startsWith("/")) return undefined;
-  return (
-    promptProfileText(turnInput.promptProfile) ??
-    "<prompt_profile>The user switched off the prompt profile for this thread. Earlier prompt_profile instructions no longer apply.</prompt_profile>"
-  );
+  return promptProfileChangeNote({
+    profile: turnInput.promptProfile,
+    deliveredKey: state.deliveredPromptProfileKey ?? "",
+    messageText: turnInput.message.text,
+  });
 }
 
 interface PiWake {
@@ -2744,17 +2739,13 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
                 const profileNote = piPromptProfileNote(state, turnInput);
                 yield* connection.send({
                   type: "prompt",
-                  message:
-                    profileNote === undefined
-                      ? payload.message
-                      : `${profileNote}
-
-User message:
-${payload.message}`,
+                  message: withPromptProfileNote(profileNote, payload.message),
                   streamingBehavior: "steer",
                   ...(payload.images.length === 0 ? {} : { images: payload.images }),
                 });
-                state.deliveredPromptProfileKey = promptProfileKey(turnInput.promptProfile);
+                if (profileNote !== undefined) {
+                  state.deliveredPromptProfileKey = promptProfileKey(turnInput.promptProfile);
+                }
                 pendingPromptResponses.push({
                   providerTurnId: providerTurn.id,
                   kind: "turn_start",

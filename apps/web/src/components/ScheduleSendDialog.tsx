@@ -231,7 +231,7 @@ function ScheduleSendDialog({
               disabled={saving}
               onChange={(event) => setText(event.target.value)}
             />
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="grid grid-cols-[auto_1fr_1fr] items-center gap-2">
               <CalendarClockIcon aria-hidden className="size-4 text-muted-foreground" />
               <Input
                 type="date"

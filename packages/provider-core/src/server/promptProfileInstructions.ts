@@ -29,3 +29,28 @@ export function promptProfileKey(profile: TurnPromptProfile | undefined): string
   const text = promptProfileText(profile);
   return text === undefined ? "" : `${profile?.id}:${text.length}:${text}`;
 }
+
+/**
+ * For harnesses whose system prompt cannot change after a session starts (Claude records it,
+ * Pi has no RPC for it): the note to put before the user's next message when the thread's
+ * profile differs from the one the session last received, or undefined when nothing changed.
+ * Slash commands get no note, since a prefix would stop the harness expanding them.
+ */
+export function promptProfileChangeNote(input: {
+  readonly profile: TurnPromptProfile | undefined;
+  /** Key of the profile the session last received ("" for none). */
+  readonly deliveredKey: string;
+  readonly messageText: string;
+}): string | undefined {
+  if (promptProfileKey(input.profile) === input.deliveredKey) return undefined;
+  if (input.messageText.trimStart().startsWith("/")) return undefined;
+  return (
+    promptProfileText(input.profile) ??
+    "<prompt_profile>The user switched off the prompt profile for this thread. Earlier prompt_profile instructions no longer apply.</prompt_profile>"
+  );
+}
+
+/** The user's message with a profile note in front of it. */
+export function withPromptProfileNote(note: string | undefined, messageText: string): string {
+  return note === undefined ? messageText : `${note}\n\nUser message:\n${messageText}`;
+}

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "@effect/vitest";
 
-import { promptProfileKey, promptProfileText } from "./promptProfileInstructions.ts";
+import {
+  promptProfileChangeNote,
+  promptProfileKey,
+  promptProfileText,
+  withPromptProfileNote,
+} from "./promptProfileInstructions.ts";
 import { buildRuntimeInstructions } from "./runtimeInstructions.ts";
 
 const profile = { id: "careful-engineer", name: "Careful engineer", instructions: "Run tests." };
@@ -30,5 +35,35 @@ describe("prompt profile instructions", () => {
     expect(buildRuntimeInstructions({ harness: "Codex", promptProfile: profile })).toContain(
       "Run tests.",
     );
+  });
+});
+
+describe("promptProfileChangeNote", () => {
+  const minimal = { id: "minimal", name: "Minimal", instructions: "Be brief." };
+
+  it("adds the profile once, when it differs from what the session has", () => {
+    const note = promptProfileChangeNote({ profile: minimal, deliveredKey: "", messageText: "hi" });
+    expect(note).toContain("Be brief.");
+    expect(withPromptProfileNote(note, "hi")).toMatch(/User message:\nhi$/);
+    expect(
+      promptProfileChangeNote({
+        profile: minimal,
+        deliveredKey: promptProfileKey(minimal),
+        messageText: "hi",
+      }),
+    ).toBeUndefined();
+  });
+
+  it("says so when the profile is switched off, and leaves slash commands alone", () => {
+    expect(
+      promptProfileChangeNote({
+        profile: undefined,
+        deliveredKey: promptProfileKey(minimal),
+        messageText: "hi",
+      }),
+    ).toContain("switched off");
+    expect(
+      promptProfileChangeNote({ profile: minimal, deliveredKey: "", messageText: "/compact" }),
+    ).toBeUndefined();
   });
 });
