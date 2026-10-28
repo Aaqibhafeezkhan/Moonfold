@@ -20,6 +20,7 @@ import { AppSidebarLayout } from "../components/AppSidebarLayout";
 import { CommandPalette } from "../components/CommandPalette";
 import { CustomSnoozeDialogHost } from "../components/CustomSnoozeDialog";
 import { HandoffBriefDialogHost, HandoffDialogHost } from "../components/HandoffDialog";
+import { ScheduleSendDialogHost } from "../components/ScheduleSendDialog";
 import { MoveToWorktreeDialogHost } from "../components/MoveToWorktreeDialog";
 import { ConfirmDialogHost } from "../components/ConfirmDialogHost";
 import { KeybindingsConfigWarning } from "../components/KeybindingsConfigWarning";
@@ -204,6 +205,7 @@ function RootRouteView() {
           <ProviderAuthCallbackCoordinator />
           <CustomSnoozeDialogHost />
           <HandoffDialogHost />
+          <ScheduleSendDialogHost />
           <HandoffBriefDialogHost />
           <MoveToWorktreeDialogHost />
           <CommandPalette>
@@ -276,6 +278,7 @@ function RootRouteView() {
           <ConfirmDialogHost />
           <CustomSnoozeDialogHost />
           <HandoffDialogHost />
+          <ScheduleSendDialogHost />
           <HandoffBriefDialogHost />
           <MoveToWorktreeDialogHost />
           <SlowRpcRequestToastCoordinator />
