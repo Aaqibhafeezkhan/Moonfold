@@ -18,6 +18,8 @@ Notes: [docs/releases/v0.1.0-beta.3.md](docs/releases/v0.1.0-beta.3.md).
 
 ### Fixed
 
+- Beta installs find new releases again. Beta 1 and beta 2 reported "No published versions on
+  GitHub" and need one manual install of this release.
 - A prompt profile picked mid-thread now reaches Claude Code, whose session keeps its first system
   prompt.
 
