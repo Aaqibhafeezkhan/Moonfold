@@ -36,6 +36,13 @@ The confirmation counts the running threads that the restarts will interrupt,
 and how many can resume afterwards. See **Continue threads after restarts**
 below.
 
+## Coming from beta 1 or beta 2
+
+The desktop app's **Check for Updates** in beta 1 and beta 2 never finds a newer release; it
+reports no update. Install 0.1.0-beta.3 or later by hand once, from the
+[releases page](https://github.com/Mr-Dark-debug/Moonfold/releases) or with the command-line
+installer. Your projects, threads and settings stay. Later releases then arrive in the app.
+
 ## Before you update
 
 Server updates restart the connection and can interrupt active agents and
