@@ -2130,11 +2130,12 @@ body.demo-modal-open {
   align-items: flex-end;
   justify-content: center;
   gap: 40px;
-  padding-block: 20px 30px;
+  padding-block: 64px 30px;
 }
 
-/* Glass Folder Core Rules */
+/* Glass Folder Core Rules (geometry is applied by folders.js) */
 .gf-root {
+  text-align: left;
   --gf-px: 0;
   --gf-py: 0;
   --gf-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -2150,11 +2151,19 @@ body.demo-modal-open {
   display: inline-block;
   flex: none;
   vertical-align: top;
-  font-family: var(--sans);
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "SF Pro Text",
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   isolation: isolate;
-  height: 290px;
 }
 .gf-root[data-tone="dark"] {
   --gf-ink: #f5f5f7;
@@ -2183,7 +2192,6 @@ body.demo-modal-open {
   width: 340px;
   height: 272px;
   transform-origin: 0 0;
-  transform: translateY(48px) scale(0.94);
 }
 .gf-tilt {
   position: absolute;
@@ -2192,6 +2200,7 @@ body.demo-modal-open {
     rotateY(calc(var(--gf-px) * 4deg));
   transition: transform 0.9s var(--gf-ease);
 }
+
 .gf-shadow {
   position: absolute;
   left: 18px;
@@ -2231,6 +2240,14 @@ body.demo-modal-open {
     opacity 1.2s var(--gf-ease),
     filter 1.2s var(--gf-ease);
 }
+canvas.gf-art {
+  opacity: 0;
+  filter: blur(14px) saturate(0.6);
+}
+canvas.gf-art[data-ready] {
+  opacity: 1;
+  filter: none;
+}
 .gf-back-sheen {
   position: absolute;
   inset: 0;
@@ -2239,6 +2256,7 @@ body.demo-modal-open {
     radial-gradient(120% 80% at 80% 0%, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 60%);
   pointer-events: none;
 }
+
 .gf-rim {
   position: absolute;
   left: 0;
@@ -2260,11 +2278,13 @@ body.demo-modal-open {
   stroke: rgba(255, 255, 255, 0.16);
 }
 
+/* ---- files ---------------------------------------------------------------- */
 .gf-files {
   position: absolute;
   inset: 0;
   z-index: 5;
   pointer-events: none;
+  /* nothing hangs out of the bottom of the pocket, however tall the stack */
   clip-path: inset(-400px -400px 10px -400px);
 }
 .gf-sheet-slot {
@@ -2289,13 +2309,15 @@ body.demo-modal-open {
     0 10px 26px -8px rgba(10, 12, 20, 0.28);
   transform-origin: 50% 100%;
   transform: translate(
-      calc(var(--gf-slot) * var(--gf-spread)),
+      calc(var(--gf-jx) + var(--gf-slot) * var(--gf-spread)),
       calc(var(--gf-lift) + var(--gf-depth) * var(--gf-stack) * -1)
     )
-    rotate(calc(var(--gf-slot) * var(--gf-fan)));
+    rotate(calc(var(--gf-jr) + var(--gf-slot) * var(--gf-fan)));
   transition:
     transform 0.75s var(--gf-spring) calc(var(--gf-depth) * 40ms),
-    box-shadow 0.4s var(--gf-ease);
+    box-shadow 0.4s var(--gf-ease),
+    translate 0.9s var(--gf-ease),
+    opacity 0.9s var(--gf-ease);
 }
 .gf-root[data-tone="dark"] .gf-sheet {
   background: linear-gradient(180deg, #2c2c30 0%, #1c1c1f 100%);
@@ -2310,7 +2332,7 @@ body.demo-modal-open {
 .gf-root[data-open] .gf-sheet:hover,
 .gf-root[data-open] .gf-sheet:focus-visible {
   transform: translate(
-      calc(var(--gf-slot) * var(--gf-spread)),
+      calc(var(--gf-jx) + var(--gf-slot) * var(--gf-spread)),
       calc(var(--gf-lift) + var(--gf-depth) * var(--gf-stack) * -1 - 18px)
     )
     rotate(calc(var(--gf-slot) * var(--gf-fan) * 0.6));
@@ -2318,6 +2340,11 @@ body.demo-modal-open {
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     0 0 0 0.5px rgba(0, 0, 0, 0.1),
     0 22px 40px -12px rgba(10, 12, 20, 0.42);
+  transition-delay: 0s;
+}
+.gf-sheet:focus-visible {
+  outline: 2px solid #4c8dff;
+  outline-offset: 2px;
 }
 .gf-sheet-art {
   position: absolute;
@@ -2327,6 +2354,17 @@ body.demo-modal-open {
   height: 184px;
   max-width: none;
   object-fit: cover;
+  transition:
+    opacity 0.9s var(--gf-ease),
+    filter 0.9s var(--gf-ease);
+}
+canvas.gf-sheet-art {
+  opacity: 0;
+  filter: blur(10px);
+}
+canvas.gf-sheet-art[data-ready] {
+  opacity: 1;
+  filter: none;
 }
 .gf-sheet--art::after {
   content: "";
@@ -2353,13 +2391,13 @@ body.demo-modal-open {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 560;
   letter-spacing: -0.005em;
   color: #18181b;
 }
 .gf-sheet-meta {
   flex: none;
-  font-family: ui-monospace, "SF Mono", monospace;
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 10px;
   letter-spacing: 0.02em;
   color: rgba(24, 24, 27, 0.5);
@@ -2399,6 +2437,30 @@ body.demo-modal-open {
   background: rgba(255, 255, 255, 0.16);
 }
 
+.gf-sheet--drop {
+  animation: gf-drop 0.85s var(--gf-ease) both;
+}
+@keyframes gf-drop {
+  0% {
+    translate: 0 -190px;
+    rotate: -9deg;
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  72% {
+    translate: 0 10px;
+    rotate: 1deg;
+  }
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+    opacity: 1;
+  }
+}
+
+/* ---- front glass ----------------------------------------------------------- */
 .gf-front {
   position: absolute;
   left: 0;
@@ -2410,7 +2472,27 @@ body.demo-modal-open {
   backdrop-filter: blur(22px) saturate(1.5);
   transform-origin: 50% 100%;
   transform: perspective(760px) rotateX(var(--gf-hinge));
-  transition: transform 0.8s var(--gf-spring);
+  transition:
+    transform 0.8s var(--gf-spring),
+    translate 1s var(--gf-ease),
+    opacity 1s var(--gf-ease);
+}
+.gf-front--bump {
+  animation: gf-bump 0.7s var(--gf-ease) 0.38s both;
+}
+@keyframes gf-bump {
+  0% {
+    scale: 1;
+  }
+  35% {
+    scale: 1.018 0.975;
+  }
+  70% {
+    scale: 0.996 1.006;
+  }
+  100% {
+    scale: 1;
+  }
 }
 .gf-tint {
   position: absolute;
@@ -2453,6 +2535,10 @@ body.demo-modal-open {
 }
 .gf-front-rim path {
   stroke-width: 2.4;
+  transition: stroke-width 0.3s var(--gf-ease);
+}
+.gf-root[data-tone="dark"] .gf-front-rim {
+  opacity: 0.55;
 }
 
 .gf-hit {
@@ -2462,10 +2548,17 @@ body.demo-modal-open {
   z-index: 1;
   cursor: pointer;
 }
+.gf-hit:focus-visible ~ .gf-label .gf-title {
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+}
+.gf-front:has(.gf-hit:focus-visible) .gf-front-rim path {
+  stroke-width: 5;
+}
+
 .gf-label {
   position: absolute;
-  left: 28px;
-  bottom: 32px;
   z-index: 2;
   display: flex;
   flex-direction: column;
@@ -2473,6 +2566,19 @@ body.demo-modal-open {
   max-width: 200px;
   pointer-events: none;
   color: var(--gf-ink);
+}
+.gf-root[data-place="bottom-left"] .gf-label {
+  left: 28px;
+  bottom: 32px;
+}
+.gf-root[data-place="top-left"] .gf-label {
+  left: 28px;
+  top: 34px;
+}
+.gf-root[data-place="top-right"] .gf-label {
+  right: 32px;
+  top: 52px;
+  align-items: flex-start;
 }
 .gf-title {
   font-size: 18px;
@@ -2484,13 +2590,27 @@ body.demo-modal-open {
   white-space: nowrap;
 }
 .gf-meta {
-  font-family: ui-monospace, "SF Mono", monospace;
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
   letter-spacing: 0.03em;
   color: var(--gf-ink-soft);
   white-space: nowrap;
+  animation: gf-roll 0.5s var(--gf-ease) both;
+}
+@keyframes gf-roll {
+  from {
+    opacity: 0;
+    translate: 0 7px;
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    filter: blur(0);
+  }
 }
 
+/* ---- the key: + or ··· ------------------------------------------------------ */
 .gf-key {
   all: unset;
   box-sizing: border-box;
@@ -2498,21 +2618,27 @@ body.demo-modal-open {
   right: 22px;
   bottom: 22px;
   z-index: 12;
-  width: 54px;
-  height: 54px;
+  width: 58px;
+  height: 58px;
   border-radius: 18px;
   display: grid;
   place-items: center;
   cursor: pointer;
   transition:
     transform 0.35s var(--gf-spring),
-    box-shadow 0.35s var(--gf-ease);
+    box-shadow 0.35s var(--gf-ease),
+    background 0.35s var(--gf-ease);
 }
 .gf-key:hover {
   transform: translateY(-2px);
 }
 .gf-key:active {
   transform: translateY(0) scale(0.93);
+  transition-duration: 0.12s;
+}
+.gf-key:focus-visible {
+  outline: 2px solid #4c8dff;
+  outline-offset: 3px;
 }
 .gf-key--add {
   color: #fff;
@@ -2521,7 +2647,8 @@ body.demo-modal-open {
     inset 0 1px 0 rgba(255, 255, 255, 0.22),
     inset 0 -3px 8px rgba(0, 0, 0, 0.7),
     0 0 0 1px rgba(0, 0, 0, 0.75),
-    0 14px 22px -8px rgba(0, 0, 0, 0.55);
+    0 14px 22px -8px rgba(0, 0, 0, 0.55),
+    0 3px 6px -2px rgba(0, 0, 0, 0.35);
 }
 .gf-root[data-tone="dark"] .gf-key--add {
   color: #111113;
@@ -2539,7 +2666,20 @@ body.demo-modal-open {
   backdrop-filter: blur(10px);
   box-shadow:
     inset 0 1px 0 #fff,
+    inset 0 -2px 4px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(0, 0, 0, 0.16),
     0 10px 18px -8px rgba(0, 0, 0, 0.3);
+}
+.gf-root[data-tone="dark"] .gf-key--more {
+  color: #f5f5f7;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.06) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 10px 18px -8px rgba(0, 0, 0, 0.6);
+}
+.gf-key--more[aria-expanded="true"] {
+  transform: scale(0.96);
 }
 .gf-glyph {
   display: block;
@@ -2549,12 +2689,147 @@ body.demo-modal-open {
   stroke-linecap: round;
 }
 .gf-glyph--plus {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
+  stroke-width: 1.6;
+  animation: gf-turn 0.6s var(--gf-spring);
 }
 .gf-glyph--more {
-  width: 28px;
-  height: 11px;
+  width: 30px;
+  height: 12px;
+  stroke-width: 1.7;
+}
+@keyframes gf-turn {
+  from {
+    rotate: -90deg;
+  }
+  to {
+    rotate: 0deg;
+  }
+}
+
+/* ---- menu ------------------------------------------------------------------- */
+.gf-menu {
+  position: absolute;
+  right: 22px;
+  bottom: 90px;
+  z-index: 20;
+  min-width: 176px;
+  padding: 6px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(252, 252, 253, 0.72);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  backdrop-filter: blur(24px) saturate(1.6);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 0.5px rgba(0, 0, 0, 0.14),
+    0 24px 48px -16px rgba(10, 12, 20, 0.4);
+  transform-origin: 100% 100%;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px) scale(0.94);
+  transition:
+    opacity 0.2s var(--gf-ease),
+    transform 0.32s var(--gf-spring),
+    visibility 0s 0.32s;
+}
+.gf-menu[data-open] {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition-delay: 0s;
+}
+.gf-root[data-tone="dark"] .gf-menu {
+  background: rgba(30, 30, 34, 0.72);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 0 0.5px rgba(255, 255, 255, 0.1),
+    0 24px 48px -16px rgba(0, 0, 0, 0.8);
+}
+.gf-menu-item {
+  all: unset;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 450;
+  color: #18181b;
+  cursor: pointer;
+}
+.gf-root[data-tone="dark"] .gf-menu-item {
+  color: #f4f4f5;
+}
+.gf-menu-item:hover,
+.gf-menu-item:focus-visible {
+  background: rgba(24, 24, 27, 0.07);
+}
+.gf-root[data-tone="dark"] .gf-menu-item:hover,
+.gf-root[data-tone="dark"] .gf-menu-item:focus-visible {
+  background: rgba(255, 255, 255, 0.09);
+}
+.gf-menu-item--danger {
+  color: #d92d20;
+}
+.gf-root[data-tone="dark"] .gf-menu-item--danger {
+  color: #ff6b5e;
+}
+
+/* ---- entrance: the folder assembles itself ---------------------------------- */
+.gf-root:not([data-entered]) .gf-back,
+.gf-root:not([data-entered]) .gf-back-rim {
+  translate: 0 22px;
+  opacity: 0;
+}
+.gf-root:not([data-entered]) .gf-sheet {
+  translate: 0 -120px;
+  opacity: 0;
+}
+.gf-root:not([data-entered]) .gf-front {
+  translate: 0 46px;
+  opacity: 0;
+}
+.gf-root:not([data-entered]) .gf-key {
+  opacity: 0;
+  scale: 0.6;
+}
+.gf-root:not([data-entered]) .gf-shadow {
+  opacity: 0;
+}
+.gf-back,
+.gf-back-rim {
+  transition:
+    translate 1s var(--gf-ease),
+    opacity 0.9s var(--gf-ease);
+}
+.gf-root[data-entered] .gf-sheet {
+  transition-delay:
+    calc(var(--gf-depth) * 40ms), 0s, calc(0.18s + var(--gf-depth) * 90ms),
+    calc(0.18s + var(--gf-depth) * 90ms);
+}
+.gf-root[data-entered] .gf-front {
+  transition-delay: 0s, 0.42s, 0.42s;
+}
+.gf-key {
+  transition:
+    transform 0.35s var(--gf-spring),
+    box-shadow 0.35s var(--gf-ease),
+    opacity 0.6s var(--gf-ease) 0.7s,
+    scale 0.7s var(--gf-spring) 0.7s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gf-root *,
+  .gf-root *::before,
+  .gf-root *::after {
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+    animation: none !important;
+  }
+  .gf-tilt {
+    transform: none !important;
+  }
 }
 
 /* ---- Halftone Wordmark Canvas in Footer ---- */
