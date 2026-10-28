@@ -29,6 +29,11 @@ import {
 } from "./model.ts";
 import { ModelSelection } from "./modelSelection.ts";
 import { DEFAULT_PROVIDER_HANDOFF_SETTINGS, ProviderHandoffSettings } from "./handoff.ts";
+import {
+  CustomPromptProfiles,
+  DEFAULT_PROMPT_PROFILE_ID,
+  PromptProfileId,
+} from "./promptProfiles.ts";
 import { ProjectScript, type ProjectMutation } from "./project.ts";
 import { DEFAULT_RUNTIME_MODE, RuntimeMode } from "./providerPolicy.ts";
 import { BrowserProfile, BrowserProfileId, DEFAULT_BROWSER_PROFILE_ID } from "./browserProfile.ts";
@@ -1013,6 +1018,7 @@ export const PROJECT_SCOPED_SERVER_SETTING_KEYS = [
   "continueThreadsAfterServerUpdate",
   "responseStreamingMode",
   "providerHandoff",
+  "defaultPromptProfileId",
 ] as const;
 export type ProjectScopedServerSettingKey = (typeof PROJECT_SCOPED_SERVER_SETTING_KEYS)[number];
 
@@ -1062,6 +1068,7 @@ export const ProjectSettingsOverrides = Schema.Struct({
   continueThreadsAfterServerUpdate: Schema.optionalKey(Schema.Boolean),
   responseStreamingMode: Schema.optionalKey(ResponseStreamingMode),
   providerHandoff: Schema.optionalKey(ProviderHandoffSettings),
+  defaultPromptProfileId: Schema.optionalKey(PromptProfileId),
   providerInstances: Schema.optionalKey(
     Schema.Record(ProviderInstanceId, ProjectProviderInstanceOverride),
   ),
@@ -1167,6 +1174,12 @@ export const ServerSettings = Schema.Struct({
   /** Moving limited threads to another provider: ask first by default, every provider allowed. */
   providerHandoff: ProviderHandoffSettings.pipe(
     Schema.withDecodingDefault(Effect.succeed(DEFAULT_PROVIDER_HANDOFF_SETTINGS)),
+  ),
+  /** The user's own prompt profiles (D-54); built-ins live in code and are not stored. */
+  promptProfiles: CustomPromptProfiles.pipe(Schema.withDecodingDefault(Effect.succeed([]))),
+  /** Profile new turns use unless the thread picks another; projects can override it. */
+  defaultPromptProfileId: PromptProfileId.pipe(
+    Schema.withDecodingDefault(Effect.succeed(DEFAULT_PROMPT_PROFILE_ID)),
   ),
   /**
    * Whether agents may drive the in-app preview browser. Turning this off
@@ -1588,6 +1601,8 @@ export const ServerSettingsPatch = Schema.Struct({
   // Server settings
   responseStreamingMode: Schema.optionalKey(ResponseStreamingMode),
   providerHandoff: Schema.optionalKey(ProviderHandoffSettings),
+  promptProfiles: Schema.optionalKey(CustomPromptProfiles),
+  defaultPromptProfileId: Schema.optionalKey(PromptProfileId),
   enableProviderUpdateChecks: Schema.optionalKey(Schema.Boolean),
   continueThreadsAfterServerUpdate: Schema.optionalKey(Schema.Boolean),
   enableAgentBrowserAccess: Schema.optionalKey(Schema.Boolean),

@@ -512,6 +512,29 @@ describe("CodexAdapterV2 runtime policy", () => {
     }),
   );
 
+  it.effect("sends the thread's prompt profile as its own developer context entry", () =>
+    Effect.gen(function* () {
+      const base = {
+        nativeThreadId: "native-profile",
+        codexInput: [{ type: "text" as const, text: "hello" }],
+        runtimePolicy: {
+          runtimeMode: "full-access" as const,
+          interactionMode: "default" as const,
+          cwd: null,
+        },
+        modelSelection: { instanceId: ProviderInstanceId.make("codex"), model: "gpt-5.4" },
+      };
+      const params = yield* CodexAdapterV2.buildCodexTurnStartParams({
+        ...base,
+        promptProfile: { id: "minimal", name: "Minimal", instructions: "Be brief." },
+      });
+      assert.equal(params.additionalContext?.["moonfold_prompt_profile"]?.kind, "application");
+      assert.include(params.additionalContext?.["moonfold_prompt_profile"]?.value, "Be brief.");
+      const without = yield* CodexAdapterV2.buildCodexTurnStartParams(base);
+      assert.isUndefined(without.additionalContext?.["moonfold_prompt_profile"]);
+    }),
+  );
+
   it.effect(
     "adds default-mode developer instructions when the Moonfold MCP server is attached",
     () =>

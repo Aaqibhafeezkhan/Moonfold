@@ -20,6 +20,7 @@ import {
   type ProviderSessionId,
   type ProviderThreadId,
   type ProviderTurnId,
+  resolvePromptProfile,
   type RunAttemptId,
   type ThreadId,
   type TurnItemId,
@@ -1422,6 +1423,26 @@ export const layer: Layer.Layer<
             threadId: input.run.threadId,
             projectId: input.appThread.projectId,
           });
+          // The thread's prompt profile (D-54). Unreadable settings cost the turn its profile,
+          // not the turn itself.
+          const promptProfile = yield* serverSettings.getSettings.pipe(
+            Effect.map((settings) => {
+              const profile = resolvePromptProfile({
+                customProfiles: settings.promptProfiles,
+                defaultProfileId: resolveProjectSettings(settings, input.appThread.projectId)
+                  .settings.defaultPromptProfileId,
+                threadProfileId: input.appThread.promptProfileId,
+              });
+              return profile.instructions.trim() === ""
+                ? undefined
+                : { id: profile.id, name: profile.name, instructions: profile.instructions };
+            }),
+            Effect.catch((cause) =>
+              Effect.logWarning("Failed to read the prompt profile.", { cause }).pipe(
+                Effect.as(undefined),
+              ),
+            ),
+          );
           const turnInput = {
             appThread: input.appThread,
             threadId: input.run.threadId,
@@ -1444,6 +1465,7 @@ export const layer: Layer.Layer<
             runtimePolicy: input.runtimePolicy,
             ...(appContext.length === 0 ? {} : { appContext }),
             ...(memories === undefined ? {} : { memories }),
+            ...(promptProfile === undefined ? {} : { promptProfile }),
           };
           // Check after the context read: ingestion can settle the run while
           // it awaits. A failed ownership read fails the start below.

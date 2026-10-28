@@ -24,6 +24,7 @@ export * from "./threadWorkspace.ts";
 export * from "./plugins.ts";
 export * from "./memories.ts";
 export * from "./handoff.ts";
+export * from "./promptProfiles.ts";
 export * from "./browserSites.ts";
 export * from "./computerUse.ts";
 export * from "./providerRuntime.ts";

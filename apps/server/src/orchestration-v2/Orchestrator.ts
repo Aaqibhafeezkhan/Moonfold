@@ -3045,6 +3045,9 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
                 : {}),
             ...(command.branch === undefined ? {} : { branch: command.branch }),
             ...(command.worktreePath === undefined ? {} : { worktreePath: command.worktreePath }),
+            ...(command.promptProfileId === undefined
+              ? {}
+              : { promptProfileId: command.promptProfileId }),
             ...(command.linkedPullRequest === undefined
               ? {}
               : {

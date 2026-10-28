@@ -39,6 +39,7 @@ import type * as Effect from "effect/Effect";
 import type * as Scope from "effect/Scope";
 import type * as Stream from "effect/Stream";
 import type { TurnMemories } from "./memoryInstructions.ts";
+import type { TurnPromptProfile } from "./promptProfileInstructions.ts";
 
 import type {
   ProviderSelectionTransitionInput,
@@ -426,6 +427,8 @@ export interface ProviderAdapterV2TurnInput {
   readonly appContext?: ReadonlyArray<{ readonly key: string; readonly text: string }>;
   /** The user's memories for this thread, absent when memories are off for it. */
   readonly memories?: TurnMemories;
+  /** The thread's prompt profile (D-54), absent when it adds nothing. */
+  readonly promptProfile?: TurnPromptProfile;
 }
 
 export interface ProviderAdapterV2SteerInput {

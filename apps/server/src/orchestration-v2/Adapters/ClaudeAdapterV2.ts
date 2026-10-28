@@ -1,3 +1,4 @@
+import type { TurnPromptProfile } from "@moonfold/provider-core/server/promptProfileInstructions";
 import { makeProviderTextDeltaCoalescer } from "./ProviderTextDeltaCoalescer.ts";
 import {
   dynamicToolTitle,
@@ -1107,6 +1108,8 @@ export function makeClaudeQueryOptions(input: {
   /** The user's enabled Moonfold plugins: Claude Code plugin folders and their MCP servers. */
   readonly plugins?: ClaudePluginQueryOverrides;
   readonly memories?: TurnMemories;
+  /** The thread's prompt profile (D-54), appended to the system prompt like memories. */
+  readonly promptProfile?: TurnPromptProfile;
   readonly tools?: ClaudeAgentSdkQueryTools;
   readonly allowedTools?: ReadonlyArray<string>;
   readonly disallowedTools?: ReadonlyArray<string>;
@@ -1201,7 +1204,7 @@ export function makeClaudeQueryOptions(input: {
       type: "preset" as const,
       preset: "claude_code" as const,
       append:
-        buildRuntimeInstructions({ harness: "Claude Code" }) +
+        buildRuntimeInstructions({ harness: "Claude Code", promptProfile: input.promptProfile }) +
         (input.mcpServers === undefined ? "" : MOONFOLD_ORCHESTRATION_INSTRUCTIONS) +
         claudeMemoryInstructions(input.memories),
     },
@@ -1979,6 +1982,7 @@ export function claudeEffectiveQueryPolicyKey(
   },
   pluginOverrides: ClaudePluginQueryOverrides = {},
   memories?: TurnMemories,
+  promptProfile?: TurnPromptProfile,
 ): string {
   return JSON.stringify({
     runtimePolicy: claudeRuntimeQueryPolicyKey({
@@ -1993,6 +1997,8 @@ export function claudeEffectiveQueryPolicyKey(
       : { plugins: pluginOverrides }),
     // The system prompt carries memories, so a change reopens the query.
     ...(memories === undefined ? {} : { memories }),
+    // So does the prompt profile.
+    ...(promptProfile === undefined ? {} : { promptProfile }),
   });
 }
 
@@ -8546,6 +8552,7 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
             mcpOverrides,
             pluginOverrides,
             turnInput.memories,
+            turnInput.promptProfile,
           );
           const compiledSelection = compileClaudeModelSelection(turnInput.modelSelection);
           const resumeSessionAt = yield* getNativeConversationHeadId(turnInput.providerThread);
@@ -8658,6 +8665,9 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
               : { mcpServers: mcpOverrides.mcpServers }),
             plugins: pluginOverrides,
             ...(turnInput.memories === undefined ? {} : { memories: turnInput.memories }),
+            ...(turnInput.promptProfile === undefined
+              ? {}
+              : { promptProfile: turnInput.promptProfile }),
             permissionMode: queryPolicy.permissionMode,
             ...(queryPolicy.allowDangerouslySkipPermissions === undefined
               ? {}

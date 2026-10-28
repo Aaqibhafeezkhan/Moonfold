@@ -1,3 +1,4 @@
+import { promptProfileText } from "@moonfold/provider-core/server/promptProfileInstructions";
 import { revertCodexThread } from "../../provider/CodexThreadRevert.ts";
 import { historyResponseItems } from "@moonfold/provider-core/server/handoffBudget";
 import { makeProviderTextDeltaCoalescer } from "./ProviderTextDeltaCoalescer.ts";
@@ -737,6 +738,7 @@ export function buildCodexTurnStartParams(input: {
   /** What the thread's MCP Apps want the agent to know (`ui/update-model-context`). */
   readonly appContext?: ProviderAdapter.ProviderAdapterV2TurnInput["appContext"];
   readonly memories?: ProviderAdapter.ProviderAdapterV2TurnInput["memories"];
+  readonly promptProfile?: ProviderAdapter.ProviderAdapterV2TurnInput["promptProfile"];
 }) {
   return Effect.gen(function* () {
     const runtimeModeDefaults = codexRuntimeModeTurnDefaults(input.runtimePolicy.runtimeMode);
@@ -792,6 +794,14 @@ export function buildCodexTurnStartParams(input: {
         ? {}
         : { moonfold_memory_notes: { kind: "untrusted" as const, value: agentMemories } }),
     };
+    // The thread's prompt profile is the user's own standing instruction (D-54). Its own key, so
+    // Codex resends it only when the user switches profile.
+    const profile = promptProfileText(input.promptProfile);
+    if (profile !== undefined) {
+      Object.assign(memoryContext, {
+        moonfold_prompt_profile: { kind: "application" as const, value: profile },
+      });
+    }
     const additionalContext =
       moonfoldContext === undefined &&
       Object.keys(appContext).length === 0 &&
@@ -6588,6 +6598,9 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
               omitServiceTier: adapterOptions.resolveRuntime !== undefined,
               ...(turnInput.appContext === undefined ? {} : { appContext: turnInput.appContext }),
               ...(turnInput.memories === undefined ? {} : { memories: turnInput.memories }),
+              ...(turnInput.promptProfile === undefined
+                ? {}
+                : { promptProfile: turnInput.promptProfile }),
             });
             yield* Ref.update(pendingRootTurns, (current) => {
               const updated = new Map(current);
