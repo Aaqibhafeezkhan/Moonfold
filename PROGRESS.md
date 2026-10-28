@@ -53,9 +53,18 @@ docs/REA-BETA3.md.
 - Out of scope for beta 3, recorded in the plan: native Ollama agent, Pieces, VS Code extension,
   `moonfold.json` lock-down, strict local-only mode, OAuth connectors, hosted plugin store.
 
+### Release
+
+- v0.1.0-beta.3 published 2026-10-28 (27 assets, Latest) after main CI passed. The first tag was
+  cancelled before publishing: beta installs never saw updates (electron-updater skips -beta.N
+  releases when its channel is set to "latest"); fixed, and electron-updater 6.8.9 against the live
+  feed now resolves 0.1.0-beta.3 for a beta.1 install. Beta 1 and 2 need one manual install.
+- Also fixed on the way: main CI was red from the website brand check, a test mock, two Registry
+  tests and newer Git wording in storage cleanup.
+
 ### Next step
 
-Merge `beta-3`, confirm main CI, tag `v0.1.0-beta.3`. After that: the cold-start budget (ROADMAP),
+After beta 3: the cold-start budget (ROADMAP),
 and prompt profiles live on Codex once its limit resets.
 
 ## Brand and launch follow-ups (2026-10-26)
