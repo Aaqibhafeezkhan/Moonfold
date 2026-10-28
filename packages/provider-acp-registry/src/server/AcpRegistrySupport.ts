@@ -180,13 +180,15 @@ export interface AcpRegistryIndex {
 
 const decodeRegistryIndexEnvelope = Schema.decodeUnknownEffect(AcpRegistryIndexEnvelope);
 const decodeRegistryAgent = Schema.decodeUnknownOption(AcpRegistryAgent);
-/** Moonfold's own catalog entries, decoded with the Registry schema so invalid ones fail tests. */
-const catalogSupplementAgents: ReadonlyArray<AcpRegistryAgent> = ACP_CATALOG_SUPPLEMENT.flatMap(
-  (candidate) => {
+/** Catalog entries decoded with the Registry schema, so an invalid one is dropped like theirs. */
+const decodeCatalogSupplement = (
+  entries: ReadonlyArray<unknown>,
+): ReadonlyArray<AcpRegistryAgent> =>
+  entries.flatMap((candidate) => {
     const decoded = decodeRegistryAgent(candidate);
     return Option.isSome(decoded) ? [decoded.value] : [];
-  },
-);
+  });
+const catalogSupplementAgents = decodeCatalogSupplement(ACP_CATALOG_SUPPLEMENT);
 const decodeJson = Schema.decodeUnknownEffect(Schema.fromJsonString(Schema.Unknown));
 const decodeNpmPackageManifest = Schema.decodeUnknownEffect(
   Schema.fromJsonString(NpmPackageManifest),
@@ -561,6 +563,8 @@ export interface AcpRegistryCatalogOptions {
   readonly cacheDir: string;
   readonly toolsDir: string;
   readonly registryUrl?: string;
+  /** Agents listed beside the Registry (D-53); Moonfold's built-in supplement when absent. */
+  readonly catalogSupplement?: ReadonlyArray<unknown>;
 }
 
 const INSTALL_LOCK_RETRY_COUNT = 300;
@@ -667,6 +671,10 @@ export const makeAcpRegistryCatalog = Effect.fn("AcpRegistryCatalog.make")(funct
   const resolveExecutable = yield* SpawnExecutableResolution;
   const platformTarget = resolveAcpRegistryPlatformTarget(platform, architecture);
   const registryUrl = input.registryUrl ?? ACP_REGISTRY_URL;
+  const supplementAgents =
+    input.catalogSupplement === undefined
+      ? catalogSupplementAgents
+      : decodeCatalogSupplement(input.catalogSupplement);
   const registryDirectory = path.join(input.cacheDir, "acp-registry");
   const registryCachePath = path.join(registryDirectory, "registry.json");
   const installsDirectory = input.toolsDir;
@@ -775,7 +783,7 @@ export const makeAcpRegistryCatalog = Effect.fn("AcpRegistryCatalog.make")(funct
       return Option.isSome(decodedAgent) ? [decodedAgent.value] : [];
     });
     const discarded = envelope.agents.length - registryAgents.length;
-    const agents = withCatalogSupplement(registryAgents, catalogSupplementAgents);
+    const agents = withCatalogSupplement(registryAgents, supplementAgents);
     if (discarded > 0) {
       yield* Effect.logWarning("ignored invalid ACP Registry entries", { discarded });
     }
